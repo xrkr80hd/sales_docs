@@ -120,7 +120,7 @@ function OverviewRow({ label, value, href, onNavigate }: { label: string; value:
 
 export function WorkflowScreen({ dealType = "used" }: { dealType?: "used" | "new" } = {}) {
   const isNewDeal = dealType === "new";
-  const workflowPath = isNewDeal ? "/workflow/new" : "/workflow";
+  const workflowPath = isNewDeal ? "/deal-sheet/new" : "/deal-sheet";
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [data, setData] = useState<WorkflowData>(() => loadWorkflow());
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {

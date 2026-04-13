@@ -1,11 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { BuyersGuideReverseSheet } from "@/components/documents/buyers-guide-reverse-sheet";
 import { BuyersGuideSheet } from "@/components/documents/buyers-guide-sheet";
-import { DocToolbar } from "@/components/documents/doc-toolbar";
-import { useVinConfirmation } from "@/components/ui/use-vin-confirmation";
 import {
   loadConsultant,
   loadDealer,
@@ -21,7 +20,7 @@ import {
 const PAGE_W = 816;
 
 export function BuyersGuideScreen() {
-  const { confirmVinAction, dialog } = useVinConfirmation();
+  const router = useRouter();
   const [workflow, setWorkflow] = useState<WorkflowData>(() => loadWorkflow());
   const [dealer] = useState<DealerInfo>(() => loadDealer());
   const [consultant] = useState<ConsultantInfo>(() => loadConsultant());
@@ -40,48 +39,24 @@ export function BuyersGuideScreen() {
   }, []);
 
   useEffect(() => {
-    return subscribeToWorkflowSessionClear(() => {
-      setWorkflow(loadWorkflow());
-    });
+    return subscribeToWorkflowSessionClear(() => setWorkflow(loadWorkflow()));
   }, []);
 
-  async function openPrintSurface() {
-    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-    const latest = loadWorkflow();
-    if (!(await confirmVinAction(latest.vin, "printing"))) return;
-    window.open("/print/buyers-guide?autoprint=1&vinchecked=1", "_blank");
-  }
-
   return (
-    <>
-      <div className="mx-auto flex w-full max-w-[8.5in] flex-col">
-        <DocToolbar vin={workflow.vin} mileage={workflow.mileage} saved={false} onSave={() => { }} onPrint={openPrintSurface} />
-
-        <div ref={containerRef}>
-          <div
-            style={
-              pageScale < 1
-                ? { zoom: pageScale }
-                : undefined
-            }
-          >
-            <BuyersGuideSheet workflow={workflow} />
-          </div>
-
-          <div className="mt-6" />
-
-          <div
-            style={
-              pageScale < 1
-                ? { zoom: pageScale }
-                : undefined
-            }
-          >
-            <BuyersGuideReverseSheet workflow={workflow} dealer={dealer} consultant={consultant} />
-          </div>
+    <div className="mx-auto w-full max-w-[8.5in]">
+      <div className="mb-4 flex items-center gap-3">
+        <button type="button" onClick={() => router.back()} className="text-sm font-bold uppercase tracking-[0.08em] text-white/60 transition hover:text-white">← Back</button>
+        <h1 className="text-lg font-bold uppercase tracking-[0.14em] text-white">Buyers Guide</h1>
+      </div>
+      <div ref={containerRef}>
+        <div style={pageScale < 1 ? { zoom: pageScale } : undefined}>
+          <BuyersGuideSheet workflow={workflow} />
+        </div>
+        <div className="mt-6" />
+        <div style={pageScale < 1 ? { zoom: pageScale } : undefined}>
+          <BuyersGuideReverseSheet workflow={workflow} dealer={dealer} consultant={consultant} />
         </div>
       </div>
-      {dialog}
-    </>
+    </div>
   );
 }

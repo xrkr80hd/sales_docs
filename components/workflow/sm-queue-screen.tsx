@@ -55,12 +55,31 @@ export function SmQueueScreen({ role }: { role: string }) {
     return () => { cancelled = true; };
   }, []);
 
+  // Shared refetch helper — used by realtime, polling, and visibility
+  const refresh = () => listSmQueue().then((fresh) => setDeals(fresh));
+
+  // Tick the relative-time display every 30s
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(interval);
   }, []);
 
-  // Realtime: notifications + deal updates → refresh
+  // Polling fallback — refetch every 15s so deals always appear even if realtime drops
+  useEffect(() => {
+    const interval = setInterval(refresh, 15_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Refetch when tab becomes visible (returning from background)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
+  // Realtime: notifications + deal updates → instant refresh
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
     const supabase = getSupabaseBrowserClient();
@@ -71,7 +90,7 @@ export function SmQueueScreen({ role }: { role: string }) {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: "recipient_role=eq.sales_manager" },
         (payload) => {
-          listSmQueue().then((fresh) => setDeals(fresh));
+          refresh();
 
           const msg = (payload.new as { message?: string })?.message ?? "New deal in queue";
           if (typeof Notification !== "undefined" && Notification.permission === "granted") {
@@ -81,10 +100,13 @@ export function SmQueueScreen({ role }: { role: string }) {
       )
       .on(
         "postgres_changes",
+        { event: "INSERT", schema: "public", table: "deals", filter: "sm_ready=eq.true" },
+        () => { refresh(); },
+      )
+      .on(
+        "postgres_changes",
         { event: "UPDATE", schema: "public", table: "deals", filter: "sm_ready=eq.true" },
-        () => {
-          listSmQueue().then((fresh) => setDeals(fresh));
-        },
+        () => { refresh(); },
       )
       .subscribe();
 
@@ -94,10 +116,7 @@ export function SmQueueScreen({ role }: { role: string }) {
   async function handleClaim(dealId: string) {
     setClaiming(dealId);
     const ok = await claimSmDeal(dealId);
-    if (ok) {
-      const fresh = await listSmQueue();
-      setDeals(fresh);
-    }
+    if (ok) await refresh();
     setClaiming(null);
   }
 
@@ -106,20 +125,14 @@ export function SmQueueScreen({ role }: { role: string }) {
     if (!num) return;
     setSavingDealNum(dealId);
     const ok = await setDealNumber(dealId, num);
-    if (ok) {
-      const fresh = await listSmQueue();
-      setDeals(fresh);
-    }
+    if (ok) await refresh();
     setSavingDealNum(null);
   }
 
   async function handleFinish(dealId: string) {
     setFinishing(dealId);
     const ok = await finishSmDeal(dealId);
-    if (ok) {
-      const fresh = await listSmQueue();
-      setDeals(fresh);
-    }
+    if (ok) await refresh();
     setFinishing(null);
   }
 
@@ -205,6 +218,49 @@ export function SmQueueScreen({ role }: { role: string }) {
                       </span>
                     )}
                   </div>
+
+                  {/* SPACED priorities */}
+                  {(() => {
+                    const spacedItems: { letter: string; value: string }[] = [
+                      { letter: "S", value: wd.prioritySafety },
+                      { letter: "P", value: wd.priorityPerformance },
+                      { letter: "A", value: wd.priorityAppearance },
+                      { letter: "C", value: wd.priorityComfort },
+                      { letter: "E", value: wd.priorityEconomy },
+                      { letter: "D", value: wd.priorityDependability },
+                    ].filter((s) => !!s.value);
+                    const other = wd.priorityOther;
+                    const hasSpaced = spacedItems.length > 0 || !!other;
+                    if (!hasSpaced) return null;
+                    return (
+                      <div className="mt-3">
+                        <span className="text-xs font-bold uppercase tracking-[0.12em] text-white/25">SPACED</span>
+                        <div className="mt-1 flex flex-wrap gap-1.5">
+                          {spacedItems.map((s) => (
+                            <span
+                              key={s.letter}
+                              className="inline-flex items-center gap-1 border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-2 py-0.5 text-xs font-bold text-[var(--accent)]"
+                            >
+                              {s.letter}
+                              <span className="font-normal text-white/50">— {s.value}</span>
+                            </span>
+                          ))}
+                          {other && (
+                            <span className="inline-flex items-center gap-1 border border-white/20 bg-white/5 px-2 py-0.5 text-xs font-bold text-white/60">
+                              Other
+                              <span className="font-normal text-white/40">— {other}</span>
+                            </span>
+                          )}
+                        </div>
+                        {(wd.currentPayment || wd.newBudget) && (
+                          <div className="mt-1.5 flex gap-4 text-xs text-white/40">
+                            {wd.currentPayment && <span>Current: <span className="text-white/60">${wd.currentPayment}</span></span>}
+                            {wd.newBudget && <span>Budget: <span className="text-white/60">${wd.newBudget}</span></span>}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Deal details row */}
                   <div className="mt-3 grid gap-2 text-xs text-white/40 sm:grid-cols-4">

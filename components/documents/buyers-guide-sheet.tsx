@@ -225,6 +225,7 @@ export function BuyersGuideSheet({ workflow }: BuyersGuideSheetProps) {
             Si el concesionario gestiona la venta en espa&ntilde;ol, p&iacute;dale
             una copia de la Gu&iacute;a del Comprador en espa&ntilde;ol.
           </p>
+
         </div>
       </section>
       <span style={{ position: "absolute", bottom: 4, right: 8, fontSize: 7, color: "#bbb" }}>v1.0 • Buyers Guide</span>

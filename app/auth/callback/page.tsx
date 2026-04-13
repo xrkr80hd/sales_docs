@@ -54,7 +54,7 @@ function AuthCallbackInner() {
           setStatus("Set your new password below.");
         } else {
           setStatus("You're signed in! Redirecting…");
-          setTimeout(() => router.replace("/workflow"), 1000);
+          setTimeout(() => router.replace("/deal-sheet"), 1000);
         }
       }
     });
@@ -94,7 +94,7 @@ function AuthCallbackInner() {
       } else {
         setDone(true);
         setStatus("Password updated! Redirecting…");
-        setTimeout(() => router.replace("/workflow"), 1500);
+        setTimeout(() => router.replace("/deal-sheet"), 1500);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update password.");
@@ -161,7 +161,7 @@ function AuthCallbackInner() {
             <div className="mt-4 text-center">
               <button
                 type="button"
-                onClick={() => router.replace("/workflow")}
+                onClick={() => router.replace("/deal-sheet")}
                 className="text-sm font-bold text-[var(--accent)] underline underline-offset-2"
               >
                 Go to Walker Docs

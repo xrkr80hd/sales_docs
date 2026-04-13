@@ -51,7 +51,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const isFniQueueRoute = pathname.startsWith("/fni-queue");
   const isSmQueueRoute = pathname.startsWith("/sm-queue");
   const isDashboardRoute = pathname === "/dashboard";
-  const isWorkflowRoute = pathname.startsWith("/workflow");
+  const isWorkflowRoute = pathname.startsWith("/deal-sheet");
 
   // Derive dealType for document drawer from workflow return path
   const drawerDealType: "new" | "used" = (() => {
@@ -60,7 +60,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       const raw = window.sessionStorage.getItem("walker.workflow.view.v1");
       if (!raw) return "used";
       const parsed = JSON.parse(raw);
-      return parsed.returnPath === "/workflow/new" ? "new" : "used";
+      return parsed.returnPath === "/deal-sheet/new" ? "new" : "used";
     } catch {
       return "used";
     }
@@ -71,7 +71,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <DisclosureGate>
         <div className="min-h-screen">
           <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-8 pt-4 sm:px-6 lg:px-8">
-            {!isDashboardRoute && !isWorkflowRoute && (
+            {!isDashboardRoute && !isWorkflowRoute && !isDocumentRoute && (
               <header className="border border-white/10 bg-[#2a2a2e] bg-[url('/bg-card-3x2.jpg')] bg-cover bg-center shadow-[0_24px_60px_rgba(0,0,0,0.3)]">
                 <div className="flex flex-col gap-4 px-5 py-4 sm:px-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
@@ -115,7 +115,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                         Admin
                       </Link>
                     )}
-                    {isSm && (
+                    {isSm && !isAdminRoute && (
                       <Link
                         href="/sm-queue"
                         className={`inline-flex min-h-11 items-center justify-center border px-4 text-sm font-bold uppercase tracking-[0.08em] ${isSmQueueRoute
@@ -126,7 +126,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                         SM Queue
                       </Link>
                     )}
-                    {isFni && (
+                    {isFni && !isAdminRoute && (
                       <Link
                         href="/fni-queue"
                         className={`inline-flex min-h-11 items-center justify-center border px-4 text-sm font-bold uppercase tracking-[0.08em] ${isFniQueueRoute
@@ -142,7 +142,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </header>
             )}
 
-            {isDocumentRoute && (
+            {(isDocumentRoute || isWorkflowRoute || isAdminRoute) && (
               <>
                 <DocumentDrawerTrigger onClick={() => setDrawerOpen(true)} />
                 <DocumentDrawer

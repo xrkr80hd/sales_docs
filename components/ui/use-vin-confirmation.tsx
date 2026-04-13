@@ -6,7 +6,6 @@ import { getLast8, normalizeVin } from "@/lib/walker-workflow";
 
 type RequestState = {
   actionLabel: string;
-  dismissOnly: boolean;
   resolve: (result: boolean) => void;
   vin: string;
 } | null;
@@ -43,7 +42,6 @@ export function useVinConfirmation() {
       if (!vin) {
         setRequest({
           actionLabel,
-          dismissOnly: true,
           resolve,
           vin: "",
         });
@@ -52,7 +50,6 @@ export function useVinConfirmation() {
 
       setRequest({
         actionLabel,
-        dismissOnly: false,
         resolve,
         vin,
       });
@@ -63,12 +60,12 @@ export function useVinConfirmation() {
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4 sm:items-center">
       <div className="w-full max-w-md border border-white/10 bg-[#141414] p-4 text-white shadow-[0_20px_44px_rgba(0,0,0,0.28)]">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/70">
-          {request.dismissOnly ? "No VIN" : "Verify VIN"}
+          {request.vin ? "Verify VIN" : "No VIN"}
         </p>
         <h2 className="mt-2 text-lg font-bold leading-7">
-          {request.dismissOnly
-            ? "Please enter your VIN."
-            : "Verify VIN"}
+          {request.vin
+            ? "Verify VIN"
+            : "No VIN entered — continue anyway?"}
         </h2>
 
         {request.vin ? (
@@ -83,21 +80,19 @@ export function useVinConfirmation() {
         ) : null}
 
         <div className="mt-5 flex justify-end gap-3">
-          {!request.dismissOnly ? (
-            <button
-              type="button"
-              onClick={() => finish(false)}
-              className="min-h-10 border border-white/18 px-4 font-bold"
-            >
-              Go Back
-            </button>
-          ) : null}
           <button
             type="button"
-            onClick={() => finish(request.dismissOnly ? false : true)}
+            onClick={() => finish(false)}
+            className="min-h-10 border border-white/18 px-4 font-bold"
+          >
+            Go Back
+          </button>
+          <button
+            type="button"
+            onClick={() => finish(true)}
             className="min-h-10 border border-[var(--accent)] bg-[var(--accent)] px-4 font-bold text-white"
           >
-            {request.dismissOnly ? "OK" : "VIN Looks Right"}
+            {request.vin ? "VIN Looks Right" : "Print Anyway"}
           </button>
         </div>
       </div>

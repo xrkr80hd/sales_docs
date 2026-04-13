@@ -17,6 +17,64 @@ export const CHECKLIST_ITEMS = [
   { key: "etchNumbers", label: "Etch #'s" },
 ] as const;
 
+export const REQUIRED_DOCS_SECTIONS = [
+  {
+    key: "identification",
+    title: "Identification",
+    description: "Customer must present one valid form of ID",
+    items: [
+      "Valid driver\u2019s license (not expired)",
+      "State-issued photo ID",
+      "U.S. military ID (active duty)",
+      "Passport or passport card",
+    ],
+  },
+  {
+    key: "insurance",
+    title: "Proof of Insurance",
+    description: "Must cover the vehicle being purchased",
+    items: [
+      "Current insurance card (physical or app)",
+      "Insurance declaration page / printout",
+      "Binder letter from agent (if purchasing same-day coverage)",
+    ],
+  },
+  {
+    key: "creditFinance",
+    title: "Credit / Finance Docs",
+    description: "Required if the customer is financing",
+    items: [
+      "Signed credit application with references",
+      "Authorization to submit credit",
+      "Proof of income \u2014 pay stubs, tax returns (if lender requires)",
+      "Proof of residence \u2014 utility bill, bank statement (if lender requires)",
+    ],
+  },
+  {
+    key: "tradeInDocs",
+    title: "Trade-In Documents",
+    description: "Required if customer has a trade",
+    items: [
+      "Vehicle title (or payoff authorization letter)",
+      "Current registration",
+      "All keys, remotes, and fobs",
+    ],
+  },
+  {
+    key: "delivery",
+    title: "At Delivery",
+    description: "Verify before customer drives off",
+    items: [
+      "Signed buyer\u2019s agreement",
+      "Factory invoice / Federal Buyer\u2019s Guide (used vehicles)",
+      "We Owe / Up-fit agreement (if applicable)",
+      "Temp tag displayed",
+    ],
+  },
+] as const;
+
+export type RequiredDocsSectionKey = (typeof REQUIRED_DOCS_SECTIONS)[number]["key"];
+
 export const DELIVERY_CHECKLIST_ENTRY_FIELDS = [
   { id: "bmwKeyRead", label: "BMW Key Read" },
   { id: "taxWatch", label: "Tax Watch" },
@@ -161,7 +219,6 @@ export type WorkflowData = {
   stockNumber: string;
   stockNumberLetter: string;
   customerSource: string;
-  fniEmail: string;
   vehicleYear: string;
   vehicleMake: string;
   vehicleModel: string;
@@ -196,6 +253,7 @@ export type WorkflowData = {
   priorityEconomy: string;
   priorityDependability: string;
   priorityOther: string;
+  spacedConfirmed: boolean;
   vehicleOfInterest: string;
   tradeYear: string;
   tradeMake: string;
@@ -208,6 +266,7 @@ export type WorkflowData = {
   signedBuyerAgreement: boolean;
   factoryInvBuyerGuide: boolean;
   firstServiceVisitDate: string;
+  sectionComplete: Record<string, boolean>;
 };
 
 export type DeliveryChecklistNotes = Partial<
@@ -215,12 +274,6 @@ export type DeliveryChecklistNotes = Partial<
 >;
 
 export type SignatureStore = Record<string, string>;
-
-export type EmailDraft = {
-  to: string;
-  subject: string;
-  body: string;
-};
 
 function isBrowser() {
   return typeof window !== "undefined";
@@ -325,7 +378,6 @@ export function createDefaultWorkflowData(): WorkflowData {
     stockNumber: "",
     stockNumberLetter: "",
     customerSource: "",
-    fniEmail: "",
     vehicleYear: "",
     vehicleMake: "",
     vehicleModel: "",
@@ -360,6 +412,7 @@ export function createDefaultWorkflowData(): WorkflowData {
     priorityEconomy: "",
     priorityDependability: "",
     priorityOther: "",
+    spacedConfirmed: false,
     vehicleOfInterest: "",
     tradeYear: "",
     tradeMake: "",
@@ -372,6 +425,7 @@ export function createDefaultWorkflowData(): WorkflowData {
     signedBuyerAgreement: false,
     factoryInvBuyerGuide: false,
     firstServiceVisitDate: "",
+    sectionComplete: {},
   };
 }
 
@@ -418,7 +472,6 @@ export function normalizeWorkflowData(value: unknown): WorkflowData {
     stockNumber: safeTrim(value.stockNumber),
     stockNumberLetter: safeTrim(value.stockNumberLetter),
     customerSource: safeTrim(value.customerSource),
-    fniEmail: safeTrim(value.fniEmail),
     vehicleYear: safeTrim(value.vehicleYear),
     vehicleMake: safeTrim(value.vehicleMake),
     vehicleModel: safeTrim(value.vehicleModel),
@@ -456,6 +509,7 @@ export function normalizeWorkflowData(value: unknown): WorkflowData {
     priorityEconomy: safeTrim(value.priorityEconomy),
     priorityDependability: safeTrim(value.priorityDependability),
     priorityOther: safeTrim(value.priorityOther),
+    spacedConfirmed: typeof value.spacedConfirmed === "boolean" ? value.spacedConfirmed : false,
     vehicleOfInterest: safeTrim(value.vehicleOfInterest),
     tradeYear: safeTrim(value.tradeYear),
     tradeMake: safeTrim(value.tradeMake),
@@ -470,6 +524,11 @@ export function normalizeWorkflowData(value: unknown): WorkflowData {
     factoryInvBuyerGuide:
       typeof value.factoryInvBuyerGuide === "boolean" ? value.factoryInvBuyerGuide : false,
     firstServiceVisitDate: safeTrim(value.firstServiceVisitDate),
+    sectionComplete: isRecord(value.sectionComplete)
+      ? Object.fromEntries(
+        Object.entries(value.sectionComplete).map(([k, v]) => [k, Boolean(v)]),
+      )
+      : {},
   };
 }
 
@@ -595,47 +654,4 @@ export function saveDeliveryChecklistNotes(notes: DeliveryChecklistNotes) {
   }
 
   return next;
-}
-
-export function createEmailDraft(data: WorkflowData, salespersonName?: string): EmailDraft {
-  const selectedItems = CHECKLIST_ITEMS.filter(
-    (item) => data.deliveryChecklist[item.key],
-  ).map((item) => `- ${item.label}`);
-
-  const lines = [
-    `Customer: ${getCustomerDisplayName(data) || "-"}`,
-    `VIN: ${normalizeVin(data.vin) || "-"}`,
-    `Last 8: ${getLast8(data.vin) || "-"}`,
-    `Deal #: ${safeTrim(data.dealNumber) || "-"}`,
-    `Stock #: ${getFullStockNumber(data) || "-"}`,
-    `Salesperson: ${salespersonName || safeTrim(data.salespersonName) || "-"}`,
-    `Email: ${safeTrim(data.email) || "-"}`,
-    "",
-  ];
-
-  if (selectedItems.length) {
-    lines.push("Delivery Checklist Items:");
-    lines.push(...selectedItems);
-    lines.push("");
-  }
-
-  lines.push("Attach the printed Delivery Checklist PDF before sending.");
-
-  return {
-    to: safeTrim(data.fniEmail),
-    subject: `Delivery Checklist - ${getCustomerDisplayName(data) || normalizeVin(data.vin) || "Walker Customer"
-      }`,
-    body: lines.join("\n"),
-  };
-}
-
-export function openMailDraft(draft: EmailDraft) {
-  if (!isBrowser()) {
-    return;
-  }
-
-  const to = encodeURIComponent(draft.to || "");
-  const subject = encodeURIComponent(draft.subject || "");
-  const body = encodeURIComponent(draft.body || "");
-  window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
@@ -173,12 +172,6 @@ export default function AdminPage() {
               </p>
             </div>
           </div>
-          <Link
-            href="/overview"
-            className="inline-flex items-center gap-2 border border-white/30 bg-white/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white backdrop-blur-sm transition hover:border-white/60 hover:bg-white/20"
-          >
-            Back to Overview
-          </Link>
         </div>
       </section>
 

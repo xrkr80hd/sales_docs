@@ -83,10 +83,10 @@ export function getSupabaseBrowserClient() {
 
 export function getAuthRedirectUrl() {
   if (typeof window === "undefined") {
-    return "/workflow";
+    return "/deal-sheet";
   }
 
-  return `${window.location.origin}/workflow`;
+  return `${window.location.origin}/deal-sheet`;
 }
 
 export function getSessionLabel(session: Session | null) {

@@ -207,7 +207,11 @@ export function DeliveryChecklistSheet({
                     {workflow.factoryInvBuyerGuide ? "✓" : ""}
                   </div>
                 ) : field.id === "firstServiceVisit" ? (
-                  <div className={styles.entryLine}>
+                  <div
+                    className={styles.entryLine}
+                    contentEditable
+                    suppressContentEditableWarning
+                  >
                     {formatDate(workflow.firstServiceVisitDate)}
                   </div>
                 ) : field.id === "deliveryChecklistNew" ? (

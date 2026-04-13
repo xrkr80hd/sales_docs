@@ -55,35 +55,6 @@ export function DocumentDrawer({ dealType, open, onClose }: DocumentDrawerProps)
           </button>
         </div>
 
-        {/* Overview link */}
-        <div className="bg-[#1c1c1e] px-3 pt-3">
-          <Link
-            href={dealType === "new" ? "/workflow/new" : "/workflow"}
-            onClick={onClose}
-            className={`group flex items-center gap-4 border px-4 py-4 transition ${(pathname === "/workflow" || pathname === "/workflow/new")
-              ? "border-[var(--accent)] bg-[var(--accent)]/10"
-              : "border-white/10 bg-[#2a2a2e] hover:border-white/20 hover:bg-[#333338]"
-              }`}
-          >
-            <span
-              className={`flex h-8 w-8 shrink-0 items-center justify-center border text-xs font-bold ${(pathname === "/workflow" || pathname === "/workflow/new")
-                ? "border-[var(--accent)] bg-[var(--accent)] text-white"
-                : "border-white/20 bg-white/5 text-white/40"
-                }`}
-            >
-              {(pathname === "/workflow" || pathname === "/workflow/new") ? "●" : "○"}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className={`text-sm font-bold ${(pathname === "/workflow" || pathname === "/workflow/new") ? "text-[var(--accent)]" : "text-white"}`}>
-                Overview
-              </p>
-              <p className="mt-0.5 text-xs text-white/40 line-clamp-1">
-                View the current deal summary.
-              </p>
-            </div>
-          </Link>
-        </div>
-
         {/* Document list */}
         <div className="flex-1 bg-[#1c1c1e]">
           <nav className="grid gap-px bg-white/5 p-3">

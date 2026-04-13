@@ -22,7 +22,7 @@ export default function DocumentsPage() {
           rel="noopener noreferrer"
           className="mt-4 inline-flex min-h-11 items-center justify-center border border-[var(--accent)] bg-[var(--accent)] px-5 text-sm font-bold uppercase tracking-[0.08em] text-white"
         >
-          Print All Completed Forms
+          Print All Forms
         </Link>
       </section>
 

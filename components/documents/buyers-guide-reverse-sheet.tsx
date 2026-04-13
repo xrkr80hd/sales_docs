@@ -247,6 +247,12 @@ export function BuyersGuideReverseSheet({
             </div>
           </div>
         </div>
+
+        {/* Customer Signature & Date — bottom of back page */}
+        <div className={styles.signatureBlock}>
+          <div className={styles.signatureLine} />
+          <p className={styles.signatureLabel}>Customer Signature &amp; Date</p>
+        </div>
       </section>
       <span style={{ position: "absolute", bottom: 4, right: 8, fontSize: 7, color: "#bbb" }}>v1.0 • Buyers Guide (reverse)</span>
     </main>

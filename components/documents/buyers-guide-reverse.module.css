@@ -23,6 +23,8 @@
   border: var(--frameStroke);
   padding: 0.2in 0.22in 0.22in;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .importantBlock {
@@ -116,6 +118,23 @@
 .defectItem {
   margin: 0;
   padding: 0;
+}
+
+.signatureBlock {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.signatureLine {
+  border-bottom: 1.5px solid var(--ink);
+  height: 28px;
+}
+
+.signatureLabel {
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: uppercase;
+  margin: 2px 0 0;
 }
 
 @media print {

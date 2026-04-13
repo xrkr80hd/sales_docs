@@ -65,7 +65,7 @@ export function MyDealsScreen() {
     saveWorkflow(deal.workflow_data);
     saveSignatures(deal.signatures);
     setLocalDealId(deal.id);
-    router.push("/workflow");
+    router.push("/deal-sheet");
   }
 
   async function handleDelete(dealId: string) {

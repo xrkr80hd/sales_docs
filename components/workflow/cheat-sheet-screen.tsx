@@ -382,11 +382,21 @@ export function CheatSheetScreen() {
         return (
           <section
             key={section.id}
+            id={`cheat-${section.id}`}
             className="overflow-hidden border border-white/10 shadow-[0_0_20px_rgba(190,23,23,0.08),0_12px_32px_rgba(0,0,0,0.2)]"
           >
             <button
               type="button"
-              onClick={() => toggle(section.id)}
+              onClick={() => {
+                const el = document.getElementById(`cheat-${section.id}`);
+                const wasOpen = openId === section.id;
+                toggle(section.id);
+                if (wasOpen) return;
+                // After opening, scroll the button into view so content appears below viewport top
+                requestAnimationFrame(() => {
+                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                });
+              }}
               className="flex w-full items-center justify-between bg-[var(--accent)] bg-[url('/bg-card-3x2.jpg')] bg-cover bg-center px-5 py-4 text-left transition sm:px-6"
             >
               <h2 className="text-base font-bold text-white sm:text-lg">{section.title}</h2>
@@ -394,11 +404,13 @@ export function CheatSheetScreen() {
                 {isOpen ? "▲" : "▼"}
               </span>
             </button>
-            {isOpen && (
+            <div
+              className={`overflow-hidden transition-all duration-200 ${isOpen ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}
+            >
               <div className="border-t border-white/10 bg-[#2a2a2e] px-5 py-4 sm:px-6 sm:py-5">
                 {section.content}
               </div>
-            )}
+            </div>
           </section>
         );
       })}

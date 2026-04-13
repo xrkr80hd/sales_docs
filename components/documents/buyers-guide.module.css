@@ -285,6 +285,23 @@
   margin: 0;
 }
 
+.signatureBlock {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.signatureLine {
+  border-bottom: 1.5px solid var(--ink);
+  height: 28px;
+}
+
+.signatureLabel {
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: uppercase;
+  margin: 2px 0 0;
+}
+
 .lowerSection {
   flex: 1;
   display: flex;

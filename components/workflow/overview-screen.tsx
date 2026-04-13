@@ -190,13 +190,13 @@ export function OverviewScreen() {
             Dashboard
           </Link>
           <Link
-            href="/workflow"
+            href="/deal-sheet"
             className="inline-flex min-h-12 items-center justify-center border border-white/20 bg-white/10 px-5 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-white/20"
           >
             Used Vehicle
           </Link>
           <Link
-            href="/workflow/new"
+            href="/deal-sheet/new"
             className="inline-flex min-h-12 items-center justify-center border border-white/20 bg-white/10 px-5 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-white/20"
           >
             New Vehicle
