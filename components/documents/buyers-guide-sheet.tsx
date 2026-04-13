@@ -26,6 +26,26 @@ type BoxKey =
   | "otherWarranty"
   | "serviceContract";
 
+function Box({
+  checked,
+  lg,
+  onToggle,
+}: {
+  checked: boolean;
+  lg?: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      className={lg ? styles.checkboxLg : styles.checkbox}
+      onClick={onToggle}
+      style={{ cursor: "pointer" }}
+    >
+      {checked ? "✕" : ""}
+    </div>
+  );
+}
+
 export function BuyersGuideSheet({ workflow }: BuyersGuideSheetProps) {
   const [checks, setChecks] = useState<Record<BoxKey, boolean>>({
     implied: false,
@@ -42,17 +62,6 @@ export function BuyersGuideSheet({ workflow }: BuyersGuideSheetProps) {
     setChecks((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  function Box({ k, lg }: { k: BoxKey; lg?: boolean }) {
-    return (
-      <div
-        className={lg ? styles.checkboxLg : styles.checkbox}
-        onClick={() => toggle(k)}
-        style={{ cursor: "pointer" }}
-      >
-        {checks[k] ? "✕" : ""}
-      </div>
-    );
-  }
   return (
     <main
       className={styles.sheet}
@@ -96,7 +105,7 @@ export function BuyersGuideSheet({ workflow }: BuyersGuideSheetProps) {
         <div className={styles.boldLine} />
 
         <div className={styles.sectionRow}>
-          <Box k="implied" lg />
+          <Box checked={checks.implied} lg onToggle={() => toggle("implied")} />
           <div>
             <p className={styles.impliedTitle}>AS IS - NO DEALER WARRANTY</p>
             <div className={styles.spacerSm} />
@@ -109,17 +118,17 @@ export function BuyersGuideSheet({ workflow }: BuyersGuideSheetProps) {
         <div className={styles.dashedLine} />
 
         <div className={styles.sectionRow}>
-          <Box k="dealerWarranty" lg />
+          <Box checked={checks.dealerWarranty} lg onToggle={() => toggle("dealerWarranty")} />
           <div>
             <p className={styles.dealerWarrantyTitle}>Dealer Warranty</p>
             <div className={styles.spacerSm} />
             <div className={styles.warrantyCheckRow}>
-              <Box k="fullWarranty" />
+              <Box checked={checks.fullWarranty} onToggle={() => toggle("fullWarranty")} />
               <span className={styles.warrantyCheckLabel}>FULL WARRANTY.</span>
             </div>
             <div className={styles.spacerSm} />
             <div className={styles.warrantyCheckRow}>
-              <Box k="limitedWarranty" />
+              <Box checked={checks.limitedWarranty} onToggle={() => toggle("limitedWarranty")} />
               <span className={styles.limitedWarrantyText}>
                 LIMITED WARRANTY. The dealer will pay{" "}
                 <span className={styles.fieldLine} contentEditable suppressContentEditableWarning onKeyDown={blockEnter}>&nbsp;&nbsp;&nbsp;&nbsp;</span>% of the labor and{" "}
@@ -163,7 +172,7 @@ export function BuyersGuideSheet({ workflow }: BuyersGuideSheetProps) {
           </h3>
 
           <div className={styles.warrantyCheckRow}>
-            <Box k="mfgWarranty" />
+            <Box checked={checks.mfgWarranty} onToggle={() => toggle("mfgWarranty")} />
             <span className={styles.bodyText}>
               MANUFACTURER&rsquo;S WARRANTY STILL APPLIES. The
               manufacturer&rsquo;s original warranty has not expired on some
@@ -172,14 +181,14 @@ export function BuyersGuideSheet({ workflow }: BuyersGuideSheetProps) {
           </div>
 
           <div className={styles.warrantyCheckRow}>
-            <Box k="mfgUsedWarranty" />
+            <Box checked={checks.mfgUsedWarranty} onToggle={() => toggle("mfgUsedWarranty")} />
             <span className={styles.bodyText}>
               MANUFACTURER&rsquo;S USED VEHICLE WARRANTY APPLIES.
             </span>
           </div>
 
           <div className={styles.warrantyCheckRow}>
-            <Box k="otherWarranty" />
+            <Box checked={checks.otherWarranty} onToggle={() => toggle("otherWarranty")} />
             <span className={styles.bodyText}>
               OTHER USED VEHICLE WARRANTY APPLIES.
             </span>
@@ -191,7 +200,7 @@ export function BuyersGuideSheet({ workflow }: BuyersGuideSheetProps) {
           </p>
 
           <div className={styles.warrantyCheckRow}>
-            <Box k="serviceContract" />
+            <Box checked={checks.serviceContract} onToggle={() => toggle("serviceContract")} />
             <span className={styles.bodyText}>
               SERVICE CONTRACT. A service contract on this vehicle is available for
               an extra charge. Ask for details about coverage, deductible, price,

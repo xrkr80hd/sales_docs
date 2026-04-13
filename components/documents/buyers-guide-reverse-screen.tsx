@@ -61,7 +61,7 @@ export function BuyersGuideReverseScreen() {
             href={getWorkflowReturnPath()}
             className="inline-flex min-h-10 items-center justify-center border border-[var(--foreground)] bg-white px-4 text-sm font-bold text-[var(--foreground)]"
           >
-            Back to Overview
+            Back to Deal Sheet
           </Link>
           <span className="text-sm font-bold text-[var(--foreground)]">
             Last 8: {getLast8(workflow.vin) || "-"}

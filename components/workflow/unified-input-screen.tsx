@@ -5,15 +5,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useVinConfirmation } from "@/components/ui/use-vin-confirmation";
-import { loadConsultant, type ConsultantInfo } from "@/lib/dealer-consultant";
 import {
   clearLocalDealId,
+  consumeStartFreshDeal,
   finishDeal,
   getLocalDealId,
   listMyDeals,
   loadDealFromServer,
   saveDealToServer,
-  sendToSm,
   setLocalDealId,
   type DealSummary,
 } from "@/lib/deals";
@@ -21,19 +20,16 @@ import { isSupabaseConfigured } from "@/lib/supabase-browser";
 import {
   CHECKLIST_ITEMS,
   clearWorkflowSession,
+  createDefaultWorkflowData,
   getLast8,
-  loadDeliveryChecklistNotes,
   loadSignatures,
   loadWorkflow,
   normalizeVin,
   REQUIRED_DOCS_SECTIONS,
-  saveDeliveryChecklistNotes,
   saveSignatures,
   saveWorkflow,
   subscribeToWorkflowSessionClear,
   type ChecklistKey,
-  type DeliveryChecklistNoteKey,
-  type DeliveryChecklistNotes,
   type WorkflowData
 } from "@/lib/walker-workflow";
 
@@ -119,28 +115,6 @@ const INPUT =
 const LABEL =
   "text-xs font-bold uppercase tracking-[0.14em] text-white/60";
 
-/* ── Signature helpers ────────────────────────────────────── */
-
-type SigKey = "customer" | "salesperson";
-const VIN_SIG_IDS: Record<SigKey, string> = {
-  customer: "vin.customer",
-  salesperson: "vin.salesperson",
-};
-
-function loadVinSigs(): Record<SigKey, string> {
-  const store = loadSignatures();
-  return {
-    customer:
-      typeof store[VIN_SIG_IDS.customer] === "string"
-        ? store[VIN_SIG_IDS.customer]
-        : "",
-    salesperson:
-      typeof store[VIN_SIG_IDS.salesperson] === "string"
-        ? store[VIN_SIG_IDS.salesperson]
-        : "",
-  };
-}
-
 /* ── Main component ───────────────────────────────────────── */
 
 export function UnifiedInputScreen({
@@ -149,24 +123,13 @@ export function UnifiedInputScreen({
   dealType?: "used" | "new";
 }) {
   const isNew = dealType === "new";
-  const { confirmVinAction, dialog } = useVinConfirmation();
-  const [consultant] = useState<ConsultantInfo>(() => loadConsultant());
+  const { dialog } = useVinConfirmation();
   const [data, setData] = useState<WorkflowData>(() => loadWorkflow());
-  const [signatures, setSignatures] = useState<Record<SigKey, string>>(
-    () => loadVinSigs(),
-  );
-
-  const [notes, setNotes] = useState<DeliveryChecklistNotes>(() =>
-    loadDeliveryChecklistNotes(),
-  );
   const [status, setStatus] = useState("");
   const [tone, setTone] = useState<"" | "success" | "warn">("");
   const [dealId, setDealId] = useState<string | null>(() => getLocalDealId());
   const [openDeals, setOpenDeals] = useState<DealSummary[] | null>(null);
   const [showDealPicker, setShowDealPicker] = useState(false);
-  const [showSsn, setShowSsn] = useState(false);
-  const [smSent, setSmSent] = useState(false);
-  const [smSending, setSmSending] = useState(false);
   const [vinCheckOpen, setVinCheckOpen] = useState(false);
 
   const serverSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -233,15 +196,6 @@ export function UnifiedInputScreen({
     });
   }
 
-  function updateNote(fieldKey: DeliveryChecklistNoteKey, value: string) {
-    setNotes((cur) => {
-      const next = saveDeliveryChecklistNotes({ ...cur, [fieldKey]: value });
-      return next;
-    });
-  }
-
-
-
   /* ── sessionStorage auto-save ── */
   useEffect(() => {
     saveWorkflow(data);
@@ -288,6 +242,21 @@ export function UnifiedInputScreen({
   useEffect(() => {
     let cancelled = false;
     async function loadDeals() {
+      const startFreshDealType = consumeStartFreshDeal();
+      if (startFreshDealType === dealType) {
+        const next = saveWorkflow({
+          ...createDefaultWorkflowData(),
+          dealType,
+        });
+        clearLocalDealId();
+        setDealId(null);
+        setData(next);
+        setOpenDeals(null);
+        setShowDealPicker(false);
+        initialLoadDone.current = true;
+        return;
+      }
+
       if (!isSupabaseConfigured()) {
         initialLoadDone.current = true;
         return;
@@ -306,7 +275,6 @@ export function UnifiedInputScreen({
               saveSignatures(deal.signatures as Record<string, string>);
             }
             setData(workflow);
-            setSignatures(loadVinSigs());
             setDealId(deal.id);
           } else if (!cancelled) {
             clearLocalDealId();
@@ -330,7 +298,6 @@ export function UnifiedInputScreen({
           saveSignatures(deal.signatures as Record<string, string>);
         }
         setData(workflow);
-        setSignatures(loadVinSigs());
         setDealId(deal.id);
         setLocalDealId(deal.id);
         initialLoadDone.current = true;
@@ -344,7 +311,7 @@ export function UnifiedInputScreen({
     return () => {
       cancelled = true;
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ── Session clear listener ── */
   useEffect(() => {
@@ -352,8 +319,6 @@ export function UnifiedInputScreen({
       clearLocalDealId();
       setDealId(null);
       setData(loadWorkflow());
-      setSignatures(loadVinSigs());
-      setNotes(loadDeliveryChecklistNotes());
       setStatus("Session cleared. Ready for a new deal.");
       setTone("success");
     });
@@ -366,8 +331,6 @@ export function UnifiedInputScreen({
     clearLocalDealId();
     setDealId(null);
     setData(loadWorkflow());
-    setSignatures(loadVinSigs());
-    setNotes(loadDeliveryChecklistNotes());
     setStatus("Session cleared. Ready for a new deal.");
     setTone("success");
   }
@@ -430,26 +393,6 @@ export function UnifiedInputScreen({
     setVinCheckOpen(false);
   }
 
-  async function handleSendToSm() {
-    const id = getLocalDealId();
-    if (!id) {
-      setStatus("Save the deal first — no deal ID found.");
-      setTone("warn");
-      return;
-    }
-    setSmSending(true);
-    const ok = await sendToSm(id);
-    setSmSending(false);
-    if (ok) {
-      setSmSent(true);
-      setStatus("Deal sent to Sales Manager queue.");
-      setTone("success");
-    } else {
-      setStatus("Could not send to Sales Manager. It may already be sent.");
-      setTone("warn");
-    }
-  }
-
   function pickDeal(deal: DealSummary) {
     const workflow = deal.workflow_data as unknown as WorkflowData;
     saveWorkflow(workflow);
@@ -457,7 +400,6 @@ export function UnifiedInputScreen({
       saveSignatures(deal.signatures as Record<string, string>);
     }
     setData(workflow);
-    setSignatures(loadVinSigs());
     setDealId(deal.id);
     setLocalDealId(deal.id);
     setShowDealPicker(false);
@@ -1514,21 +1456,6 @@ export function UnifiedInputScreen({
               Print All Forms
             </button>
             <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={handleSendToSm}
-                disabled={smSent || smSending}
-                className={`flex min-h-12 w-full items-center justify-center border px-4 text-sm font-bold transition ${smSent
-                  ? "border-green-500 bg-green-500/20 text-green-400"
-                  : "border-white/20 bg-white/10 text-white hover:bg-white/20"
-                  } disabled:opacity-50`}
-              >
-                {smSending
-                  ? "Sending…"
-                  : smSent
-                    ? "✓ Sent to Sales Manager"
-                    : "Send to Sales Manager"}
-              </button>
               {dealId && (
                 <button
                   type="button"

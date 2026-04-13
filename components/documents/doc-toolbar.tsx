@@ -45,7 +45,7 @@ export function DocToolbar({ vin, mileage, saved, onSave, onPrint, extraActions 
           href={getWorkflowReturnPath()}
           className="inline-flex min-h-10 items-center justify-center border border-white/20 bg-white/10 px-4 text-sm font-bold text-white transition hover:bg-white/20"
         >
-          Back to Overview
+          Back to Deal Sheet
         </Link>
         <div className="flex flex-wrap items-center gap-4">
           <span className="text-xs font-semibold text-white/50">{sessionLabel}</span>
@@ -119,7 +119,7 @@ export function DocToolbar({ vin, mileage, saved, onSave, onPrint, extraActions 
             onClick={() => setMenuOpen(false)}
             className="inline-flex min-h-10 items-center justify-center border border-white/20 bg-white/10 px-4 text-sm font-bold text-white transition hover:bg-white/20"
           >
-            Back to Overview
+            Back to Deal Sheet
           </Link>
           {extraActions}
           <button

@@ -1,15 +1,10 @@
 "use client";
 
-import { SignaturePad } from "@/components/ui/signature-pad";
 import {
   formatDate,
-  loadSignatures,
-  saveSignatures,
-  type SignatureStore,
   type WorkflowData,
 } from "@/lib/walker-workflow";
 import Image from "next/image";
-import { useState } from "react";
 import css from "./payoff-form.module.css";
 
 interface Props {
@@ -20,35 +15,7 @@ function blockEnter(e: React.KeyboardEvent) {
   if (e.key === "Enter") { e.preventDefault(); }
 }
 
-type SigKey = "owner" | "coOwner" | "witness";
-const PAYOFF_SIGNATURE_IDS: Record<SigKey, string> = {
-  owner: "payoff.owner",
-  coOwner: "payoff.coOwner",
-  witness: "payoff.witness",
-};
-
-function loadPayoffSignatures(): Record<SigKey, string> {
-  const store = loadSignatures();
-  return {
-    owner: typeof store[PAYOFF_SIGNATURE_IDS.owner] === "string" ? store[PAYOFF_SIGNATURE_IDS.owner] : "",
-    coOwner: typeof store[PAYOFF_SIGNATURE_IDS.coOwner] === "string" ? store[PAYOFF_SIGNATURE_IDS.coOwner] : "",
-    witness: typeof store[PAYOFF_SIGNATURE_IDS.witness] === "string" ? store[PAYOFF_SIGNATURE_IDS.witness] : "",
-  };
-}
-
 export function PayoffFormSheet({ workflow }: Props) {
-  const [signatures, setSignatures] = useState<Record<SigKey, string>>(() =>
-    loadPayoffSignatures(),
-  );
-  const [activeSig, setActiveSig] = useState<SigKey | null>(null);
-
-  function persistSignature(signatureKey: SigKey, dataUrl: string) {
-    const store: SignatureStore = loadSignatures();
-    store[PAYOFF_SIGNATURE_IDS[signatureKey]] = dataUrl;
-    saveSignatures(store);
-    setSignatures((prev) => ({ ...prev, [signatureKey]: dataUrl }));
-  }
-
   return (
     <div className={css.sheet} data-print-sheet="payoff-form" style={{ position: "relative" }}>
       {/* Logo */}
@@ -106,30 +73,18 @@ export function PayoffFormSheet({ workflow }: Props) {
       {/* Signatures — Owner + Co-Owner always side by side */}
       <div className={css.signatureGrid}>
         <div className={css.signatureBlock}>
-          {signatures.owner ? (
-            <img src={signatures.owner} alt="Owner Signature" className={css.signatureImg} onClick={() => setActiveSig("owner")} />
-          ) : (
-            <div className={css.signatureLine} onClick={() => setActiveSig("owner")} style={{ cursor: "pointer" }} />
-          )}
+          <div className={css.signatureLine} contentEditable suppressContentEditableWarning onKeyDown={blockEnter} />
           <span className={css.signatureLabel}>Owner Signature</span>
         </div>
         <div className={css.signatureBlock}>
-          {signatures.coOwner ? (
-            <img src={signatures.coOwner} alt="Co-Owner Signature" className={css.signatureImg} onClick={() => setActiveSig("coOwner")} />
-          ) : (
-            <div className={css.signatureLine} onClick={() => setActiveSig("coOwner")} style={{ cursor: "pointer" }} />
-          )}
+          <div className={css.signatureLine} contentEditable suppressContentEditableWarning onKeyDown={blockEnter} />
           <span className={css.signatureLabel}>Co-Owner Signature</span>
         </div>
       </div>
 
       <div className={css.witnessRow}>
         <div className={css.signatureBlock}>
-          {signatures.witness ? (
-            <img src={signatures.witness} alt="Witness Signature" className={css.signatureImg} onClick={() => setActiveSig("witness")} />
-          ) : (
-            <div className={css.signatureLine} onClick={() => setActiveSig("witness")} style={{ cursor: "pointer" }} />
-          )}
+          <div className={css.signatureLine} contentEditable suppressContentEditableWarning onKeyDown={blockEnter} />
           <span className={css.signatureLabel}>Witness Signature</span>
         </div>
         <div className={css.signatureBlock}>
@@ -238,18 +193,6 @@ export function PayoffFormSheet({ workflow }: Props) {
           <span className={css.fieldLine} contentEditable suppressContentEditableWarning onKeyDown={blockEnter} />
         </div>
       </div>
-
-      {activeSig && (
-        <SignaturePad
-          label={activeSig === "owner" ? "Owner Signature" : activeSig === "coOwner" ? "Co-Owner Signature" : "Witness Signature"}
-          initialValue={signatures[activeSig] || undefined}
-          onKeep={(dataUrl) => {
-            persistSignature(activeSig, dataUrl);
-            setActiveSig(null);
-          }}
-          onCancel={() => setActiveSig(null)}
-        />
-      )}
       <span style={{ position: "absolute", bottom: 4, right: 8, fontSize: 7, color: "#bbb" }}>v1.0 • Payoff Form</span>
     </div>
   );

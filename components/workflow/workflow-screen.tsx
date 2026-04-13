@@ -87,14 +87,14 @@ function clearWorkflowViewState() {
 }
 
 export function getWorkflowReturnPath(): string {
-  if (typeof window === "undefined") return "/overview";
+  if (typeof window === "undefined") return "/deal-sheet";
   try {
     const raw = window.sessionStorage.getItem(WORKFLOW_VIEW_STATE_KEY);
-    if (!raw) return "/overview";
+    if (!raw) return "/deal-sheet";
     const parsed = JSON.parse(raw) as Partial<WorkflowViewState>;
-    return parsed.returnPath || "/overview";
+    return parsed.returnPath || "/deal-sheet";
   } catch {
-    return "/overview";
+    return "/deal-sheet";
   }
 }
 
@@ -247,7 +247,7 @@ export function WorkflowScreen({ dealType = "used" }: { dealType?: "used" | "new
 
     loadDeals();
     return () => { cancelled = true; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Persist dealType so other screens (delivery checklist) can read it
   useEffect(() => {

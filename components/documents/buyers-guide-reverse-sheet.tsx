@@ -12,14 +12,6 @@ type BuyersGuideReverseSheetProps = {
   consultant?: ConsultantInfo;
 };
 
-const FRAME_BODY_COL1 = [
-  "Frame & Body",
-  "Frame—cracks, corrective welds, or rusted through",
-  "Dog tracking—Loss of, or rusted",
-  "enough",
-  "Body Panels—rusted through",
-];
-
 const DEFECTS_COL1 = [
   {
     heading: "Frame & Body", items: [
@@ -145,7 +137,6 @@ const DEFECTS_COL3 = [
 ];
 
 export function BuyersGuideReverseSheet({
-  workflow,
   dealer,
   consultant,
 }: BuyersGuideReverseSheetProps) {

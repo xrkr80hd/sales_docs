@@ -18,6 +18,7 @@ export function VinVerificationPrintScreen() {
   const [consultant] = useState<ConsultantInfo>(() => loadConsultant());
   const printedRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const [pageScale, setPageScale] = useState(1);
 
   useLayoutEffect(() => {
@@ -25,11 +26,16 @@ export function VinVerificationPrintScreen() {
     if (!el) return;
     const observer = new ResizeObserver(([entry]) => {
       const w = entry.contentRect.width;
-      setPageScale(w >= 816 ? 1 : w / 816);
+      setPageScale(w >= 816 || w < 640 ? 1 : w / 816);
     });
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!previewRef.current) return;
+    previewRef.current.style.zoom = pageScale < 1 ? String(pageScale) : "1";
+  }, [pageScale]);
 
   useEffect(() => {
     return subscribeToWorkflowSessionClear(() => setWorkflow(loadWorkflow()));
@@ -59,8 +65,8 @@ export function VinVerificationPrintScreen() {
             Print Form
           </button>
         </div>
-        <div ref={containerRef}>
-          <div style={pageScale < 1 ? { zoom: pageScale } : undefined} className="print:[zoom:1]">
+        <div ref={containerRef} className="overflow-x-auto sm:overflow-visible">
+          <div ref={previewRef} className="print:[zoom:1]">
             <VinVerificationSheet workflow={workflow} consultant={consultant} />
           </div>
         </div>

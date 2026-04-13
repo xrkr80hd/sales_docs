@@ -1,15 +1,10 @@
 "use client";
 
-import { SignaturePad } from "@/components/ui/signature-pad";
 import type { ConsultantInfo } from "@/lib/dealer-consultant";
 import {
   getFullStockNumber,
-  loadSignatures,
-  saveSignatures,
-  type SignatureStore,
   type WorkflowData,
 } from "@/lib/walker-workflow";
-import { useState } from "react";
 import css from "./vin-verification.module.css";
 
 const MONTH_NAMES = [
@@ -36,34 +31,8 @@ function blockEnter(e: React.KeyboardEvent) {
   if (e.key === "Enter") { e.preventDefault(); }
 }
 
-type SigKey = "customer" | "salesperson";
-const VIN_SIGNATURE_IDS: Record<SigKey, string> = {
-  customer: "vin.customer",
-  salesperson: "vin.salesperson",
-};
-
-function loadVinSignatures(): Record<SigKey, string> {
-  const store = loadSignatures();
-  return {
-    customer: typeof store[VIN_SIGNATURE_IDS.customer] === "string" ? store[VIN_SIGNATURE_IDS.customer] : "",
-    salesperson:
-      typeof store[VIN_SIGNATURE_IDS.salesperson] === "string" ? store[VIN_SIGNATURE_IDS.salesperson] : "",
-  };
-}
-
 export function VinVerificationSheet({ workflow, consultant }: Props) {
-  const [signatures, setSignatures] = useState<Record<SigKey, string>>(() =>
-    loadVinSignatures(),
-  );
-  const [activeSig, setActiveSig] = useState<SigKey | null>(null);
   const dd = parseDealDate(workflow.dealDate);
-
-  function persistSignature(signatureKey: SigKey, dataUrl: string) {
-    const store: SignatureStore = loadSignatures();
-    store[VIN_SIGNATURE_IDS[signatureKey]] = dataUrl;
-    saveSignatures(store);
-    setSignatures((prev) => ({ ...prev, [signatureKey]: dataUrl }));
-  }
 
   return (
     <div className={css.sheet} data-print-sheet="vin-verification" style={{ position: "relative" }}>
@@ -120,11 +89,7 @@ export function VinVerificationSheet({ workflow, consultant }: Props) {
 
       {/* Customer Signature */}
       <div className={css.signatureBlock}>
-        {signatures.customer ? (
-          <img src={signatures.customer} alt="Customer Signature" className={css.signatureImg} onClick={() => setActiveSig("customer")} />
-        ) : (
-          <div className={css.signatureLine} onClick={() => setActiveSig("customer")} style={{ cursor: "pointer" }} />
-        )}
+        <div className={css.signatureLine} contentEditable suppressContentEditableWarning onKeyDown={blockEnter} />
         <span className={css.signatureLabel}>Customer Signature</span>
       </div>
 
@@ -137,11 +102,7 @@ export function VinVerificationSheet({ workflow, consultant }: Props) {
 
       {/* Salesperson Signature */}
       <div className={css.signatureBlock}>
-        {signatures.salesperson ? (
-          <img src={signatures.salesperson} alt="Salesperson Signature" className={css.signatureImg} onClick={() => setActiveSig("salesperson")} />
-        ) : (
-          <div className={css.signatureLine} onClick={() => setActiveSig("salesperson")} style={{ cursor: "pointer" }} />
-        )}
+        <div className={css.signatureLine} contentEditable suppressContentEditableWarning onKeyDown={blockEnter} />
         <span className={css.signatureLabel}>Salesperson Signature</span>
       </div>
 
@@ -151,18 +112,6 @@ export function VinVerificationSheet({ workflow, consultant }: Props) {
         </div>
         <span className={css.signatureLabel}>Salesperson Printed Name</span>
       </div>
-
-      {activeSig && (
-        <SignaturePad
-          label={activeSig === "customer" ? "Customer Signature" : "Salesperson Signature"}
-          initialValue={signatures[activeSig] || undefined}
-          onKeep={(dataUrl) => {
-            persistSignature(activeSig, dataUrl);
-            setActiveSig(null);
-          }}
-          onCancel={() => setActiveSig(null)}
-        />
-      )}
       <span style={{ position: "absolute", bottom: 4, right: 8, fontSize: 7, color: "#bbb" }}>v1.0 • VIN Verification</span>
     </div>
   );

@@ -69,7 +69,7 @@ export async function POST(request: Request) {
   // Send Supabase invite email (creates user + sends magic link)
   const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
     email,
-    { redirectTo: `${request.headers.get("origin") ?? ""}/deal-sheet` },
+    { redirectTo: `${request.headers.get("origin") ?? ""}/dashboard` },
   );
 
   if (inviteError) {

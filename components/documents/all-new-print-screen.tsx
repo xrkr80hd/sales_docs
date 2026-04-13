@@ -33,6 +33,7 @@ export function AllNewPrintScreen() {
   );
   const printedRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const [pageScale, setPageScale] = useState(1);
 
   useLayoutEffect(() => {
@@ -40,11 +41,16 @@ export function AllNewPrintScreen() {
     if (!el) return;
     const observer = new ResizeObserver(([entry]) => {
       const w = entry.contentRect.width;
-      setPageScale(w >= 816 ? 1 : w / 816);
+      setPageScale(w >= 816 || w < 640 ? 1 : w / 816);
     });
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!previewRef.current) return;
+    previewRef.current.style.zoom = pageScale < 1 ? String(pageScale) : "1";
+  }, [pageScale]);
 
   useEffect(() => {
     return subscribeToWorkflowSessionClear(() => {
@@ -71,10 +77,10 @@ export function AllNewPrintScreen() {
       <div className="mx-auto flex min-h-screen w-full max-w-[8.5in] flex-col px-4 py-4 print:min-h-0 print:px-0 print:py-0 sm:px-0">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border border-black/10 bg-white/90 px-4 py-3 shadow-[0_14px_40px_rgba(0,0,0,0.08)] print:hidden">
           <Link
-            href="/overview"
+            href="/deal-sheet/new"
             className="inline-flex min-h-10 items-center justify-center border border-[var(--foreground)] bg-white px-4 text-sm font-bold text-[var(--foreground)]"
           >
-            Back to Overview
+            Back to Deal Sheet
           </Link>
           <button
             type="button"
@@ -85,8 +91,8 @@ export function AllNewPrintScreen() {
           </button>
         </div>
 
-        <div ref={containerRef}>
-          <div style={pageScale < 1 ? { zoom: pageScale } : undefined} className="print:[zoom:1]">
+        <div ref={containerRef} className="overflow-x-auto sm:overflow-visible">
+          <div ref={previewRef} className="print:[zoom:1]">
             <DeliveryChecklistSheet
               workflow={workflow}
               consultant={consultant}

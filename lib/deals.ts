@@ -2,6 +2,7 @@ import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase-b
 import type { SignatureStore, WorkflowData } from "@/lib/walker-workflow";
 
 const DEAL_ID_KEY = "walker.deal.id.v1";
+const START_FRESH_DEAL_TYPE_KEY = "walker.deal.start-fresh.v1";
 
 async function getAuthToken(): Promise<string | null> {
   if (!isSupabaseConfigured()) return null;
@@ -31,6 +32,21 @@ export function clearLocalDealId() {
   if (typeof window !== "undefined") {
     window.sessionStorage.removeItem(DEAL_ID_KEY);
   }
+}
+
+export function markStartFreshDeal(dealType: "new" | "used") {
+  if (typeof window !== "undefined") {
+    window.sessionStorage.setItem(START_FRESH_DEAL_TYPE_KEY, dealType);
+  }
+}
+
+export function consumeStartFreshDeal(): "new" | "used" | null {
+  if (typeof window === "undefined") return null;
+
+  const value = window.sessionStorage.getItem(START_FRESH_DEAL_TYPE_KEY);
+  window.sessionStorage.removeItem(START_FRESH_DEAL_TYPE_KEY);
+
+  return value === "new" || value === "used" ? value : null;
 }
 
 // ── API calls ──
