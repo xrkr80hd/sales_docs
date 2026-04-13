@@ -46,6 +46,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const isAdminRoute = pathname.startsWith("/admin");
   const isDashboardRoute = pathname === "/dashboard";
   const isWorkflowRoute = pathname.startsWith("/deal-sheet");
+  const appShellClass = isDashboardRoute
+    ? "mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-3 pt-2 sm:px-6 lg:px-8"
+    : "mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-8 pt-4 sm:px-6 lg:px-8";
+  const mainClass = isDashboardRoute ? "flex-1 py-2 md:py-3" : "flex-1 py-6";
 
   // Derive dealType for document drawer from workflow return path
   const drawerDealType: "new" | "used" = (() => {
@@ -64,7 +68,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <SupabaseSessionGate surface="app" renderBar={!isDocumentRoute}>
       <DisclosureGate>
         <div className="min-h-screen">
-          <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-8 pt-4 sm:px-6 lg:px-8">
+          <div className={appShellClass}>
             {!isDashboardRoute && !isWorkflowRoute && !isDocumentRoute && (
               <header className="border border-white/10 bg-[#2a2a2e] bg-[url('/bg-card-3x2.jpg')] bg-cover bg-center shadow-[0_24px_60px_rgba(0,0,0,0.3)]">
                 <div className="flex flex-col gap-4 px-5 py-4 sm:px-6">
@@ -125,7 +129,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </>
             )}
 
-            <main className="flex-1 py-6">{children}</main>
+            <main className={mainClass}>{children}</main>
           </div>
         </div>
       </DisclosureGate>

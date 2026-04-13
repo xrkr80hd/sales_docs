@@ -87,14 +87,14 @@ export function DashboardScreen() {
     ? allDeals.filter((deal) => deal.id !== lastDeal.id)
     : allDeals;
   const pickerDeals = previousDeals.length > 0 ? previousDeals : allDeals;
-  const primaryButtonClass = "inline-flex h-12 w-full items-center justify-center border-2 border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[var(--accent)]/90";
-  const secondaryButtonClass = "inline-flex h-12 w-full items-center justify-center border border-white/15 bg-white/5 px-4 text-sm font-bold uppercase tracking-[0.08em] text-white/70 transition hover:bg-white/10 hover:text-white";
-  const accentGhostButtonClass = "inline-flex h-12 w-full items-center justify-center border border-[var(--accent)] bg-[var(--accent)]/10 px-4 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[var(--accent)]/20";
+  const primaryButtonClass = "inline-flex h-12 w-full items-center justify-center border-2 border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[var(--accent)]/90 md:h-11";
+  const secondaryButtonClass = "inline-flex h-12 w-full items-center justify-center border border-white/15 bg-white/5 px-4 text-sm font-bold uppercase tracking-[0.08em] text-white/70 transition hover:bg-white/10 hover:text-white md:h-11";
+  const accentGhostButtonClass = "inline-flex h-12 w-full items-center justify-center border border-[var(--accent)] bg-[var(--accent)]/10 px-4 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[var(--accent)]/20 md:h-11";
 
   return (
     <>
       <section className="overflow-hidden border border-white/10 bg-[var(--panel)] bg-[url('/bg-hero-16x9.jpg')] bg-cover bg-center shadow-[0_0_40px_rgba(190,23,23,0.15),0_24px_60px_rgba(0,0,0,0.3)]">
-        <div className="flex min-h-0 items-start justify-center px-5 py-3 sm:min-h-[60vh] sm:items-center sm:px-6 sm:py-10">
+        <div className="flex min-h-0 items-start justify-center px-5 py-3 md:min-h-[50vh] md:items-center md:px-6 md:py-5">
           <div className="text-center">
             <Image
               src="/walker-red-graphic-v2.png"
@@ -102,19 +102,19 @@ export function DashboardScreen() {
               width={320}
               height={116}
               priority
-              className="mx-auto h-auto w-full max-w-[190px] sm:max-w-[280px]"
+              className="mx-auto h-auto w-full max-w-[190px] md:max-w-[220px]"
             />
-            <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white drop-shadow-sm sm:mt-5 sm:text-xs">
+            <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white drop-shadow-sm md:mt-2 md:text-xs">
               Walker Docs
             </p>
-            <h1 className="mt-0.5 text-[1.55rem] font-extrabold leading-tight tracking-[0.01em] text-white drop-shadow-sm sm:mt-2 sm:text-4xl">
+            <h1 className="mt-0.5 text-[1.55rem] font-extrabold leading-tight tracking-[0.01em] text-white drop-shadow-sm md:mt-1 md:text-[2rem]">
               Start a Deal
             </h1>
-            <p className="mx-auto mt-1.5 max-w-md text-[13px] leading-5 text-white/70 sm:mt-3 sm:text-base sm:leading-7">
+            <p className="mx-auto mt-1.5 max-w-md text-[13px] leading-5 text-white/70 md:mt-2 md:text-sm md:leading-6">
               Choose a vehicle type to begin.
             </p>
 
-            <nav className="mx-auto mt-3 flex w-[280px] flex-col gap-2 sm:mt-8 sm:gap-3">
+            <nav className="mx-auto mt-3 flex w-[280px] flex-col gap-2 md:mt-4">
               <button
                 type="button"
                 onClick={() => startFreshDeal("new")}
@@ -130,7 +130,7 @@ export function DashboardScreen() {
                 Used Vehicle
               </button>
 
-              <hr className="my-1 border-white/10 sm:my-2" />
+              <hr className="my-1 border-white/10" />
 
               {/* Resume — shows immediately from sessionStorage, upgrades to server data when loaded */}
               {(() => {
@@ -142,7 +142,7 @@ export function DashboardScreen() {
                     <button
                       type="button"
                       onClick={() => resumeDeal(lastDeal)}
-                      className="inline-flex h-12 w-full flex-col items-center justify-center overflow-hidden border-2 border-[var(--accent)] bg-[var(--accent)] px-4 text-white transition hover:bg-[var(--accent)]/90"
+                      className="inline-flex h-12 w-full flex-col items-center justify-center overflow-hidden border-2 border-[var(--accent)] bg-[var(--accent)] px-4 text-white transition hover:bg-[var(--accent)]/90 md:h-11"
                     >
                       <span className="text-[11px] font-bold uppercase leading-tight tracking-[0.08em]">Resume Deal</span>
                       <span className="max-w-full truncate text-[10px] leading-tight text-white/80">{name}{vehicle ? ` · ${vehicle}` : ""}</span>
@@ -153,7 +153,7 @@ export function DashboardScreen() {
                   return (
                     <Link
                       href={localResume.dealType === "new" ? "/deal-sheet/new" : "/deal-sheet"}
-                      className="inline-flex h-12 w-full flex-col items-center justify-center overflow-hidden border-2 border-[var(--accent)] bg-[var(--accent)] px-4 text-white transition hover:bg-[var(--accent)]/90"
+                      className="inline-flex h-12 w-full flex-col items-center justify-center overflow-hidden border-2 border-[var(--accent)] bg-[var(--accent)] px-4 text-white transition hover:bg-[var(--accent)]/90 md:h-11"
                     >
                       <span className="text-[11px] font-bold uppercase leading-tight tracking-[0.08em]">Resume Deal</span>
                       <span className="max-w-full truncate text-[10px] leading-tight text-white/80">{localResume.name}</span>
@@ -172,7 +172,7 @@ export function DashboardScreen() {
                 Previous Deals ({pickerDeals.length})
               </button>
 
-              <hr className="my-1 border-white/10 sm:my-2" />
+              <hr className="my-1 border-white/10" />
 
               <Link
                 href="/documents/cheat-sheet"
