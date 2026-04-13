@@ -93,8 +93,8 @@ export function DashboardScreen() {
 
   return (
     <>
-      <section className="overflow-hidden border border-white/10 bg-[var(--panel)] bg-[url('/bg-hero-16x9.jpg')] bg-cover bg-center shadow-[0_0_40px_rgba(190,23,23,0.15),0_24px_60px_rgba(0,0,0,0.3)]">
-        <div className="flex min-h-0 items-start justify-center px-5 py-3 md:min-h-[50vh] md:items-center md:px-6 md:py-5">
+      <section className="h-full overflow-hidden border border-white/10 bg-[var(--panel)] bg-[url('/bg-hero-16x9.jpg')] bg-cover bg-center shadow-[0_0_40px_rgba(190,23,23,0.15),0_24px_60px_rgba(0,0,0,0.3)]">
+        <div className="flex min-h-full items-start justify-center px-5 pt-3 pb-6 md:min-h-[50vh] md:items-center md:px-6 md:py-5">
           <div className="text-center">
             <Image
               src="/walker-red-graphic-v2.png"
@@ -114,7 +114,7 @@ export function DashboardScreen() {
               Choose a vehicle type to begin.
             </p>
 
-            <nav className="mx-auto mt-3 flex w-[280px] flex-col gap-2 md:mt-4">
+            <nav className="mx-auto mt-3 flex w-[280px] flex-col gap-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:mt-4 md:pb-0">
               <button
                 type="button"
                 onClick={() => startFreshDeal("new")}
