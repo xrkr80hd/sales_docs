@@ -137,12 +137,17 @@
   flex-basis: 2.45in;
 }
 
+.headerFillCoBuyer {
+  flex-basis: 2.45in;
+  flex-grow: 0;
+}
+
 .headerFillSalesperson {
-  flex-basis: 2.7in;
+  flex-basis: 2.2in;
 }
 
 .headerFillNumber {
-  flex: 0 0 1.32in;
+  flex: 0 0 1in;
 }
 
 .headerFillDeal {

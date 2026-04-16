@@ -56,8 +56,33 @@ export function DocumentDrawer({ dealType, open, onClose }: DocumentDrawerProps)
         </div>
 
         {/* Document list */}
-        <div className="flex-1 bg-[#1c1c1e]">
-          <nav className="grid gap-px bg-white/5 p-3">
+        <div className="flex flex-1 flex-col bg-[#1c1c1e]">
+          <nav className="flex flex-1 flex-col justify-evenly bg-white/5 p-3">
+            {/* Deal Sheet — back to input section */}
+            <Link
+              href={dealType === "new" ? "/deal-sheet/new" : "/deal-sheet/used"}
+              onClick={onClose}
+              className={`group flex items-center gap-3 border px-4 py-3 transition ${pathname.startsWith("/deal-sheet")
+                ? "border-[var(--accent)] bg-[var(--accent)]/10"
+                : "border-white/10 bg-[#2a2a2e] hover:border-white/20 hover:bg-[#333338]"
+                }`}
+            >
+              <span
+                className={`flex h-7 w-7 shrink-0 items-center justify-center border text-xs font-bold ${pathname.startsWith("/deal-sheet")
+                  ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                  : "border-white/20 bg-white/5 text-white/40"
+                  }`}
+              >
+                {pathname.startsWith("/deal-sheet") ? "●" : "✎"}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className={`text-sm font-bold ${pathname.startsWith("/deal-sheet") ? "text-[var(--accent)]" : "text-white"}`}>Deal Sheet</p>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`h-4 w-4 shrink-0 ${pathname.startsWith("/deal-sheet") ? "text-[var(--accent)]" : "text-white/20 group-hover:text-white/40"}`}>
+                <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+              </svg>
+            </Link>
+
             {docs.map((doc) => {
               const isActive = pathname === doc.href;
 
@@ -66,14 +91,14 @@ export function DocumentDrawer({ dealType, open, onClose }: DocumentDrawerProps)
                   key={doc.slug}
                   href={doc.href}
                   onClick={onClose}
-                  className={`group flex items-center gap-4 border px-4 py-4 transition ${isActive
+                  className={`group flex items-center gap-3 border px-4 py-3 transition ${isActive
                     ? "border-[var(--accent)] bg-[var(--accent)]/10"
                     : "border-white/10 bg-[#2a2a2e] hover:border-white/20 hover:bg-[#333338]"
                     }`}
                 >
                   {/* Status indicator */}
                   <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center border text-xs font-bold ${isActive
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center border text-xs font-bold ${isActive
                       ? "border-[var(--accent)] bg-[var(--accent)] text-white"
                       : "border-white/20 bg-white/5 text-white/40"
                       }`}
@@ -87,9 +112,6 @@ export function DocumentDrawer({ dealType, open, onClose }: DocumentDrawerProps)
                         }`}
                     >
                       {doc.title}
-                    </p>
-                    <p className="mt-0.5 text-xs text-white/40 line-clamp-1">
-                      {doc.description}
                     </p>
                   </div>
 
@@ -113,47 +135,6 @@ export function DocumentDrawer({ dealType, open, onClose }: DocumentDrawerProps)
           </nav>
         </div>
 
-        {/* Cheat Sheet link */}
-        <div className="bg-[#1c1c1e] px-3 pb-3">
-          <Link
-            href="/documents/cheat-sheet"
-            onClick={onClose}
-            className={`group flex items-center gap-4 border px-4 py-4 transition ${pathname === "/documents/cheat-sheet"
-              ? "border-[var(--accent)] bg-[var(--accent)]/10"
-              : "border-white/10 bg-[#2a2a2e] hover:border-white/20 hover:bg-[#333338]"
-              }`}
-          >
-            <span
-              className={`flex h-8 w-8 shrink-0 items-center justify-center border text-xs font-bold ${pathname === "/documents/cheat-sheet"
-                ? "border-[var(--accent)] bg-[var(--accent)] text-white"
-                : "border-white/20 bg-white/5 text-white/40"
-                }`}
-            >
-              {pathname === "/documents/cheat-sheet" ? "●" : "📋"}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className={`text-sm font-bold ${pathname === "/documents/cheat-sheet" ? "text-[var(--accent)]" : "text-white"}`}>
-                Cheat Sheet
-              </p>
-              <p className="mt-0.5 text-xs text-white/40 line-clamp-1">
-                CDJR sales quick reference
-              </p>
-            </div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className={`h-4 w-4 shrink-0 ${pathname === "/documents/cheat-sheet" ? "text-[var(--accent)]" : "text-white/20 group-hover:text-white/40"}`}
-            >
-              <path
-                fillRule="evenodd"
-                d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </Link>
-        </div>
-
         {/* Footer actions */}
         <div className="flex flex-col gap-2 border-t border-white/10 bg-[#2a2a2e] px-5 py-4">
           <Link
@@ -162,6 +143,13 @@ export function DocumentDrawer({ dealType, open, onClose }: DocumentDrawerProps)
             className="inline-flex min-h-11 w-full items-center justify-center border border-white/20 bg-white/10 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-white/20"
           >
             ← Dashboard
+          </Link>
+          <Link
+            href="/documents/cheat-sheet"
+            onClick={onClose}
+            className="inline-flex min-h-11 w-full items-center justify-center border border-[var(--accent)] bg-[var(--accent)] text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[var(--accent-strong)]"
+          >
+            Cheat Sheet
           </Link>
           <button
             type="button"

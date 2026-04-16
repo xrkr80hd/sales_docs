@@ -9,7 +9,6 @@ import {
   cleanSingleLine,
   DELIVERY_CHECKLIST_ENTRY_FIELDS,
   formatDate,
-  getCustomerDisplayName,
   getFullStockNumber,
   getLast8,
   normalizeVin,
@@ -118,9 +117,9 @@ export function DeliveryChecklistSheet({
 
         <div className={styles.headerStack} aria-label="Delivery checklist header fields">
           <div className={styles.headerLine}>
-            <div className={styles.headerLabel}>CUSTOMER:</div>
+            <div className={styles.headerLabel}>CUSTOMER/BUYER:</div>
             <div className={`${styles.headerFill} ${styles.headerFillCustomer}`}>
-              {getCustomerDisplayName(workflow)}
+              {workflow.customerName}
             </div>
             <div className={styles.headerGap} />
             <div className={styles.headerLabel}>SALESPERSON:</div>
@@ -132,6 +131,15 @@ export function DeliveryChecklistSheet({
               {consultant?.salespersonNumber || workflow.salespersonNumber}
             </div>
           </div>
+
+          {workflow.coCustomerName && (
+            <div className={styles.headerLine}>
+              <div className={styles.headerLabel}>CO-BUYER:</div>
+              <div className={`${styles.headerFill} ${styles.headerFillCoBuyer}`}>
+                {workflow.coCustomerName}
+              </div>
+            </div>
+          )}
 
           <div className={styles.headerLine}>
             <div className={styles.headerLabel}>DEAL#:</div>
@@ -253,7 +261,7 @@ export function DeliveryChecklistSheet({
             <div className={`${styles.fieldRow} ${styles.fieldRowCompact}`}>
               <EditableLine
                 ariaLabel="Title to Trade"
-                className={`${styles.fieldLine} ${styles.fieldLineSm}`}
+                className={`${styles.fieldLine} ${styles.fieldLineMd}`}
                 fieldKey="titleToTrade"
                 notes={notes}
                 onNoteChange={onNoteChange}

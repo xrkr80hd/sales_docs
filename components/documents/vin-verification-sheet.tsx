@@ -48,6 +48,9 @@ export function VinVerificationSheet({ workflow, consultant }: Props) {
         <span className={css.inlineFieldShort} contentEditable suppressContentEditableWarning onKeyDown={blockEnter}>{dd.day}</span> day of{" "}
         <span className={css.inlineField} contentEditable suppressContentEditableWarning onKeyDown={blockEnter}>{dd.month}</span> 20
         <span className={css.inlineFieldShort} contentEditable suppressContentEditableWarning onKeyDown={blockEnter}>{dd.year2}</span>.
+        {workflow.coCustomerName ? (
+          <><br /><span className={css.inlineFieldWide}>{workflow.coCustomerName}</span></>
+        ) : null}
       </p>
 
       <div className={css.spacerMd} />
@@ -97,6 +100,20 @@ export function VinVerificationSheet({ workflow, consultant }: Props) {
         <div className={css.signatureLine}>{workflow.customerName}</div>
         <span className={css.signatureLabel}>Customer Printed Name</span>
       </div>
+
+      {workflow.coCustomerName ? (
+        <>
+          <div className={css.signatureBlock}>
+            <div className={css.signatureLine} contentEditable suppressContentEditableWarning onKeyDown={blockEnter} />
+            <span className={css.signatureLabel}>Co-Buyer Signature</span>
+          </div>
+
+          <div className={css.printedNameBlock}>
+            <div className={css.signatureLine}>{workflow.coCustomerName}</div>
+            <span className={css.signatureLabel}>Co-Buyer Printed Name</span>
+          </div>
+        </>
+      ) : null}
 
       <div className={css.spacerLg} />
 

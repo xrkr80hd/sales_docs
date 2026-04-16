@@ -58,7 +58,7 @@ export function AddressInformationSheet({
       <div className={styles.fieldRow}>
         <span className={styles.fieldLabel}>Name</span>
         <div className={styles.fieldLine}>
-          {getCustomerDisplayName(workflow)}
+          {workflow.mailingDifferent ? getCustomerDisplayName(workflow) : ""}
         </div>
       </div>
 
