@@ -60,7 +60,7 @@ export function DocumentDrawer({ dealType, open, onClose }: DocumentDrawerProps)
           <nav className="flex flex-1 flex-col justify-evenly bg-white/5 p-3">
             {/* Deal Sheet — back to input section */}
             <Link
-              href={dealType === "new" ? "/deal-sheet/new" : "/deal-sheet/used"}
+              href={dealType === "new" ? "/deal-sheet/new" : "/deal-sheet"}
               onClick={onClose}
               className={`group flex items-center gap-3 border px-4 py-3 transition ${pathname.startsWith("/deal-sheet")
                 ? "border-[var(--accent)] bg-[var(--accent)]/10"
