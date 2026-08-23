@@ -41,3 +41,15 @@ This document is the implementation contract for the public profile at `/card/tr
 ## Publication rule
 
 Every create, edit, delete, publish, unpublish, and scheduling action uses an explicit confirmation button. Do not use checkboxes as action confirmations.
+
+
+## Implemented prototype behavior — 2026-08-23
+
+- Contact actions use universal labels inside a compact accordion: Call, Text, Email, and Save Contact.
+- The public profile displays the consultant's full name.
+- Consultant records include two catchphrase fields plus optional logo and 2:3 calling-card artwork.
+- Featured vehicles render in a horizontally swipeable rail.
+- Each vehicle provides a real preview image, summary, expandable information, direct consultant contact, and source listing link.
+- The server link importer accepts only approved Walker domains and attempts to extract listing metadata.
+- Walker currently returns HTTP 403 to server-side listing imports. The verified prototype record therefore uses the real Walker CDN image and facts verified from the supplied listing. Never silently fabricate missing fields.
+- Production import handling must preserve the approved-domain restriction and provide a manual verified-data/photo path whenever the source blocks automated retrieval.
