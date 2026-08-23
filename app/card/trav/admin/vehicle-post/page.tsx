@@ -38,7 +38,7 @@ const drawCropped = (context: CanvasRenderingContext2D, image: HTMLImageElement,
   context.drawImage(image, sourceX, sourceY, cropWidth, cropHeight, slot.x, slot.y, slot.w, slot.h);
 };
 
-const renderCollage = async (canvas: HTMLCanvasElement, photos: CropPhoto[]) => {
+const renderCollage = async (canvas: HTMLCanvasElement, photos: CropPhoto[], selected = -1) => {
   canvas.width = 1500;
   canvas.height = 1000;
   const context = canvas.getContext("2d");
@@ -54,6 +54,11 @@ const renderCollage = async (canvas: HTMLCanvasElement, photos: CropPhoto[]) => 
       context.strokeStyle = "#111317";
       context.lineWidth = 10;
       context.strokeRect(slots[index].x + 5, slots[index].y + 5, slots[index].w - 10, slots[index].h - 10);
+      if (index === selected) {
+        context.strokeStyle = "#ef3b3b";
+        context.lineWidth = 12;
+        context.strokeRect(slots[index].x + 8, slots[index].y + 8, slots[index].w - 16, slots[index].h - 16);
+      }
       resolve();
     };
     image.onerror = reject;
@@ -68,11 +73,12 @@ export default function VehiclePostBuilder() {
   const [notice, setNotice] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLCanvasElement>(null);
+  const dragRef = useRef<{ index: number; startX: number; startY: number; initialX: number; initialY: number } | null>(null);
 
   useEffect(() => {
     if (!previewRef.current) return;
-    void renderCollage(previewRef.current, photos);
-  }, [photos]);
+    void renderCollage(previewRef.current, photos, selectedPhoto);
+  }, [photos, selectedPhoto]);
 
   const prompt = useMemo(() => {
     const vehicle = [form.year, form.make, form.model, form.trim].filter(Boolean).join(" ");
@@ -121,8 +127,46 @@ INSTRUCTIONS
     setNotice(incoming.length ? "Select a photo below the collage and adjust its actual export slot." : "Choose image files.");
   };
 
-  const setCrop = (key: "zoom" | "x" | "y", value: number) => {
-    setPhotos((current) => current.map((photo, index) => index === selectedPhoto ? { ...photo, [key]: value } : photo));
+  const chooseSlot = (clientX: number, clientY: number) => {
+    const canvas = previewRef.current;
+    if (!canvas) return -1;
+    const rect = canvas.getBoundingClientRect();
+    const x = (clientX - rect.left) * (1500 / rect.width);
+    const y = (clientY - rect.top) * (1000 / rect.height);
+    return getSlots(photos.length).findIndex((slot) => x >= slot.x && x <= slot.x + slot.w && y >= slot.y && y <= slot.y + slot.h);
+  };
+
+  const startDrag = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const index = chooseSlot(event.clientX, event.clientY);
+    if (index < 0) return;
+    setSelectedPhoto(index);
+    const photo = photos[index];
+    dragRef.current = { index, startX: event.clientX, startY: event.clientY, initialX: photo.x, initialY: photo.y };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const moveDrag = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const drag = dragRef.current;
+    const canvas = previewRef.current;
+    if (!drag || !canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const slot = getSlots(photos.length)[drag.index];
+    const slotWidth = rect.width * (slot.w / 1500);
+    const slotHeight = rect.height * (slot.h / 1000);
+    const nextX = Math.max(0, Math.min(100, drag.initialX - ((event.clientX - drag.startX) / slotWidth) * 100));
+    const nextY = Math.max(0, Math.min(100, drag.initialY - ((event.clientY - drag.startY) / slotHeight) * 100));
+    setPhotos((current) => current.map((photo, index) => index === drag.index ? { ...photo, x: nextX, y: nextY } : photo));
+  };
+
+  const stopDrag = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+
+  const adjustZoom = (amount: number) => {
+    setPhotos((current) => current.map((photo, index) => index === selectedPhoto
+      ? { ...photo, zoom: Math.max(1, Math.min(2.5, Number((photo.zoom + amount).toFixed(2)))) }
+      : photo));
   };
 
   const onDrop = (event: DragEvent<HTMLDivElement>) => {
@@ -200,21 +244,23 @@ INSTRUCTIONS
             {!!photos.length && (
               <section className={styles.finalCrop}>
                 <div className={styles.finalCropHeading}><strong>Final 3:2 collage preview</strong><span>Exact export</span></div>
-                <canvas ref={previewRef} className={styles.collageCanvas} aria-label="Final vehicle collage preview" />
-                <div className={styles.photoTabs} aria-label="Select a photo to crop">
-                  {photos.map((photo, index) => (
-                    <button className={index === selectedPhoto ? styles.activeTab : styles.photoTab} type="button" key={photo.id} onClick={() => setSelectedPhoto(index)}>
-                      Photo {index + 1}
-                    </button>
-                  ))}
-                </div>
-                {active && (
-                  <div className={styles.cropControls}>
-                    <label>Zoom<input type="range" min="1" max="2.5" step=".01" value={active.zoom} onChange={(event) => setCrop("zoom", Number(event.target.value))} /></label>
-                    <label>Move left/right<input type="range" min="0" max="100" value={active.x} onChange={(event) => setCrop("x", Number(event.target.value))} /></label>
-                    <label>Move up/down<input type="range" min="0" max="100" value={active.y} onChange={(event) => setCrop("y", Number(event.target.value))} /></label>
+                <canvas
+                  ref={previewRef}
+                  className={styles.collageCanvas}
+                  aria-label="Final vehicle collage preview. Select and drag a photo to reposition it."
+                  onPointerDown={startDrag}
+                  onPointerMove={moveDrag}
+                  onPointerUp={stopDrag}
+                  onPointerCancel={stopDrag}
+                />
+                <div className={styles.cropToolbar}>
+                  <span>Photo {selectedPhoto + 1} selected — drag it inside the frame</span>
+                  <div>
+                    <button type="button" onClick={() => adjustZoom(-0.1)} aria-label="Zoom selected photo out">−</button>
+                    <strong>{active ? Math.round(active.zoom * 100) : 100}%</strong>
+                    <button type="button" onClick={() => adjustZoom(0.1)} aria-label="Zoom selected photo in">+</button>
                   </div>
-                )}
+                </div>
               </section>
             )}
             <button className={styles.primary} type="button" onClick={createCollage}>Confirm exact preview and download</button>
