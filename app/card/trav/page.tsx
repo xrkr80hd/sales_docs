@@ -88,13 +88,14 @@ export default function TravisWilkinsonProfile() {
         </header>
 
         <div className={styles.profileGrid}>
-          <section className={styles.brandCard} aria-labelledby="brand-card-heading">
-            <span className={styles.wireNumber}>02</span>
-            <div>
-              <p className={styles.vehicleLabel}>Consultant calling card</p>
-              <h2 id="brand-card-heading">#CallTrav</h2>
-              <p>Caricature or personal brand graphic has not been uploaded.</p>
-            </div>
+          <section className={styles.brandCard} aria-label="Call Trav consultant calling card">
+            <Image
+              src="/profiles/trav-call-card.jpg"
+              alt="Call Trav consultant calling card for Travis Wilkinson"
+              fill
+              sizes="(max-width: 619px) 100vw, 300px"
+              className={styles.brandCardImage}
+            />
           </section>
 
           {!wiring.bio && (
