@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { ReviewCarousel } from "@/components/profile/review-carousel";
 import { VehiclePreviewCard } from "@/components/profile/vehicle-preview-card";
 import styles from "./page.module.css";
 
@@ -119,15 +120,14 @@ export default function TravisWilkinsonProfile() {
           </div>
         </section>
 
+        <ReviewCarousel reviews={[]} />
+
         <div className={styles.sections}>
           {!wiring.inventory && (
             <EmptyState number="06" title="Browse all Walker inventory" note="The general inventory destination has not been connected." />
           )}
           {!wiring.walkaround && (
             <EmptyState number="08" title="Vehicle walk-around" note="No active walk-around video has been published." />
-          )}
-          {!wiring.reviews && (
-            <EmptyState number="09" title="Five-star reviews" note="Review screenshots have not been uploaded." />
           )}
           {!wiring.socials && (
             <EmptyState number="10" title="Follow Travis Wilkinson" note="Social links have not been connected." />
