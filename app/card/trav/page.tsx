@@ -83,9 +83,15 @@ export default function TravisWilkinsonProfile() {
       <div className={styles.shell}>
         <header className={styles.hero}>
           <div className={styles.brandRow}>
-            <div className={styles.logoSlot} aria-label="Consultant logo slot">
-              <span>Logo</span>
-              <small>Not uploaded</small>
+            <div className={styles.logoSlot}>
+              <Image
+                src="/branding/nxtdox-by-eben.png"
+                alt="NXTDox by E.B.E.N."
+                fill
+                priority
+                sizes="170px"
+                className={styles.logoImage}
+              />
             </div>
             <span className={styles.language}>EN · ES</span>
           </div>
