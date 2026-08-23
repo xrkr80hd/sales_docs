@@ -76,7 +76,7 @@ export function ReviewCarousel({ reviews }: { reviews: ReviewImage[] }) {
                 alt={review.alt}
                 fill
                 sizes="(max-width: 720px) 86vw, 560px"
-                className={styles.image}
+                className={`${styles.image} ${needsExpansion.has(review.src) ? styles.imageOverflow : ""}`}
                 onLoad={(event) => {
                   const image = event.currentTarget;
                   const isTallerThanFrame = image.naturalWidth / image.naturalHeight < 1536 / 890;
@@ -89,7 +89,7 @@ export function ReviewCarousel({ reviews }: { reviews: ReviewImage[] }) {
                   });
                 }}
               />
-              {(review.isLong || needsExpansion.has(review.src)) && (
+              {needsExpansion.has(review.src) && (
                 <span className={styles.readMore}>Double-tap to read more</span>
               )}
             </article>
