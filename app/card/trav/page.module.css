@@ -705,3 +705,19 @@
     grid-auto-columns: min(56%, 360px);
   }
 }
+
+
+.inventoryButton {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #be1717;
+  border-radius: 17px;
+  background: #be1717;
+  color: #fff;
+  padding: 12px 18px;
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+}
