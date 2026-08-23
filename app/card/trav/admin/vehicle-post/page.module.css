@@ -291,3 +291,88 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+
+.finalCrop {
+  overflow: hidden;
+  border: 1px solid #3a3e45;
+  border-radius: 18px;
+  background: #202329;
+}
+
+.finalCropHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+}
+
+.finalCropHeading span {
+  color: #969aa2;
+  font-size: .72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.collageCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  background: #090a0c;
+  cursor: grab;
+  touch-action: none;
+}
+
+.collageCanvas:active {
+  cursor: grabbing;
+}
+
+.cropToolbar {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+}
+
+.cropToolbar > span {
+  color: #c5c8ce;
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.cropToolbar > div {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.cropToolbar button {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  cursor: pointer;
+  place-items: center;
+  border: 1px solid #4b5059;
+  border-radius: 12px;
+  background: #15171b;
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.cropToolbar strong {
+  min-width: 48px;
+  font-size: .78rem;
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .cropToolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
