@@ -2,8 +2,19 @@ import Image from "next/image";
 import { VehiclePreviewCard } from "@/components/profile/vehicle-preview-card";
 import styles from "./page.module.css";
 
-const vehicleLinks = [
-  "https://www.walkercdjr.net/inventory/new-2026-ram-2500-laramie-4x4-crew-cab-3c6ur5fj8tg367952/",
+const featuredVehicles = [
+  {
+    listingUrl: "https://www.walkercdjr.net/inventory/new-2026-ram-2500-laramie-4x4-crew-cab-3c6ur5fj8tg367952/",
+    verifiedFallback: {
+      sourceUrl: "https://www.walkercdjr.net/inventory/new-2026-ram-2500-laramie-4x4-crew-cab-3c6ur5fj8tg367952/",
+      title: "New 2026 RAM 2500 Laramie 4×4 Crew Cab",
+      imageUrl: "https://vehicle-images.carscommerce.inc/e3a2-110005854/3C6UR5FJ8TG367952/64a7e95a66b6ac639f330cf1e34dc9fb.jpg",
+      description: "6.4L V8 · 4WD · 8-speed automatic · Black interior",
+      vin: "3C6UR5FJ8TG367952",
+      stock: "TJ26336",
+      price: "$67,598",
+    },
+  },
 ];
 
 const wiring = {
@@ -97,8 +108,12 @@ export default function TravisWilkinsonProfile() {
             <span>Swipe</span>
           </div>
           <div className={styles.vehicleRail}>
-            {vehicleLinks.map((listingUrl) => (
-              <VehiclePreviewCard key={listingUrl} listingUrl={listingUrl} />
+            {featuredVehicles.map(({ listingUrl, verifiedFallback }) => (
+              <VehiclePreviewCard
+                key={listingUrl}
+                listingUrl={listingUrl}
+                verifiedFallback={verifiedFallback}
+              />
             ))}
           </div>
         </section>
