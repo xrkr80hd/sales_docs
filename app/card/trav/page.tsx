@@ -18,6 +18,19 @@ const featuredVehicles = [
   },
 ];
 
+const reviews = [
+  { src: "/reviews/edward-ramer.jpg", alt: "Five-star review from Edward Ramer", isLong: true },
+  { src: "/reviews/ciena-thompson.jpg", alt: "Five-star review from Ciena Thompson" },
+  { src: "/reviews/sabrina-carter.jpg", alt: "Five-star review from Sabrina Carter", isLong: true },
+  { src: "/reviews/elise-leblanc.jpg", alt: "Five-star review from Elise LeBlanc" },
+  { src: "/reviews/shonna-longino.jpg", alt: "Five-star review from Shonna Longino" },
+  { src: "/reviews/downing-glasscock.jpg", alt: "Five-star review from Downing Glasscock", isLong: true },
+  { src: "/reviews/angela-jeffress.jpg", alt: "Five-star review from Angela Jeffress" },
+  { src: "/reviews/shane-pappas.jpg", alt: "Five-star review from Shane Pappas" },
+  { src: "/reviews/michael-christy.jpg", alt: "Five-star review from Michael Christy" },
+  { src: "/reviews/christina-belvin.jpg", alt: "Five-star review from Christina Belvin", isLong: true },
+];
+
 const wiring = {
   bio: false,
   socials: false,
@@ -120,7 +133,7 @@ export default function TravisWilkinsonProfile() {
           </div>
         </section>
 
-        <ReviewCarousel reviews={[]} />
+        <ReviewCarousel reviews={reviews} />
 
         <div className={styles.sections}>
           {!wiring.inventory && (
