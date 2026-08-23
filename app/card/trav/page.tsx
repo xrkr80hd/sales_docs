@@ -152,9 +152,14 @@ export default function TravisWilkinsonProfile() {
         <ReviewCarousel reviews={reviews} />
 
         <div className={styles.sections}>
-          {!wiring.inventory && (
-            <EmptyState number="06" title="Browse all Walker inventory" note="The general inventory destination has not been connected." />
-          )}
+          <a
+            className={styles.inventoryButton}
+            href="https://www.walkerautomotive.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Browse Walker Inventory
+          </a>
           {!wiring.walkaround && (
             <EmptyState number="08" title="Vehicle walk-around" note="No active walk-around video has been published." />
           )}
