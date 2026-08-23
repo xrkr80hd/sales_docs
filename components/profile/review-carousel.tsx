@@ -15,6 +15,7 @@ export function ReviewCarousel({ reviews }: { reviews: ReviewImage[] }) {
   const pausedRef = useRef(false);
   const lastTapRef = useRef(0);
   const [expanded, setExpanded] = useState<ReviewImage | null>(null);
+  const [needsExpansion, setNeedsExpansion] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     if (reviews.length < 2) return;
@@ -76,8 +77,21 @@ export function ReviewCarousel({ reviews }: { reviews: ReviewImage[] }) {
                 fill
                 sizes="(max-width: 720px) 86vw, 560px"
                 className={styles.image}
+                onLoad={(event) => {
+                  const image = event.currentTarget;
+                  const isTallerThanFrame = image.naturalWidth / image.naturalHeight < 1536 / 890;
+                  if (!isTallerThanFrame) return;
+                  setNeedsExpansion((current) => {
+                    if (current.has(review.src)) return current;
+                    const updated = new Set(current);
+                    updated.add(review.src);
+                    return updated;
+                  });
+                }}
               />
-              {review.isLong && <span className={styles.readMore}>Double-tap to read more</span>}
+              {(review.isLong || needsExpansion.has(review.src)) && (
+                <span className={styles.readMore}>Double-tap to read more</span>
+              )}
             </article>
           ))}
         </div>
