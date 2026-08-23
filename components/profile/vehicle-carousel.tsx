@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { VehiclePreviewCard, type VehiclePreviewCardProps } from "./vehicle-preview-card";
 import styles from "../../app/card/trav/page.module.css";
 
@@ -15,7 +15,15 @@ export function VehicleCarousel({ vehicles, initialVehicleVin }: VehicleCarousel
     return matchedIndex >= 0 ? matchedIndex : 0;
   });
   const [copied, setCopied] = useState(false);
+  const railRef = useRef<HTMLDivElement>(null);
   const activeVehicle = vehicles[activeIndex] ?? vehicles[0];
+
+  useEffect(() => {
+    const rail = railRef.current;
+    const card = rail?.children.item(activeIndex) as HTMLElement | null;
+    if (!rail || !card || activeIndex === 0) return;
+    rail.scrollTo({ left: card.offsetLeft, behavior: "instant" });
+  }, []);
 
   const copyVehicleLink = async () => {
     const vin = activeVehicle.verifiedFallback?.vin;
@@ -38,6 +46,7 @@ export function VehicleCarousel({ vehicles, initialVehicleVin }: VehicleCarousel
       </div>
 
       <div
+        ref={railRef}
         className={styles.vehicleRail}
         onScroll={(event) => {
           const rail = event.currentTarget;
