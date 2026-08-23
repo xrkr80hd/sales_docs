@@ -222,3 +222,72 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+
+.cropList {
+  display: grid;
+  gap: 14px;
+}
+
+.cropCard {
+  overflow: hidden;
+  border: 1px solid #343840;
+  border-radius: 18px;
+  background: #202329;
+}
+
+.cropTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 13px;
+}
+
+.cropTitle span {
+  color: #969aa2;
+  font-size: .72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.cropViewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: #090a0c;
+}
+
+.cropViewport img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  max-width: none;
+  transform: translate(-50%, -50%);
+}
+
+.cropControls {
+  display: grid;
+  gap: 11px;
+  padding: 14px;
+}
+
+.cropControls label {
+  grid-template-columns: 126px 1fr;
+  align-items: center;
+}
+
+.cropControls input[type="range"] {
+  width: 100%;
+  min-height: 28px;
+  accent-color: #be1717;
+  box-shadow: none;
+  padding: 0;
+}
+
+@media (min-width: 620px) {
+  .cropList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
