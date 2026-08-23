@@ -81,7 +81,7 @@ export default function TravisWilkinsonProfile() {
             <div className={styles.actions}>
               <a className={styles.primaryAction} href="tel:+13187877887">Call</a>
               <a className={styles.secondaryAction} href="sms:+13187877887">Text</a>
-              <a className={styles.secondaryAction} href="mailto:trav@xrkr80hd.studio">Email</a>
+              <a className={styles.secondaryAction} href="mailto:twilkinson@walkerautomotive.com">Email</a>
               <button className={styles.secondaryAction} disabled>Save contact — not connected</button>
             </div>
           </details>
