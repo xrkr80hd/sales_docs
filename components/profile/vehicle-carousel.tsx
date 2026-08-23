@@ -10,14 +10,17 @@ type VehicleCarouselProps = {
 
 export function VehicleCarousel({ vehicles }: VehicleCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [copied, setCopied] = useState(false);
   const activeVehicle = vehicles[activeIndex] ?? vehicles[0];
 
-  const shareVehicle = () => {
+  const copyVehicleLink = async () => {
     const vin = activeVehicle.verifiedFallback?.vin;
     const cardUrl = new URL(window.location.href);
+    cardUrl.search = "";
     if (vin) cardUrl.searchParams.set("vehicle", vin);
-    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(cardUrl.toString())}`;
-    window.open(facebookUrl, "_blank", "noopener,noreferrer,width=720,height=640");
+    await navigator.clipboard.writeText(cardUrl.toString());
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
   };
 
   return (
@@ -52,7 +55,7 @@ export function VehicleCarousel({ vehicles }: VehicleCarouselProps) {
       <div className={styles.vehicleDock}>
         <div className={styles.vehicleDockTop}>
           <a href={activeVehicle.listingUrl} target="_blank" rel="noopener noreferrer">View listing</a>
-          <button type="button" onClick={shareVehicle}>Share on Facebook</button>
+          <button type="button" onClick={copyVehicleLink}>{copied ? "Link copied!" : "Copy link"}</button>
         </div>
         <div className={styles.vehicleDockContact}>
           <a href="tel:+13187877887">Call</a>
