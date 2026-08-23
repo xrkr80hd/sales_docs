@@ -1,16 +1,15 @@
 import Image from "next/image";
+import { VehiclePreviewCard } from "@/components/profile/vehicle-preview-card";
 import styles from "./page.module.css";
 
-const vehicleUrl =
-  "https://www.walkercdjr.net/inventory/new-2026-ram-2500-laramie-4x4-crew-cab-3c6ur5fj8tg367952/";
+const vehicleLinks = [
+  "https://www.walkercdjr.net/inventory/new-2026-ram-2500-laramie-4x4-crew-cab-3c6ur5fj8tg367952/",
+];
 
 const wiring = {
-  phone: true,
-  email: true,
   bio: false,
   socials: false,
   inventory: false,
-  featuredVehicle: true,
   walkaround: false,
   reviews: false,
   leadForm: false,
@@ -29,13 +28,16 @@ function EmptyState({ number, title, note }: { number: string; title: string; no
   );
 }
 
-export default function TravCardPage() {
+export default function TravisWilkinsonProfile() {
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
         <header className={styles.hero}>
           <div className={styles.brandRow}>
-            <span className={styles.brand}>Walker Automotive</span>
+            <div className={styles.logoSlot} aria-label="Consultant logo slot">
+              <span>Logo</span>
+              <small>Not uploaded</small>
+            </div>
             <span className={styles.language}>EN · ES</span>
           </div>
 
@@ -58,59 +60,53 @@ export default function TravCardPage() {
             </div>
           </div>
 
-          <div className={styles.actions}>
-            {wiring.phone && (
-              <>
-                <a className={styles.primaryAction} href="tel:+13187877887">
-                  <span>02</span> Call Trav
-                </a>
-                <a className={styles.secondaryAction} href="sms:+13187877887">
-                  <span>02</span> Text Trav
-                </a>
-              </>
-            )}
-            <a className={styles.secondaryAction} href="mailto:trav@xrkr80hd.studio">
-              <span>03</span> Email Trav
-            </a>
-            <button className={styles.secondaryAction} disabled>
-              <span>04</span> Save contact — needs vCard
-            </button>
+          <div className={styles.catchphrases}>
+            <p className={styles.primaryPhrase}>#CallTrav</p>
+            <p>I have full access to all seven Walker Automotive lots. If this isn’t it, we’ll find what you’re looking for.</p>
           </div>
+
+          <details className={styles.contactAccordion}>
+            <summary>Contact</summary>
+            <div className={styles.actions}>
+              <a className={styles.primaryAction} href="tel:+13187877887">Call</a>
+              <a className={styles.secondaryAction} href="sms:+13187877887">Text</a>
+              <a className={styles.secondaryAction} href="mailto:trav@xrkr80hd.studio">Email</a>
+              <button className={styles.secondaryAction} disabled>Save contact — not connected</button>
+            </div>
+          </details>
         </header>
 
-        <div className={styles.sections}>
+        <div className={styles.profileGrid}>
+          <section className={styles.brandCard} aria-labelledby="brand-card-heading">
+            <span className={styles.wireNumber}>02</span>
+            <div>
+              <p className={styles.vehicleLabel}>Consultant calling card</p>
+              <h2 id="brand-card-heading">#CallTrav</h2>
+              <p>Caricature or personal brand graphic has not been uploaded.</p>
+            </div>
+          </section>
+
           {!wiring.bio && (
-            <EmptyState number="05" title="About Trav" note="Bio has not been added yet." />
+            <EmptyState number="03" title="About Travis Wilkinson" note="Bio has not been added yet." />
           )}
+        </div>
+
+        <section className={styles.vehicleSection} aria-labelledby="vehicle-section-heading">
+          <div className={styles.sectionHeading}>
+            <div><p className={styles.vehicleLabel}>Trav’s picks</p><h2 id="vehicle-section-heading">Vehicles worth a look</h2></div>
+            <span>Swipe</span>
+          </div>
+          <div className={styles.vehicleRail}>
+            {vehicleLinks.map((listingUrl) => (
+              <VehiclePreviewCard key={listingUrl} listingUrl={listingUrl} />
+            ))}
+          </div>
+        </section>
+
+        <div className={styles.sections}>
           {!wiring.inventory && (
-            <EmptyState number="06" title="Browse inventory" note="Walker inventory link has not been connected yet." />
+            <EmptyState number="06" title="Browse all Walker inventory" note="The general inventory destination has not been connected." />
           )}
-
-          {wiring.featuredVehicle && (
-            <section className={styles.vehicleCard} aria-labelledby="featured-vehicle">
-              <div className={styles.vehicleMedia}>
-                <span>07</span>
-                <p>Vehicle media has not been imported.</p>
-              </div>
-              <div className={styles.vehicleBody}>
-                <p className={styles.vehicleLabel}>Featured vehicle</p>
-                <h2 id="featured-vehicle">New 2026 RAM 2500 Laramie</h2>
-                <dl className={styles.vehicleFacts}>
-                  <div><dt>Configuration</dt><dd>4×4 Crew Cab</dd></div>
-                  <div><dt>Stock</dt><dd>TJ26336</dd></div>
-                  <div><dt>VIN</dt><dd>3C6UR5FJ8TG367952</dd></div>
-                  <div><dt>Listed price</dt><dd>$67,598</dd></div>
-                </dl>
-                <div className={styles.vehicleActions}>
-                  <a href="tel:+13187877887">Call Trav</a>
-                  <a href="sms:+13187877887">Text Trav</a>
-                  <a href={vehicleUrl} target="_blank" rel="noopener noreferrer">View Walker listing</a>
-                </div>
-                <p className={styles.priceNote}>Vehicle availability and pricing must be confirmed on the live dealer listing.</p>
-              </div>
-            </section>
-          )}
-
           {!wiring.walkaround && (
             <EmptyState number="08" title="Vehicle walk-around" note="No active walk-around video has been published." />
           )}
@@ -118,10 +114,10 @@ export default function TravCardPage() {
             <EmptyState number="09" title="Five-star reviews" note="Review screenshots have not been uploaded." />
           )}
           {!wiring.socials && (
-            <EmptyState number="10" title="Follow Trav" note="Social links have not been connected." />
+            <EmptyState number="10" title="Follow Travis Wilkinson" note="Social links have not been connected." />
           )}
           {!wiring.leadForm && (
-            <EmptyState number="11" title="Ask Trav to contact you" note="The protected contact form still needs backend wiring." />
+            <EmptyState number="11" title="Ask Travis Wilkinson to contact you" note="The protected contact form still needs backend wiring." />
           )}
         </div>
 
