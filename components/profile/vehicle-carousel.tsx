@@ -22,7 +22,7 @@ export function VehicleCarousel({ vehicles, initialVehicleVin }: VehicleCarousel
     const rail = railRef.current;
     const card = rail?.children.item(activeIndex) as HTMLElement | null;
     if (!rail || !card || activeIndex === 0) return;
-    rail.scrollTo({ left: card.offsetLeft, behavior: "instant" });
+    rail.scrollTo({ left: card.offsetLeft, behavior: "auto" });
   }, []);
 
   const copyVehicleLink = async () => {
