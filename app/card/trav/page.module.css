@@ -367,3 +367,264 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+
+.logoSlot {
+  display: grid;
+  gap: 1px;
+  min-width: 112px;
+  border: 1px dashed #555961;
+  border-radius: 12px;
+  padding: 8px 10px;
+  color: #fff;
+  line-height: 1.1;
+  text-transform: none;
+}
+
+.logoSlot span {
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.logoSlot small {
+  color: #8f939a;
+  font-size: .68rem;
+  letter-spacing: 0;
+}
+
+.catchphrases {
+  margin-top: 24px;
+  border-left: 3px solid #be1717;
+  padding: 2px 0 2px 15px;
+}
+
+.catchphrases p {
+  margin: 5px 0;
+  color: #c9cbd0;
+  line-height: 1.45;
+}
+
+.catchphrases .primaryPhrase {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.contactAccordion {
+  margin-top: 24px;
+  border: 1px solid #3a3d43;
+  border-radius: 17px;
+  background: #191b20;
+}
+
+.contactAccordion summary {
+  display: flex;
+  min-height: 54px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  font-weight: 800;
+  list-style: none;
+}
+
+.contactAccordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.contactAccordion summary::after {
+  content: "+";
+  color: #ef6262;
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 1.2rem;
+}
+
+.contactAccordion[open] summary::after {
+  content: "−";
+}
+
+.contactAccordion .actions {
+  margin: 0;
+  border-top: 1px solid #34373d;
+  padding: 12px;
+}
+
+.profileGrid {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+  margin-top: 16px;
+}
+
+.brandCard {
+  position: relative;
+  display: flex;
+  aspect-ratio: 2 / 3;
+  min-height: 390px;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  border: 1px dashed #484c54;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, transparent 30%, rgba(0, 0, 0, .84)),
+    radial-gradient(circle at 50% 24%, rgba(190, 23, 23, .2), transparent 42%),
+    #1b1e23;
+  padding: 22px;
+}
+
+.brandCard > .wireNumber {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+}
+
+.brandCard h2 {
+  margin: 4px 0;
+  font-size: clamp(2rem, 9vw, 3.5rem);
+  letter-spacing: -.05em;
+}
+
+.brandCard p {
+  margin: 0;
+  color: #a8abb1;
+  line-height: 1.45;
+}
+
+.vehicleSection {
+  margin-top: 18px;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 4px 12px;
+}
+
+.sectionHeading h2 {
+  margin: 2px 0 0;
+  font-size: 1.55rem;
+}
+
+.sectionHeading > span {
+  color: #8f939a;
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.vehicleRail {
+  display: grid;
+  grid-auto-columns: min(88vw, 620px);
+  grid-auto-flow: column;
+  gap: 14px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 0 2px 12px;
+  scroll-snap-type: inline mandatory;
+  scrollbar-width: thin;
+}
+
+.vehicleRail > * {
+  scroll-snap-align: start;
+}
+
+.vehicleMedia {
+  display: block;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+.vehicleMedia img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vehiclePrice {
+  margin: 8px 0 0;
+  color: #fff;
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.vehicleDetails {
+  margin: 16px 0;
+  border: 1px solid #303339;
+  border-radius: 14px;
+  background: #202329;
+}
+
+.vehicleDetails summary {
+  cursor: pointer;
+  padding: 13px;
+  font-weight: 800;
+}
+
+.vehicleDetails .vehicleFacts {
+  margin: 0;
+  padding: 0 12px 12px;
+}
+
+.vehicleDescription {
+  margin: 0;
+  padding: 0 13px 14px;
+  color: #a7aab0;
+  font-size: .85rem;
+  line-height: 1.45;
+}
+
+.vehicleImportState {
+  display: grid;
+  min-height: 180px;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 20px;
+}
+
+.vehicleImportState span {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 9px;
+  background: #be1717;
+  color: #fff;
+  font-family: var(--font-plex-mono), monospace;
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.vehicleImportState p {
+  margin: 4px 0 0;
+  color: #8f939a;
+}
+
+.listingFallback {
+  display: block;
+  border-top: 1px solid #303339;
+  color: #fff;
+  padding: 15px 20px;
+  font-weight: 800;
+  text-align: center;
+}
+
+@media (min-width: 620px) {
+  .profileGrid {
+    grid-template-columns: minmax(240px, .72fr) 1.28fr;
+  }
+
+  .brandCard {
+    min-height: 430px;
+  }
+
+  .vehicleRail {
+    grid-auto-columns: min(76%, 620px);
+  }
+}
