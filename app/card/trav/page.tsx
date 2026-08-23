@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { ReviewCarousel } from "@/components/profile/review-carousel";
 import { VehicleCarousel } from "@/components/profile/vehicle-carousel";
@@ -54,6 +55,43 @@ const reviews = [
   { src: "/reviews/michael-christy.jpg", alt: "Five-star review from Michael Christy" },
   { src: "/reviews/christina-belvin.jpg", alt: "Five-star review from Christina Belvin", isLong: true },
 ];
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ vehicle?: string }>;
+}): Promise<Metadata> {
+  const { vehicle } = await searchParams;
+  const selected = featuredVehicles.find(({ verifiedFallback }) => verifiedFallback.vin === vehicle);
+  if (!selected) {
+    return {
+      title: "Travis Wilkinson | Walker Automotive",
+      description: "Contact Travis Wilkinson and browse featured Walker Automotive vehicles.",
+    };
+  }
+
+  const { title, description, imageUrl, price } = selected.verifiedFallback;
+  const shareDescription = [price, description, "Contact Travis Wilkinson at Walker Automotive."]
+    .filter(Boolean)
+    .join(" · ");
+
+  return {
+    title: `${title} | Travis Wilkinson`,
+    description: shareDescription,
+    openGraph: {
+      title,
+      description: shareDescription,
+      type: "website",
+      images: imageUrl ? [{ url: imageUrl, alt: title }] : [],
+    },
+    twitter: {
+      card: imageUrl ? "summary_large_image" : "summary",
+      title,
+      description: shareDescription,
+      images: imageUrl ? [imageUrl] : [],
+    },
+  };
+}
 
 const wiring = {
   bio: false,
