@@ -34,7 +34,7 @@
 
 .card {
   position: relative;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1536 / 890;
   overflow: hidden;
   border: 1px solid #3a3d43;
   border-radius: 22px;
