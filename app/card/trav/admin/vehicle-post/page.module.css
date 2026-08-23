@@ -318,7 +318,7 @@
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 16 / 9;
   background: #090a0c;
   cursor: grab;
   touch-action: none;
@@ -375,4 +375,41 @@
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+
+.previewStage {
+  position: relative;
+  overflow: hidden;
+  background: #090a0c;
+}
+
+.removePhoto {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  cursor: pointer;
+  transform: translate(-2px, -2px);
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, .9);
+  border-radius: 999px;
+  background: rgba(12, 13, 16, .9);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .45);
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.removePhoto:hover,
+.removePhoto:focus {
+  background: #be1717;
+  outline: none;
+}
+
+.cropToolbar button:disabled {
+  cursor: not-allowed;
+  opacity: .35;
 }
