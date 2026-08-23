@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import styles from "../../app/card/trav/page.module.css";
 
-type VehiclePreview = {
+export type VehiclePreview = {
   sourceUrl: string;
   title: string;
   imageUrl: string | null;
@@ -13,7 +13,7 @@ type VehiclePreview = {
   price: string | null;
 };
 
-type VehiclePreviewCardProps = {
+export type VehiclePreviewCardProps = {
   listingUrl: string;
   verifiedFallback?: VehiclePreview;
 };
@@ -95,12 +95,7 @@ export function VehiclePreviewCard({ listingUrl, verifiedFallback }: VehiclePrev
           {vehicle.description && <p className={styles.vehicleDescription}>{vehicle.description}</p>}
         </details>
 
-        <div className={styles.vehicleActions}>
-          <a href="tel:+13187877887">Call</a>
-          <a href="sms:+13187877887">Text</a>
-          <a href={vehicle.sourceUrl} target="_blank" rel="noopener noreferrer">Walker listing</a>
-        </div>
-        <p className={styles.priceNote}>Availability and pricing must be confirmed on the live dealer listing.</p>
+        <p className={styles.priceNote}>Availability and pricing must be confirmed on the live Walker listing.</p>
       </div>
     </article>
   );
