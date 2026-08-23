@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { ReviewCarousel } from "@/components/profile/review-carousel";
-import { VehiclePreviewCard } from "@/components/profile/vehicle-preview-card";
+import { VehicleCarousel } from "@/components/profile/vehicle-carousel";
 import styles from "./page.module.css";
 
 const featuredVehicles = [
@@ -21,8 +21,8 @@ const featuredVehicles = [
     verifiedFallback: {
       sourceUrl: "https://www.walkercdjr.net/inventory/new-2026-ram-1500-big-hornlone-star-4x4-crew-cab-1c6srfft4tn349096/",
       title: "New 2026 RAM 1500 Big Horn/Lone Star 4×4 Crew Cab",
-      imageUrl: null,
-      description: "Granite Crystal Metallic Clearcoat · Black interior · 4×4 Crew Cab · 5′7″ box",
+      imageUrl: "https://vehicle-images.carscommerce.inc/4b21-11001967/1C6SRFFT4TN242517/0d926de4e644d17887ca9eaa2d802f2d.jpg",
+      description: "Representative trim photo · Granite Crystal Metallic Clearcoat · Black interior · 4×4 Crew Cab · 5′7″ box",
       vin: "1C6SRFFT4TN349096",
       stock: "TJ26185",
       price: "$53,469",
@@ -33,8 +33,8 @@ const featuredVehicles = [
     verifiedFallback: {
       sourceUrl: "https://www.walkercdjr.net/inventory/new-2026-ram-2500-black-express-4x4-crew-cab-3c6ur5cj9tg367950/",
       title: "New 2026 RAM 2500 Black Express 4×4 Crew Cab",
-      imageUrl: null,
-      description: "Bright White Clearcoat · Black Express · 4×4 Crew Cab · 6′4″ box",
+      imageUrl: "https://pictures.dealer.com/generic-stellantis-OEM_VIN_STOCK_PHOTOS/9ff8bd460de20858faddb4d37370e41d.jpg?impolicy=resize&w=1024",
+      description: "Representative trim photo · Bright White Clearcoat · Black Express · 4×4 Crew Cab · 6′4″ box",
       vin: "3C6UR5CJ9TG367950",
       stock: "TJ26335",
       price: "$61,795",
@@ -141,21 +141,7 @@ export default function TravisWilkinsonProfile() {
           )}
         </div>
 
-        <section className={styles.vehicleSection} aria-labelledby="vehicle-section-heading">
-          <div className={styles.sectionHeading}>
-            <div><p className={styles.vehicleLabel}>Trav’s picks</p><h2 id="vehicle-section-heading">Vehicles worth a look</h2></div>
-            <span>Swipe</span>
-          </div>
-          <div className={styles.vehicleRail}>
-            {featuredVehicles.map(({ listingUrl, verifiedFallback }) => (
-              <VehiclePreviewCard
-                key={listingUrl}
-                listingUrl={listingUrl}
-                verifiedFallback={verifiedFallback}
-              />
-            ))}
-          </div>
-        </section>
+        <VehicleCarousel vehicles={featuredVehicles} />
 
         <ReviewCarousel reviews={reviews} />
 
