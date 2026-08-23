@@ -16,6 +16,30 @@ const featuredVehicles = [
       price: "$67,598",
     },
   },
+  {
+    listingUrl: "https://www.walkercdjr.net/inventory/new-2026-ram-1500-big-hornlone-star-4x4-crew-cab-1c6srfft4tn349096/",
+    verifiedFallback: {
+      sourceUrl: "https://www.walkercdjr.net/inventory/new-2026-ram-1500-big-hornlone-star-4x4-crew-cab-1c6srfft4tn349096/",
+      title: "New 2026 RAM 1500 Big Horn/Lone Star 4×4 Crew Cab",
+      imageUrl: null,
+      description: "Granite Crystal Metallic Clearcoat · Black interior · 4×4 Crew Cab · 5′7″ box",
+      vin: "1C6SRFFT4TN349096",
+      stock: "TJ26185",
+      price: "$53,469",
+    },
+  },
+  {
+    listingUrl: "https://www.walkercdjr.net/inventory/new-2026-ram-2500-black-express-4x4-crew-cab-3c6ur5cj9tg367950/",
+    verifiedFallback: {
+      sourceUrl: "https://www.walkercdjr.net/inventory/new-2026-ram-2500-black-express-4x4-crew-cab-3c6ur5cj9tg367950/",
+      title: "New 2026 RAM 2500 Black Express 4×4 Crew Cab",
+      imageUrl: null,
+      description: "Bright White Clearcoat · Black Express · 4×4 Crew Cab · 6′4″ box",
+      vin: "3C6UR5CJ9TG367950",
+      stock: "TJ26335",
+      price: "$61,795",
+    },
+  },
 ];
 
 const reviews = [
