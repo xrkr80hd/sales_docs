@@ -13,7 +13,12 @@ type VehiclePreview = {
   price: string | null;
 };
 
-export function VehiclePreviewCard({ listingUrl }: { listingUrl: string }) {
+type VehiclePreviewCardProps = {
+  listingUrl: string;
+  verifiedFallback?: VehiclePreview;
+};
+
+export function VehiclePreviewCard({ listingUrl, verifiedFallback }: VehiclePreviewCardProps) {
   const [vehicle, setVehicle] = useState<VehiclePreview | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,11 +35,16 @@ export function VehiclePreviewCard({ listingUrl }: { listingUrl: string }) {
       })
       .then(setVehicle)
       .catch((requestError) => {
-        if (requestError.name !== "AbortError") setError(requestError.message);
+        if (requestError.name === "AbortError") return;
+        if (verifiedFallback) {
+          setVehicle(verifiedFallback);
+          return;
+        }
+        setError(requestError.message);
       });
 
     return () => controller.abort();
-  }, [listingUrl]);
+  }, [listingUrl, verifiedFallback]);
 
   if (error) {
     return (
