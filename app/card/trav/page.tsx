@@ -115,7 +115,13 @@ function EmptyState({ number, title, note }: { number: string; title: string; no
   );
 }
 
-export default function TravisWilkinsonProfile() {
+export default async function TravisWilkinsonProfile({
+  searchParams,
+}: {
+  searchParams: Promise<{ vehicle?: string }>;
+}) {
+  const { vehicle } = await searchParams;
+
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
@@ -185,7 +191,7 @@ export default function TravisWilkinsonProfile() {
           )}
         </div>
 
-        <VehicleCarousel vehicles={featuredVehicles} />
+        <VehicleCarousel vehicles={featuredVehicles} initialVehicleVin={vehicle} />
 
         <ReviewCarousel reviews={reviews} />
 
