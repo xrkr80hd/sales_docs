@@ -45,7 +45,7 @@
 
 .identity {
   display: grid;
-  grid-template-columns: 132px 1fr;
+  grid-template-columns: 152px 1fr;
   gap: 20px;
   align-items: end;
   margin-top: 28px;
@@ -53,7 +53,7 @@
 
 .photoFrame {
   position: relative;
-  width: 132px;
+  width: 152px;
   aspect-ratio: 1;
   overflow: hidden;
   border: 3px solid #fff;
@@ -210,11 +210,11 @@
   }
 
   .identity {
-    grid-template-columns: 168px 1fr;
+    grid-template-columns: 190px 1fr;
   }
 
   .photoFrame {
-    width: 168px;
+    width: 190px;
   }
 
   .actions {
@@ -228,12 +228,12 @@
 
 @media (max-width: 430px) {
   .identity {
-    grid-template-columns: 104px 1fr;
+    grid-template-columns: 128px 1fr;
     gap: 14px;
   }
 
   .photoFrame {
-    width: 104px;
+    width: 128px;
     border-radius: 22px;
   }
 
@@ -460,8 +460,10 @@
 
 .brandCard {
   position: relative;
+  width: min(52vw, 210px);
   aspect-ratio: 3 / 4;
   min-height: 0;
+  justify-self: center;
   overflow: hidden;
   border: 1px solid #3a3d43;
   border-radius: 24px;
