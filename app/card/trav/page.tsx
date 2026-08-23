@@ -1,14 +1,16 @@
 import Image from "next/image";
-import Link from "next/link";
 import styles from "./page.module.css";
 
+const vehicleUrl =
+  "https://www.walkercdjr.net/inventory/new-2026-ram-2500-laramie-4x4-crew-cab-3c6ur5fj8tg367952/";
+
 const wiring = {
-  phone: false,
+  phone: true,
   email: true,
   bio: false,
   socials: false,
   inventory: false,
-  featuredVehicle: false,
+  featuredVehicle: true,
   walkaround: false,
   reviews: false,
   leadForm: false,
@@ -57,12 +59,17 @@ export default function TravCardPage() {
           </div>
 
           <div className={styles.actions}>
-            {wiring.phone ? null : (
-              <button className={styles.disabledAction} disabled>
-                <span>02</span> Phone not connected
-              </button>
+            {wiring.phone && (
+              <>
+                <a className={styles.primaryAction} href="tel:+13187877887">
+                  <span>02</span> Call Trav
+                </a>
+                <a className={styles.secondaryAction} href="sms:+13187877887">
+                  <span>02</span> Text Trav
+                </a>
+              </>
             )}
-            <a className={styles.primaryAction} href="mailto:trav@xrkr80hd.studio">
+            <a className={styles.secondaryAction} href="mailto:trav@xrkr80hd.studio">
               <span>03</span> Email Trav
             </a>
             <button className={styles.secondaryAction} disabled>
@@ -78,9 +85,32 @@ export default function TravCardPage() {
           {!wiring.inventory && (
             <EmptyState number="06" title="Browse inventory" note="Walker inventory link has not been connected yet." />
           )}
-          {!wiring.featuredVehicle && (
-            <EmptyState number="07" title="Featured vehicle" note="No active Deal of the Week or Fresh Trade has been published." />
+
+          {wiring.featuredVehicle && (
+            <section className={styles.vehicleCard} aria-labelledby="featured-vehicle">
+              <div className={styles.vehicleMedia}>
+                <span>07</span>
+                <p>Vehicle media has not been imported.</p>
+              </div>
+              <div className={styles.vehicleBody}>
+                <p className={styles.vehicleLabel}>Featured vehicle</p>
+                <h2 id="featured-vehicle">New 2026 RAM 2500 Laramie</h2>
+                <dl className={styles.vehicleFacts}>
+                  <div><dt>Configuration</dt><dd>4×4 Crew Cab</dd></div>
+                  <div><dt>Stock</dt><dd>TJ26336</dd></div>
+                  <div><dt>VIN</dt><dd>3C6UR5FJ8TG367952</dd></div>
+                  <div><dt>Listed price</dt><dd>$67,598</dd></div>
+                </dl>
+                <div className={styles.vehicleActions}>
+                  <a href="tel:+13187877887">Call Trav</a>
+                  <a href="sms:+13187877887">Text Trav</a>
+                  <a href={vehicleUrl} target="_blank" rel="noopener noreferrer">View Walker listing</a>
+                </div>
+                <p className={styles.priceNote}>Vehicle availability and pricing must be confirmed on the live dealer listing.</p>
+              </div>
+            </section>
           )}
+
           {!wiring.walkaround && (
             <EmptyState number="08" title="Vehicle walk-around" note="No active walk-around video has been published." />
           )}
@@ -96,11 +126,7 @@ export default function TravCardPage() {
         </div>
 
         <footer className={styles.footer}>
-          {!wiring.personalSite ? (
-            <p><span>12</span> Personal-site link not connected</p>
-          ) : (
-            <Link href="https://xrkr80hd.studio">See what else Trav creates</Link>
-          )}
+          {!wiring.personalSite && <p><span>12</span> Personal-site link not connected</p>}
           <p className={styles.buildNote}>Real data only. Unwired features remain clearly identified.</p>
         </footer>
       </div>
