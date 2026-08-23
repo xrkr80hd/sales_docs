@@ -6,10 +6,14 @@ import styles from "../../app/card/trav/page.module.css";
 
 type VehicleCarouselProps = {
   vehicles: VehiclePreviewCardProps[];
+  initialVehicleVin?: string;
 };
 
-export function VehicleCarousel({ vehicles }: VehicleCarouselProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
+export function VehicleCarousel({ vehicles, initialVehicleVin }: VehicleCarouselProps) {
+  const [activeIndex, setActiveIndex] = useState(() => {
+    const matchedIndex = vehicles.findIndex(({ verifiedFallback }) => verifiedFallback?.vin === initialVehicleVin);
+    return matchedIndex >= 0 ? matchedIndex : 0;
+  });
   const [copied, setCopied] = useState(false);
   const activeVehicle = vehicles[activeIndex] ?? vehicles[0];
 
