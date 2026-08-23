@@ -17,12 +17,12 @@ const initialForm: VehicleForm = {
 };
 
 const getSlots = (count: number): Slot[] => count === 1
-  ? [{ x: 0, y: 0, w: 1500, h: 1000 }]
+  ? [{ x: 0, y: 0, w: 1920, h: 1080 }]
   : count === 2
-    ? [{ x: 0, y: 0, w: 750, h: 1000 }, { x: 750, y: 0, w: 750, h: 1000 }]
+    ? [{ x: 0, y: 0, w: 1920, h: 1080 }, { x: 1110, y: 612, w: 760, h: 428 }]
     : count === 3
-      ? [{ x: 0, y: 0, w: 1000, h: 1000 }, { x: 1000, y: 0, w: 500, h: 500 }, { x: 1000, y: 500, w: 500, h: 500 }]
-      : [{ x: 0, y: 0, w: 750, h: 500 }, { x: 750, y: 0, w: 750, h: 500 }, { x: 0, y: 500, w: 750, h: 500 }, { x: 750, y: 500, w: 750, h: 500 }];
+      ? [{ x: 0, y: 0, w: 1920, h: 1080 }, { x: 1160, y: 60, w: 700, h: 394 }, { x: 1160, y: 626, w: 700, h: 394 }]
+      : [{ x: 0, y: 0, w: 1920, h: 1080 }, { x: 40, y: 686, w: 600, h: 338 }, { x: 660, y: 686, w: 600, h: 338 }, { x: 1280, y: 686, w: 600, h: 338 }];
 
 const drawCropped = (context: CanvasRenderingContext2D, image: HTMLImageElement, slot: Slot, photo: CropPhoto) => {
   const slotRatio = slot.w / slot.h;
@@ -39,8 +39,8 @@ const drawCropped = (context: CanvasRenderingContext2D, image: HTMLImageElement,
 };
 
 const renderCollage = async (canvas: HTMLCanvasElement, photos: CropPhoto[], selected = -1) => {
-  canvas.width = 1500;
-  canvas.height = 1000;
+  canvas.width = 1920;
+  canvas.height = 1080;
   const context = canvas.getContext("2d");
   if (!context) return;
   context.fillStyle = "#111317";
@@ -82,7 +82,7 @@ export default function VehiclePostBuilder() {
 
   const prompt = useMemo(() => {
     const vehicle = [form.year, form.make, form.model, form.trim].filter(Boolean).join(" ");
-    return `Create a polished Facebook vehicle post using the attached finished 3:2 collage.
+    return `Create a polished Facebook vehicle post using the attached finished 16:9 collage.
 
 VERIFIED VEHICLE INFORMATION
 Vehicle: ${vehicle || "[not entered]"}
@@ -104,7 +104,7 @@ INSTRUCTIONS
 2. Use only facts verified by the listing or the information above.
 3. Never invent equipment, incentives, discounts, availability, warranty coverage, financing terms, or payments.
 4. Keep the supplied vehicle exact. Never change its color, trim, wheels, badges, body, equipment, or surroundings in a misleading way.
-5. The finished design must fill a true 3:2 frame edge-to-edge. If background extension is required, extend only the surrounding background; never regenerate or modify the vehicle.
+5. The finished design must fill a true 16:9 frame edge-to-edge. If background extension is required, extend only the surrounding background; never regenerate or modify the vehicle.
 6. Do not add text over the vehicle unless specifically requested.
 7. Write one concise, energetic Facebook caption with a strong opening and natural language.
 8. Tell the reader to use the consultant-page link to call or text Travis.
@@ -131,9 +131,14 @@ INSTRUCTIONS
     const canvas = previewRef.current;
     if (!canvas) return -1;
     const rect = canvas.getBoundingClientRect();
-    const x = (clientX - rect.left) * (1500 / rect.width);
-    const y = (clientY - rect.top) * (1000 / rect.height);
-    return getSlots(photos.length).findIndex((slot) => x >= slot.x && x <= slot.x + slot.w && y >= slot.y && y <= slot.y + slot.h);
+    const x = (clientX - rect.left) * (1920 / rect.width);
+    const y = (clientY - rect.top) * (1080 / rect.height);
+    const slots = getSlots(photos.length);
+    for (let index = slots.length - 1; index >= 0; index -= 1) {
+      const slot = slots[index];
+      if (x >= slot.x && x <= slot.x + slot.w && y >= slot.y && y <= slot.y + slot.h) return index;
+    }
+    return -1;
   };
 
   const startDrag = (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -151,8 +156,8 @@ INSTRUCTIONS
     if (!drag || !canvas) return;
     const rect = canvas.getBoundingClientRect();
     const slot = getSlots(photos.length)[drag.index];
-    const slotWidth = rect.width * (slot.w / 1500);
-    const slotHeight = rect.height * (slot.h / 1000);
+    const slotWidth = rect.width * (slot.w / 1920);
+    const slotHeight = rect.height * (slot.h / 1080);
     const nextX = Math.max(0, Math.min(100, drag.initialX - ((event.clientX - drag.startX) / slotWidth) * 100));
     const nextY = Math.max(0, Math.min(100, drag.initialY - ((event.clientY - drag.startY) / slotHeight) * 100));
     setPhotos((current) => current.map((photo, index) => index === drag.index ? { ...photo, x: nextX, y: nextY } : photo));
@@ -169,6 +174,15 @@ INSTRUCTIONS
       : photo));
   };
 
+  const removePhoto = (indexToRemove: number) => {
+    setPhotos((current) => {
+      URL.revokeObjectURL(current[indexToRemove].url);
+      return current.filter((_, index) => index !== indexToRemove);
+    });
+    setSelectedPhoto((current) => Math.max(0, Math.min(current > indexToRemove ? current - 1 : current, photos.length - 2)));
+    setNotice(`Photo ${indexToRemove + 1} removed. Remaining photos reflowed.`);
+  };
+
   const onDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     acceptFiles(event.dataTransfer.files);
@@ -182,10 +196,10 @@ INSTRUCTIONS
     const canvas = document.createElement("canvas");
     await renderCollage(canvas, photos);
     const link = document.createElement("a");
-    link.download = `${[form.year, form.make, form.model].filter(Boolean).join("-") || "walker-vehicle"}-collage.jpg`;
+    link.download = `${[form.year, form.make, form.model].filter(Boolean).join("-") || "walker-vehicle"}-16x9-collage.jpg`;
     link.href = canvas.toDataURL("image/jpeg", 0.95);
     link.click();
-    setNotice("Downloaded exactly as shown in the final 3:2 preview.");
+    setNotice("Downloaded exactly as shown in the final 16:9 preview.");
   };
 
   const copyPrompt = async () => {
@@ -211,7 +225,7 @@ INSTRUCTIONS
         <header className={styles.header}>
           <p>Consultant backend</p>
           <h1>Vehicle Post Builder</h1>
-          <span>What you see in the final collage preview is exactly what downloads.</span>
+          <span>Build a true 1920 × 1080 collage. What you see is exactly what downloads.</span>
         </header>
 
         <details className={styles.panel} open>
@@ -243,27 +257,42 @@ INSTRUCTIONS
 
             {!!photos.length && (
               <section className={styles.finalCrop}>
-                <div className={styles.finalCropHeading}><strong>Final 3:2 collage preview</strong><span>Exact export</span></div>
-                <canvas
-                  ref={previewRef}
-                  className={styles.collageCanvas}
-                  aria-label="Final vehicle collage preview. Select and drag a photo to reposition it."
-                  onPointerDown={startDrag}
-                  onPointerMove={moveDrag}
-                  onPointerUp={stopDrag}
-                  onPointerCancel={stopDrag}
-                />
+                <div className={styles.finalCropHeading}><strong>Final 16:9 collage preview</strong><span>1920 × 1080</span></div>
+                <div className={styles.previewStage}>
+                  <canvas
+                    ref={previewRef}
+                    className={styles.collageCanvas}
+                    aria-label="Final vehicle collage preview. Select and drag a photo to reposition it."
+                    onPointerDown={startDrag}
+                    onPointerMove={moveDrag}
+                    onPointerUp={stopDrag}
+                    onPointerCancel={stopDrag}
+                  />
+                  {getSlots(photos.length).map((slot, index) => (
+                    <button
+                      key={photos[index].id}
+                      className={styles.removePhoto}
+                      type="button"
+                      aria-label={`Remove photo ${index + 1}`}
+                      title={`Remove photo ${index + 1}`}
+                      style={{ left: `${((slot.x + 18) / 1920) * 100}%`, top: `${((slot.y + 18) / 1080) * 100}%` }}
+                      onClick={() => removePhoto(index)}
+                    >
+                      ×
+                    </button>
+                  ))}
+                </div>
                 <div className={styles.cropToolbar}>
                   <span>Photo {selectedPhoto + 1} selected — drag it inside the frame</span>
                   <div>
-                    <button type="button" onClick={() => adjustZoom(-0.1)} aria-label="Zoom selected photo out">−</button>
+                    <button type="button" disabled={!active || active.zoom <= 1} onClick={() => adjustZoom(-0.1)} aria-label="Zoom selected photo out">−</button>
                     <strong>{active ? Math.round(active.zoom * 100) : 100}%</strong>
                     <button type="button" onClick={() => adjustZoom(0.1)} aria-label="Zoom selected photo in">+</button>
                   </div>
                 </div>
               </section>
             )}
-            <button className={styles.primary} type="button" onClick={createCollage}>Confirm exact preview and download</button>
+            <button className={styles.primary} type="button" onClick={createCollage}>Confirm 16:9 preview and download</button>
           </div>
         </details>
 
