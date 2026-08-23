@@ -604,3 +604,113 @@
     grid-auto-columns: min(76%, 620px);
   }
 }
+
+
+/* Compact vehicle experience: information moves; contact controls stay put. */
+.vehicleRail {
+  grid-auto-columns: min(82vw, 360px);
+}
+
+.vehicleCard {
+  border-radius: 18px;
+}
+
+.vehicleBody {
+  padding: 13px 14px 14px;
+}
+
+.vehicleBody h2 {
+  font-size: 1.08rem;
+  line-height: 1.15;
+}
+
+.vehiclePrice {
+  margin-top: 6px;
+  font-size: 1.08rem;
+}
+
+.vehicleDetails {
+  margin: 9px 0;
+}
+
+.vehicleDetails summary {
+  padding: 10px 12px;
+  font-size: .86rem;
+}
+
+.vehicleDetails .vehicleFacts {
+  gap: 8px;
+  padding: 0 9px 9px;
+}
+
+.vehicleFacts div {
+  padding: 9px;
+}
+
+.vehicleDescription {
+  padding: 0 11px 11px;
+  font-size: .78rem;
+}
+
+.priceNote {
+  margin-top: 8px;
+  font-size: .66rem;
+}
+
+.vehicleDock {
+  overflow: hidden;
+  margin-top: 2px;
+  border: 1px solid #3a3d43;
+  border-radius: 17px;
+  background: #17191d;
+}
+
+.vehicleDockTop,
+.vehicleDockContact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.vehicleDockTop {
+  border-bottom: 1px solid #34373d;
+}
+
+.vehicleDock a,
+.vehicleDock button {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  padding: 10px;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 850;
+  text-align: center;
+  text-decoration: none;
+}
+
+.vehicleDock a + a,
+.vehicleDock a + button {
+  border-left: 1px solid #34373d;
+}
+
+.vehicleDockContact a {
+  min-height: 52px;
+  background: #be1717;
+  font-size: .95rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.vehicleDockContact a + a {
+  border-left-color: rgba(255, 255, 255, .28);
+}
+
+@media (min-width: 620px) {
+  .vehicleRail {
+    grid-auto-columns: min(56%, 360px);
+  }
+}
