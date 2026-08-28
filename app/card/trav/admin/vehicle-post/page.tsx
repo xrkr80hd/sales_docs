@@ -16,13 +16,19 @@ const initialForm: VehicleForm = {
   consultantUrl: "https://walker-next-docs-git-feature-trav-dig-b5f2fe-xrkr80hds-projects.vercel.app/card/trav",
 };
 
+// The collage is always 16:9, but each photo has a locked source shape:
+ // Photo 1 = 3:2 landscape. Photos 2-4 = 2:3 portrait.
 const getSlots = (count: number): Slot[] => count === 1
-  ? [{ x: 0, y: 0, w: 1920, h: 1080 }]
+  ? [{ x: 150, y: 40, w: 1620, h: 1080 }]
   : count === 2
-    ? [{ x: 0, y: 0, w: 1920, h: 1080 }, { x: 1110, y: 612, w: 760, h: 428 }]
+    ? [{ x: 40, y: 140, w: 1200, h: 800 }, { x: 1347, y: 140, w: 533, h: 800 }]
     : count === 3
-      ? [{ x: 0, y: 0, w: 1920, h: 1080 }, { x: 1160, y: 60, w: 700, h: 394 }, { x: 1160, y: 626, w: 700, h: 394 }]
-      : [{ x: 0, y: 0, w: 1920, h: 1080 }, { x: 40, y: 686, w: 600, h: 338 }, { x: 660, y: 686, w: 600, h: 338 }, { x: 1280, y: 686, w: 600, h: 338 }];
+      ? [{ x: 40, y: 140, w: 1200, h: 800 }, { x: 1440, y: 40, w: 320, h: 480 }, { x: 1440, y: 560, w: 320, h: 480 }]
+      : [{ x: 40, y: 140, w: 1200, h: 800 }, { x: 1320, y: 40, w: 320, h: 480 }, { x: 1640, y: 40, w: 240, h: 360 }, { x: 1480, y: 600, w: 280, h: 420 }];
+
+const getPhotoRequirement = (index: number) => index === 0
+  ? "3:2 landscape"
+  : "2:3 portrait";
 
 const drawCropped = (context: CanvasRenderingContext2D, image: HTMLImageElement, slot: Slot, photo: CropPhoto) => {
   const slotRatio = slot.w / slot.h;
@@ -124,7 +130,9 @@ INSTRUCTIONS
       id: `${file.name}-${file.lastModified}-${index}`, file, url: URL.createObjectURL(file), zoom: 1, x: 50, y: 50,
     })));
     setSelectedPhoto(0);
-    setNotice(incoming.length ? "Select a photo below the collage and adjust its actual export slot." : "Choose image files.");
+    setNotice(incoming.length
+      ? "Fresh crop loaded. Photo 1 is landscape; every remaining photo is portrait."
+      : "Choose image files.");
   };
 
   const chooseSlot = (clientX: number, clientY: number) => {
@@ -251,8 +259,16 @@ INSTRUCTIONS
           <div className={styles.panelBody}>
             <div className={styles.dropzone} onDragOver={(event) => event.preventDefault()} onDrop={onDrop} onClick={() => inputRef.current?.click()} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter") inputRef.current?.click(); }}>
               <strong>Drag and drop up to four photos</strong>
+              <span>Photo 1: 3:2 landscape · Photos 2–4: 2:3 portrait</span>
               <span>or tap to browse</span>
               <input ref={inputRef} hidden type="file" accept="image/*" multiple onChange={(event) => event.target.files && acceptFiles(event.target.files)} />
+            </div>
+
+            <div className={styles.slotGuide} aria-label="Required collage photo shapes">
+              <div><strong>Photo 1</strong><span>3:2 Landscape</span></div>
+              <div><strong>Photo 2</strong><span>2:3 Portrait</span></div>
+              <div><strong>Photo 3</strong><span>2:3 Portrait</span></div>
+              <div><strong>Photo 4</strong><span>2:3 Portrait</span></div>
             </div>
 
             {!!photos.length && (
@@ -283,7 +299,7 @@ INSTRUCTIONS
                   ))}
                 </div>
                 <div className={styles.cropToolbar}>
-                  <span>Photo {selectedPhoto + 1} selected — drag it inside the frame</span>
+                  <span>Photo {selectedPhoto + 1} · {getPhotoRequirement(selectedPhoto)} — drag to reposition</span>
                   <div>
                     <button type="button" disabled={!active || active.zoom <= 1} onClick={() => adjustZoom(-0.1)} aria-label="Zoom selected photo out">−</button>
                     <strong>{active ? Math.round(active.zoom * 100) : 100}%</strong>
