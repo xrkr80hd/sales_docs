@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase-browser";
 import {
   ConsultantProfileContent,
@@ -75,12 +76,6 @@ export function ProfileEditor() {
       return;
     }
     await loadProfile();
-  }
-
-  async function signOut() {
-    await getSupabaseBrowserClient().auth.signOut();
-    setProfile(null);
-    setDraft(null);
   }
 
   const updateIdentity = (field: keyof ConsultantProfileContent["identity"], value: string) => {
@@ -193,8 +188,12 @@ export function ProfileEditor() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <div><p>Private consultant backend</p><h1>Edit My Business Card</h1><span>Public link: /card/{profile.consultant_slug}</span></div>
-        <button type="button" className={styles.quiet} onClick={signOut}>Log out</button>
+        <div>
+          <Link href="/dashboard" className={styles.backLink}>← Dashboard</Link>
+          <h1>Business Card</h1>
+          <span>Public link: /card/{profile.consultant_slug}</span>
+        </div>
+        {profile.is_published && <a className={styles.viewCard} href={`/card/${profile.consultant_slug}`} target="_blank" rel="noopener noreferrer">View card</a>}
       </header>
 
       <section className={styles.statusBar}>
