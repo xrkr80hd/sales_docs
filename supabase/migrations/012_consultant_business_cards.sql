@@ -77,10 +77,12 @@ begin
   select coalesce(p.published_content, '{}'::jsonb) into template_content
   from public.consultant_profiles p where p.consultant_slug = 'trav';
 
-  if lower(coalesce(new.email, '')) = 'twilkinson@walkerautomotive.com' then
+  if lower(coalesce(new.email, '')) = 'xrkr80hd@gmail.com' then
     update public.consultant_profiles set owner_id = new.id, updated_at = now()
     where consultant_slug = 'trav' and owner_id is null;
-    if found then return new; end if;
+    update public.consultant_users set auth_user_id = new.id, role = 'admin', is_enabled = true, updated_at = now()
+    where consultant_slug = 'trav';
+    return new;
   end if;
 
   base_slug := trim(both '-' from regexp_replace(lower(split_part(coalesce(new.email, 'consultant'), '@', 1)), '[^a-z0-9]+', '-', 'g'));
@@ -98,6 +100,8 @@ begin
     (new_slug, new.id, coalesce(new.raw_user_meta_data->>'display_name', split_part(coalesce(new.email, 'New Consultant'), '@', 1)),
      'Sales Consultant', 'Walker Automotive', '', '', coalesce(new.email, ''), '', '', '',
      'https://www.walkerautomotive.com/', false, template_content, '{}'::jsonb, null);
+  insert into public.consultant_users (auth_user_id, consultant_slug, email, display_name, role, is_enabled)
+  values (new.id, new_slug, coalesce(new.email, ''), coalesce(new.raw_user_meta_data->>'display_name', 'New Consultant'), 'consultant', true);
   return new;
 end;
 $$;
