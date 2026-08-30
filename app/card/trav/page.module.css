@@ -188,6 +188,62 @@
   text-align: center;
 }
 
+.mediaSection {
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.mediaRail {
+  display: grid;
+  grid-auto-columns: minmax(240px, 74%);
+  grid-auto-flow: column;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+
+.mediaRail article {
+  overflow: hidden;
+  padding-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  scroll-snap-align: start;
+}
+
+.mediaRail img,
+.mediaRail video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.mediaRail strong,
+.mediaRail p,
+.mediaRail a {
+  display: block;
+  margin: 10px 12px 0;
+}
+
+.socialLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.socialLinks a {
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: inherit;
+  font-weight: 800;
+  text-decoration: none;
+}
+
 .footer p {
   margin: 8px 0;
 }
