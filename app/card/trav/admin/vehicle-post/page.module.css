@@ -1,0 +1,513 @@
+.page {
+  min-height: 100vh;
+  background: radial-gradient(circle at 10% 0%, rgba(190, 23, 23, .22), transparent 32rem), #0d0e10;
+  color: #f7f7f7;
+  padding: 24px 14px 56px;
+}
+
+.shell {
+  width: min(100%, 760px);
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 18px;
+  border: 1px solid #30333a;
+  border-radius: 26px;
+  background: linear-gradient(150deg, #22252a, #14161a 70%);
+  padding: 24px;
+}
+
+.header p {
+  margin: 0 0 5px;
+  color: #ef6262;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  margin: 0 0 8px;
+  font-size: clamp(2rem, 8vw, 3.4rem);
+  line-height: .95;
+  letter-spacing: -.045em;
+}
+
+.header span {
+  color: #a9adb4;
+  line-height: 1.45;
+}
+
+.panel {
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid #30333a;
+  border-radius: 20px;
+  background: #17191d;
+}
+
+.panel summary {
+  display: flex;
+  min-height: 62px;
+  cursor: pointer;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+  font-weight: 850;
+  list-style: none;
+}
+
+.panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.panel summary::after {
+  content: "+";
+  margin-left: auto;
+  color: #ef6262;
+  font-size: 1.25rem;
+}
+
+.panel[open] summary::after {
+  content: "−";
+}
+
+.panel summary span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 9px;
+  background: #be1717;
+  font-family: monospace;
+  font-size: .72rem;
+}
+
+.panelBody {
+  display: grid;
+  gap: 14px;
+  border-top: 1px solid #30333a;
+  padding: 16px;
+}
+
+.grid {
+  display: grid;
+  gap: 12px;
+}
+
+.panel label {
+  display: grid;
+  gap: 7px;
+  color: #c8cbd1;
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.panel input {
+  min-width: 0;
+  min-height: 48px;
+  border: 1px solid #3a3e45;
+  border-radius: 13px;
+  outline: none;
+  background: #202329;
+  color: #fff;
+  padding: 0 13px;
+  font: inherit;
+}
+
+.panel input:focus {
+  border-color: #ef6262;
+  box-shadow: 0 0 0 3px rgba(239, 98, 98, .12);
+}
+
+.dropzone {
+  display: grid;
+  min-height: 180px;
+  cursor: pointer;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  border: 2px dashed #555a63;
+  border-radius: 18px;
+  background: #202329;
+  padding: 24px;
+  text-align: center;
+  transition: border-color .18s ease, background .18s ease;
+}
+
+.dropzone:hover,
+.dropzone:focus {
+  border-color: #ef6262;
+  background: #25282e;
+  outline: none;
+}
+
+.dropzone span {
+  color: #969aa2;
+}
+
+.fileList {
+  display: grid;
+  gap: 6px;
+}
+
+.fileList span {
+  overflow: hidden;
+  border: 1px solid #343840;
+  border-radius: 10px;
+  color: #b7bac1;
+  padding: 9px 11px;
+  font-size: .78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+}
+
+.primary,
+.secondary {
+  min-height: 50px;
+  cursor: pointer;
+  border-radius: 14px;
+  padding: 10px 15px;
+  font-weight: 850;
+}
+
+.primary {
+  border: 1px solid #be1717;
+  background: #be1717;
+  color: #fff;
+}
+
+.secondary {
+  border: 1px solid #444851;
+  background: #22252a;
+  color: #fff;
+}
+
+.prompt {
+  width: 100%;
+  min-height: 420px;
+  resize: vertical;
+  border: 1px solid #3a3e45;
+  border-radius: 14px;
+  background: #101216;
+  color: #d8dbe0;
+  padding: 14px;
+  font: .78rem/1.55 monospace;
+}
+
+.notice {
+  min-height: 24px;
+  margin: 14px 4px 0;
+  color: #9da1a9;
+  font-size: .8rem;
+  text-align: center;
+}
+
+@media (min-width: 620px) {
+  .page {
+    padding-top: 46px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+
+.cropList {
+  display: grid;
+  gap: 14px;
+}
+
+.cropCard {
+  overflow: hidden;
+  border: 1px solid #343840;
+  border-radius: 18px;
+  background: #202329;
+}
+
+.cropTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 13px;
+}
+
+.cropTitle span {
+  color: #969aa2;
+  font-size: .72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.cropViewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: #090a0c;
+}
+
+.cropViewport img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  max-width: none;
+  transform: translate(-50%, -50%);
+}
+
+.cropControls {
+  display: grid;
+  gap: 11px;
+  padding: 14px;
+}
+
+.cropControls label {
+  grid-template-columns: 126px 1fr;
+  align-items: center;
+}
+
+.cropControls input[type="range"] {
+  width: 100%;
+  min-height: 28px;
+  accent-color: #be1717;
+  box-shadow: none;
+  padding: 0;
+}
+
+@media (min-width: 620px) {
+  .cropList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+.finalCrop {
+  overflow: hidden;
+  border: 1px solid #3a3e45;
+  border-radius: 18px;
+  background: #202329;
+}
+
+.finalCropHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+}
+
+.finalCropHeading span {
+  color: #969aa2;
+  font-size: .72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.collageCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: #090a0c;
+  cursor: grab;
+  touch-action: none;
+}
+
+.collageCanvas:active {
+  cursor: grabbing;
+}
+
+.cropToolbar {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+}
+
+.cropToolbar > span {
+  color: #c5c8ce;
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.cropToolbar > div {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.cropToolbar button {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  cursor: pointer;
+  place-items: center;
+  border: 1px solid #4b5059;
+  border-radius: 12px;
+  background: #15171b;
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.cropToolbar strong {
+  min-width: 48px;
+  font-size: .78rem;
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .cropToolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+
+.previewStage {
+  position: relative;
+  overflow: hidden;
+  background: #090a0c;
+}
+
+.removePhoto {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  cursor: pointer;
+  transform: translate(-2px, -2px);
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, .9);
+  border-radius: 999px;
+  background: rgba(12, 13, 16, .9);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .45);
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.removePhoto:hover,
+.removePhoto:focus {
+  background: #be1717;
+  outline: none;
+}
+
+.cropToolbar button:disabled {
+  cursor: not-allowed;
+  opacity: .35;
+}
+
+
+.slotGuide {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.slotGuide div {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #3a3e45;
+  border-radius: 12px;
+  background: #202329;
+  padding: 11px 12px;
+}
+
+.slotGuide strong {
+  color: #fff;
+  font-size: .78rem;
+}
+
+.slotGuide span {
+  color: #ef6262;
+  font-size: .7rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+@media (min-width: 620px) {
+  .slotGuide {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+
+.helperText {
+  margin: 0;
+  color: #a9adb4;
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.captionChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.captionChoice,
+.captionActive {
+  min-height: 44px;
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 9px 10px;
+  color: #fff;
+  font: inherit;
+  font-size: .76rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.captionChoice {
+  border: 1px solid #3a3e45;
+  background: #202329;
+}
+
+.captionActive {
+  border: 1px solid #ef6262;
+  background: rgba(190, 23, 23, .25);
+  box-shadow: 0 0 0 2px rgba(239, 98, 98, .1);
+}
+
+.captionPreview {
+  width: 100%;
+  min-height: 260px;
+  resize: vertical;
+  border: 1px solid #3a3e45;
+  border-radius: 14px;
+  background: #101216;
+  color: #e2e4e8;
+  padding: 14px;
+  font: .84rem/1.55 inherit;
+}
+
+.disclaimer {
+  margin: 18px 8px 0;
+  color: #777c85;
+  font-size: .66rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (min-width: 620px) {
+  .captionChoices {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

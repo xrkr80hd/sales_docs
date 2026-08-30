@@ -1,0 +1,121 @@
+.section {
+  margin-top: 18px;
+}
+
+.heading {
+  padding: 0 4px 12px;
+}
+
+.heading p {
+  margin: 0 0 4px;
+  color: #ef6262;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.heading h2 {
+  margin: 0;
+  font-size: 1.55rem;
+}
+
+.rail {
+  display: grid;
+  grid-auto-columns: min(86vw, 560px);
+  grid-auto-flow: column;
+  gap: 14px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 0 2px 12px;
+  scroll-snap-type: inline mandatory;
+  scrollbar-width: thin;
+}
+
+.card {
+  position: relative;
+  aspect-ratio: 1536 / 890;
+  overflow: hidden;
+  border: 1px solid #3a3d43;
+  border-radius: 22px;
+  background: #17191d;
+  cursor: pointer;
+  scroll-snap-align: start;
+  touch-action: pan-x;
+}
+
+.image {
+  object-fit: contain;
+  object-position: center;
+}
+
+.imageOverflow {
+  object-fit: cover;
+  object-position: top center;
+}
+
+.readMore {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .78);
+  color: #fff;
+  padding: 8px 10px;
+  font-size: .75rem;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.empty {
+  border: 1px solid #292c31;
+  border-radius: 20px;
+  background: #17191d;
+  color: #8f939a;
+  padding: 18px;
+}
+
+.modal {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  background: rgba(4, 5, 7, .94);
+  padding: 58px 14px 18px;
+}
+
+.close {
+  position: fixed;
+  z-index: 2;
+  top: max(14px, env(safe-area-inset-top));
+  right: 14px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid #555961;
+  border-radius: 999px;
+  background: #17191d;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.fullImage {
+  position: relative;
+  width: min(96vw, 900px);
+  height: min(88vh, 1200px);
+}
+
+.fullImage .image {
+  object-fit: contain;
+}
+
+@media (min-width: 620px) {
+  .rail {
+    grid-auto-columns: min(76%, 560px);
+  }
+}

@@ -102,6 +102,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     >
                       Documents
                     </Link>
+                    <Link
+                      href="/business-card"
+                      className="inline-flex min-h-11 items-center justify-center border border-white/20 bg-white/10 px-4 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-white/20"
+                    >
+                      Business Card
+                    </Link>
                     {isAdmin && (
                       <Link
                         href="/admin"
