@@ -180,6 +180,12 @@ export function DashboardScreen() {
               >
                 Cheat Sheet
               </Link>
+              <Link
+                href="/business-card"
+                className={secondaryButtonClass}
+              >
+                Business Card
+              </Link>
               <button
                 type="button"
                 onClick={() => setSettingsOpen(true)}
