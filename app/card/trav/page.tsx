@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { ReviewCarousel } from "@/components/profile/review-carousel";
 import { VehicleCarousel } from "@/components/profile/vehicle-carousel";
+import { getPublishedConsultantProfile } from "@/lib/public-consultant-profile";
 import styles from "./page.module.css";
 
 const featuredVehicles = [
@@ -121,6 +122,24 @@ export default async function TravisWilkinsonProfile({
   searchParams: Promise<{ vehicle?: string }>;
 }) {
   const { vehicle } = await searchParams;
+  const published = await getPublishedConsultantProfile("trav");
+  const profile = published!;
+  const databaseVehicles = profile.vehicles.map((entry) => ({
+    listingUrl: entry.url,
+    verifiedFallback: {
+      sourceUrl: entry.url,
+      title: entry.title,
+      imageUrl: entry.imageUrl || null,
+      description: entry.description || null,
+      vin: entry.secondaryUrl || null,
+      stock: entry.meta?.match(/Stock\s+([^·]+)/i)?.[1]?.trim() || null,
+      price: entry.meta?.split("·")[0]?.trim() || null,
+    },
+  }));
+  const displayedVehicles = databaseVehicles.length ? databaseVehicles : featuredVehicles;
+  const displayedReviews = profile.reviews.length
+    ? profile.reviews.map((entry) => ({ src: entry.imageUrl, alt: `Review from ${entry.title}`, isLong: entry.meta === "long" }))
+    : reviews;
 
   return (
     <main className={styles.page}>
@@ -129,7 +148,7 @@ export default async function TravisWilkinsonProfile({
           <div className={styles.brandRow}>
             <div className={styles.logoSlot}>
               <Image
-                src="/branding/nxtdox-by-eben.png"
+                src={profile.identity.logoUrl}
                 alt="NXTDox by E.B.E.N."
                 fill
                 priority
@@ -137,14 +156,14 @@ export default async function TravisWilkinsonProfile({
                 className={styles.logoImage}
               />
             </div>
-            <span className={styles.language}>EN · ES</span>
+            <span className={styles.language}>{profile.identity.languageLabel}</span>
           </div>
 
           <div className={styles.identity}>
             <div className={styles.photoFrame}>
               <Image
-                src="/profiles/trav-walker.jpg"
-                alt="Travis Wilkinson at Walker Automotive"
+                src={profile.identity.profileImageUrl}
+                alt={`${profile.identity.displayName} at ${profile.identity.dealership}`}
                 fill
                 priority
                 sizes="(max-width: 640px) 132px, 168px"
@@ -153,23 +172,23 @@ export default async function TravisWilkinsonProfile({
               <span className={styles.wireBadge}>01</span>
             </div>
             <div className={styles.identityCopy}>
-              <p className={styles.eyebrow}>Sales Consultant</p>
-              <h1>Travis Wilkinson</h1>
-              <p className={styles.location}>Walker Automotive · Alexandria, Louisiana</p>
+              <p className={styles.eyebrow}>{profile.identity.jobTitle}</p>
+              <h1>{profile.identity.displayName}</h1>
+              <p className={styles.location}>{profile.identity.dealership} · {profile.identity.location}</p>
             </div>
           </div>
 
           <div className={styles.catchphrases}>
-            <p className={styles.primaryPhrase}>#CallTrav</p>
-            <p>I have full access to all seven Walker Automotive lots. If this isn’t it, we’ll find what you’re looking for.</p>
+            <p className={styles.primaryPhrase}>{profile.content.primaryPhrase}</p>
+            <p>{profile.content.salesQuote}</p>
           </div>
 
           <details className={styles.contactAccordion}>
             <summary>Contact</summary>
             <div className={styles.actions}>
-              <a className={styles.primaryAction} href="tel:+13187877887">Call</a>
-              <a className={styles.secondaryAction} href="sms:+13187877887">Text</a>
-              <a className={styles.secondaryAction} href="mailto:twilkinson@walkerautomotive.com">Email</a>
+              <a className={styles.primaryAction} href={`tel:${profile.identity.phone}`}>{profile.contact.callLabel}</a>
+              <a className={styles.secondaryAction} href={`sms:${profile.identity.phone}`}>{profile.contact.textLabel}</a>
+              <a className={styles.secondaryAction} href={`mailto:${profile.identity.email}`}>{profile.contact.emailLabel}</a>
               <button className={styles.secondaryAction} disabled>Save contact — not connected</button>
             </div>
           </details>
@@ -178,8 +197,8 @@ export default async function TravisWilkinsonProfile({
         <div className={styles.profileGrid}>
           <section className={styles.brandCard} aria-label="Call Trav consultant calling card">
             <Image
-              src="/profiles/trav-call-card.jpg"
-              alt="Call Trav consultant calling card for Travis Wilkinson"
+              src={profile.identity.callingCardImageUrl}
+              alt={`Consultant calling card for ${profile.identity.displayName}`}
               fill
               sizes="(max-width: 619px) 100vw, 300px"
               className={styles.brandCardImage}
@@ -191,18 +210,18 @@ export default async function TravisWilkinsonProfile({
           )}
         </div>
 
-        <VehicleCarousel vehicles={featuredVehicles} initialVehicleVin={vehicle} />
+        <VehicleCarousel vehicles={displayedVehicles} initialVehicleVin={vehicle} />
 
-        <ReviewCarousel reviews={reviews} />
+        <ReviewCarousel reviews={displayedReviews} />
 
         <div className={styles.sections}>
           <a
             className={styles.inventoryButton}
-            href="https://www.walkerautomotive.com/"
+            href={profile.content.inventoryUrl}
             target="_blank"
             rel="noopener noreferrer"
           >
-            Browse Walker Inventory
+            {profile.content.inventoryButtonLabel}
           </a>
           {!wiring.walkaround && (
             <EmptyState number="08" title="Vehicle walk-around" note="No active walk-around video has been published." />
