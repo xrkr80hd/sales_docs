@@ -206,7 +206,10 @@ export function ProfileEditor() {
         </div>
       </section>
 
-      <details className={styles.panel} open>
+      <h2 className={styles.sectionHeader}>Business Card Basics</h2>
+      <p className={styles.sectionIntro}>Identity, contact details, branding and the main public-page message.</p>
+
+      <details className={styles.panel}>
         <summary>Profile and contact information</summary>
         <div className={styles.grid}>
           {([
@@ -224,7 +227,7 @@ export function ProfileEditor() {
         </div>
       </details>
 
-      <details className={styles.panel} open>
+      <details className={styles.panel}>
         <summary>Bio, catchphrases and buttons</summary>
         <div className={styles.grid}>
           <label>Primary phrase<input value={draft.content.primaryPhrase} onChange={(event) => updateContent("primaryPhrase", event.target.value)} /></label>
@@ -238,8 +241,11 @@ export function ProfileEditor() {
         </div>
       </details>
 
+      <h2 className={styles.sectionHeader}>Published Content</h2>
+      <p className={styles.sectionIntro}>Open one section to manage what appears on the public business card.</p>
+
       {collections.map(({ key, title, addLabel, help }) => (
-        <details className={styles.panel} key={key} open={key === "vehicles"}>
+        <details className={styles.panel} key={key}>
           <summary>{title} <small>{draft[key].length}</small></summary>
           <p className={styles.help}>{help}</p>
           <div className={styles.collection}>
