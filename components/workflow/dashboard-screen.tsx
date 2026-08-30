@@ -186,6 +186,9 @@ export function DashboardScreen() {
               >
                 Business Card
               </Link>
+              <Link href="/messenger" className={secondaryButtonClass}>
+                NXTDox Messenger
+              </Link>
               <button
                 type="button"
                 onClick={() => setSettingsOpen(true)}
