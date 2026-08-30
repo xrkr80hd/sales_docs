@@ -13,8 +13,6 @@ import styles from "./profile-editor.module.css";
 type CollectionKey = "vehicles" | "reviews" | "soldGallery" | "videos" | "socialLinks";
 type ProfileRow = {
   consultant_slug: string;
-  draft_content: unknown;
-  published_content: unknown;
   is_published: boolean;
 };
 
@@ -35,7 +33,12 @@ export function ProfileEditor() {
   const [draft, setDraft] = useState<ConsultantProfileContent | null>(null);
   const [notice, setNotice] = useState("");
   const [postedDialog, setPostedDialog] = useState(false);
-  const [creatingLogin, setCreatingLogin] = useState(false);
+
+  async function authFetch(url: string, init?: RequestInit) {
+    const { data: { session } } = await getSupabaseBrowserClient().auth.getSession();
+    if (!session) throw new Error("Please log in again.");
+    return fetch(url, { ...init, headers: { ...init?.headers, authorization: `Bearer ${session.access_token}` } });
+  }
 
   async function loadProfile() {
     if (!isSupabaseConfigured()) {
@@ -43,25 +46,20 @@ export function ProfileEditor() {
       setLoading(false);
       return;
     }
-    const supabase = getSupabaseBrowserClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const { data: { session } } = await getSupabaseBrowserClient().auth.getSession();
+    if (!session) {
       setLoading(false);
       return;
     }
-    const { data, error } = await supabase
-      .from("consultant_profiles")
-      .select("consultant_slug,draft_content,published_content,is_published")
-      .eq("owner_id", user.id)
-      .single();
-    if (error) {
-      setNotice("Your business card has not been attached to this login yet.");
+    const response = await authFetch("/api/me/business-card");
+    const result = await response.json();
+    if (!response.ok) {
+      setNotice(result.error || "Your business card could not be loaded.");
       setLoading(false);
       return;
     }
-    const row = data as ProfileRow;
-    setProfile(row);
-    setDraft(normalizeProfileContent(row.draft_content));
+    setProfile({ consultant_slug: result.card.slug, is_published: Boolean(result.card.publishedAt) });
+    setDraft(normalizeProfileContent(result.card.draft));
     setLoading(false);
   }
 
@@ -73,27 +71,6 @@ export function ProfileEditor() {
     const { error } = await getSupabaseBrowserClient().auth.signInWithPassword({ email, password });
     if (error) {
       setNotice(error.message);
-      setLoading(false);
-      return;
-    }
-    await loadProfile();
-  }
-
-  async function createLogin() {
-    setLoading(true);
-    setNotice("");
-    const { data, error } = await getSupabaseBrowserClient().auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: email.split("@")[0] } },
-    });
-    if (error) {
-      setNotice(error.message);
-      setLoading(false);
-      return;
-    }
-    if (!data.session) {
-      setNotice("Check your email to confirm the login, then return here and log in.");
       setLoading(false);
       return;
     }
@@ -119,39 +96,38 @@ export function ProfileEditor() {
   async function saveDraft() {
     if (!profile || !draft) return;
     setSaving(true);
-    const { error } = await getSupabaseBrowserClient()
-      .from("consultant_profiles")
-      .update({ draft_content: draft, updated_at: new Date().toISOString() })
-      .eq("consultant_slug", profile.consultant_slug);
+    const response = await authFetch("/api/me/business-card", {
+      method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "draft", draft }),
+    });
+    const result = await response.json();
     setSaving(false);
-    setNotice(error ? error.message : "Draft saved. Your public site has not changed.");
+    setNotice(response.ok ? "Draft saved. Your public site has not changed." : result.error);
   }
 
   async function publish() {
     if (!profile || !draft) return;
     setSaving(true);
-    const now = new Date().toISOString();
-    const { error } = await getSupabaseBrowserClient()
-      .from("consultant_profiles")
-      .update({ draft_content: draft, published_content: draft, is_published: true, published_at: now, updated_at: now })
-      .eq("consultant_slug", profile.consultant_slug);
+    const response = await authFetch("/api/me/business-card", {
+      method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "publish", draft }),
+    });
+    const result = await response.json();
     setSaving(false);
-    if (error) {
-      setNotice(error.message);
+    if (!response.ok) {
+      setNotice(result.error);
       return;
     }
-    setProfile({ ...profile, is_published: true, draft_content: draft, published_content: draft });
+    setProfile({ ...profile, is_published: true });
     setPostedDialog(true);
   }
 
   async function unpublish() {
     if (!profile || !window.confirm("Remove this business card from the public site? Your draft will remain saved.")) return;
-    const { error } = await getSupabaseBrowserClient()
-      .from("consultant_profiles")
-      .update({ is_published: false, published_at: null })
-      .eq("consultant_slug", profile.consultant_slug);
-    if (!error) setProfile({ ...profile, is_published: false });
-    setNotice(error ? error.message : "Business card removed from the public site.");
+    const response = await authFetch("/api/me/business-card", {
+      method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "unpublish", draft }),
+    });
+    const result = await response.json();
+    if (response.ok) setProfile({ ...profile, is_published: false });
+    setNotice(response.ok ? "Business card removed from the public site." : result.error);
   }
 
   function changeItem(key: CollectionKey, index: number, field: keyof ProfileListItem, value: string) {
@@ -184,19 +160,16 @@ export function ProfileEditor() {
   async function uploadMedia(event: ChangeEvent<HTMLInputElement>, onComplete: (url: string) => void) {
     const file = event.target.files?.[0];
     if (!file) return;
-    const supabase = getSupabaseBrowserClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
     setNotice(`Uploading ${file.name}…`);
-    const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-");
-    const path = `${user.id}/${crypto.randomUUID()}-${safeName}`;
-    const { error } = await supabase.storage.from("consultant-media").upload(path, file);
-    if (error) {
-      setNotice(error.message);
+    const body = new FormData();
+    body.append("file", file);
+    const response = await authFetch("/api/me/business-card", { method: "POST", body });
+    const result = await response.json();
+    if (!response.ok) {
+      setNotice(result.error);
       return;
     }
-    const { data } = supabase.storage.from("consultant-media").getPublicUrl(path);
-    onComplete(data.publicUrl);
+    onComplete(result.url);
     setNotice("Upload complete. Save the draft when ready.");
   }
 
@@ -210,10 +183,7 @@ export function ProfileEditor() {
           <h1>Business Card Login</h1>
           <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
           <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-          <button type="button" onClick={creatingLogin ? createLogin : signIn}>{creatingLogin ? "Create my login" : "Log in"}</button>
-          <button type="button" className={styles.quiet} onClick={() => setCreatingLogin((current) => !current)}>
-            {creatingLogin ? "I already have a login" : "Create my business-card login"}
-          </button>
+          <button type="button" onClick={signIn}>Log in with NXTDox</button>
           {notice && <p className={styles.notice}>{notice}</p>}
         </section>
       </main>
