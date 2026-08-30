@@ -45,6 +45,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const isDocumentRoute = pathname.startsWith("/documents");
   const isAdminRoute = pathname.startsWith("/admin");
   const isDashboardRoute = pathname === "/dashboard";
+  const isBusinessCardRoute = pathname === "/business-card";
   const isWorkflowRoute = pathname.startsWith("/deal-sheet");
   const appShellClass = isDashboardRoute
     ? "mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-3 pt-2 sm:px-6 lg:px-8"
@@ -69,7 +70,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <DisclosureGate>
         <div className="min-h-screen">
           <div className={appShellClass}>
-            {!isDashboardRoute && !isWorkflowRoute && !isDocumentRoute && (
+            {!isDashboardRoute && !isBusinessCardRoute && !isWorkflowRoute && !isDocumentRoute && (
               <header className="border border-white/10 bg-[#2a2a2e] bg-[url('/bg-card-3x2.jpg')] bg-cover bg-center shadow-[0_24px_60px_rgba(0,0,0,0.3)]">
                 <div className="flex flex-col gap-4 px-5 py-4 sm:px-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
