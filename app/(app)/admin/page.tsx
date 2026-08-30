@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
@@ -176,6 +177,11 @@ export default function AdminPage() {
       </section>
 
       {/* ── Error banner ── */}
+      <Link href="/admin/messenger" className="flex items-center justify-between border border-black/10 bg-white px-5 py-4 font-bold shadow-sm">
+        <span><span className="block text-xs uppercase tracking-widest text-[var(--accent)]">Organizations &amp; permissions</span>Manage NXTDox Messenger</span>
+        <span aria-hidden>→</span>
+      </Link>
+
       {error && (
         <div className="border border-red-900/20 bg-red-50 px-5 py-3 text-sm font-bold text-red-800">
           {error}
