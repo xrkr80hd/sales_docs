@@ -74,6 +74,13 @@ const renderCollage = async (canvas: HTMLCanvasElement, photos: CropPhoto[], sel
   })));
 };
 
+const canvasToPngBlob = (canvas: HTMLCanvasElement) => new Promise<Blob>((resolve, reject) => {
+  canvas.toBlob((blob) => {
+    if (blob) resolve(blob);
+    else reject(new Error("The collage could not be prepared for download."));
+  }, "image/png");
+});
+
 export default function VehiclePostBuilder() {
   const [form, setForm] = useState(initialForm);
   const [photos, setPhotos] = useState<CropPhoto[]>([]);
@@ -229,13 +236,23 @@ INSTRUCTIONS
       setNotice("Add at least one vehicle photo first.");
       return;
     }
-    const canvas = document.createElement("canvas");
-    await renderCollage(canvas, photos);
-    const link = document.createElement("a");
-    link.download = `${[form.year, form.make, form.model].filter(Boolean).join("-") || "walker-vehicle"}-16x9-collage.jpg`;
-    link.href = canvas.toDataURL("image/jpeg", 0.95);
-    link.click();
-    setNotice("Downloaded exactly as shown in the final 16:9 preview.");
+    try {
+      setNotice("Building the complete collage…");
+      const canvas = document.createElement("canvas");
+      await renderCollage(canvas, photos);
+      const blob = await canvasToPngBlob(canvas);
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = `${[form.year, form.make, form.model].filter(Boolean).join("-") || "walker-vehicle"}-16x9-collage.png`;
+      link.href = downloadUrl;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1_000);
+      setNotice("The complete 1920 × 1080 collage downloaded as one PNG image.");
+    } catch {
+      setNotice("The collage did not download. Please try again after the photos finish loading.");
+    }
   };
 
   const copyCaption = async () => {
@@ -341,7 +358,7 @@ INSTRUCTIONS
                 </div>
               </section>
             )}
-            <button className={styles.primary} type="button" onClick={createCollage}>Confirm 16:9 preview and download</button>
+            <button className={styles.primary} type="button" onClick={createCollage}>Download complete collage</button>
           </div>
         </details>
 
