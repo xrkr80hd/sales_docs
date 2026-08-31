@@ -59,7 +59,7 @@ export function SpaceSheetPrintScreen() {
           <Link href="/documents/spaced" className="inline-flex min-h-10 items-center justify-center border border-white/20 bg-white/10 px-4 text-sm font-bold text-white transition hover:bg-white/20">
             Back to SPACED
           </Link>
-          <button type="button" onClick={handlePrint} className="inline-flex min-h-10 items-center justify-center border border-white/20 bg-[var(--accent)] px-4 text-sm font-bold text-white transition hover:bg-[var(--accent-strong)]">
+          <button type="button" onClick={handlePrint} className="inline-flex min-h-10 items-center justify-center border border-white/20 rounded-[16px] bg-[var(--accent)] px-4 text-sm font-bold text-white transition hover:bg-[var(--accent-strong)]">
             Print Form
           </button>
         </div>

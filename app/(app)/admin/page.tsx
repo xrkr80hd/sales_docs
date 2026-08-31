@@ -222,7 +222,7 @@ export default function AdminPage() {
               <button
                 type="submit"
                 disabled={inviteSending}
-                className="h-10 border border-[var(--accent)] bg-[var(--accent)] px-5 text-[11px] font-bold uppercase tracking-[0.08em] text-white disabled:opacity-40"
+                className="h-10 rounded-[16px] border border-[var(--accent)] bg-[var(--accent)] px-5 text-[11px] font-bold uppercase tracking-[0.08em] text-white disabled:opacity-40"
               >
                 {inviteSending ? "Sending…" : "Invite"}
               </button>
@@ -281,7 +281,7 @@ export default function AdminPage() {
                       <button
                         type="button"
                         onClick={() => handleRemoveUser(u.id, u.email)}
-                        className="shrink-0 border border-transparent px-2 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                        className="shrink-0 rounded-[16px] border border-transparent px-2 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
                       >
                         Remove
                       </button>
@@ -340,7 +340,7 @@ export default function AdminPage() {
                       <button
                         type="button"
                         onClick={() => handleRevokeInvite(inv.id, inv.email)}
-                        className="shrink-0 border border-transparent px-2 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                        className="shrink-0 rounded-[16px] border border-transparent px-2 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
                       >
                         {inv.accepted_at ? "Delete" : "Revoke"}
                       </button>

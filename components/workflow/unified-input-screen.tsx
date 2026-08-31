@@ -55,7 +55,7 @@ function Section({
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between bg-[var(--accent)] bg-[url('/bg-card-3x2.jpg')] bg-cover bg-center px-5 py-4 text-left"
+        className="flex w-full items-center justify-between rounded-[16px] bg-[var(--accent)] bg-[url('/bg-card-3x2.jpg')] bg-cover bg-center px-5 py-4 text-left"
       >
         <span className="flex items-center gap-2">
           {complete && (
@@ -718,7 +718,7 @@ export function UnifiedInputScreen({
               <button
                 type="button"
                 onClick={() => updateField("spacedConfirmed", true)}
-                className="mt-5 inline-flex min-h-10 items-center justify-center border border-[var(--accent)] bg-[var(--accent)] px-6 text-xs font-bold uppercase tracking-[0.08em] text-white"
+                className="mt-5 inline-flex min-h-10 items-center justify-center border border-[var(--accent)] rounded-[16px] bg-[var(--accent)] px-6 text-xs font-bold uppercase tracking-[0.08em] text-white"
               >
                 Confirm Selections
               </button>
@@ -1451,7 +1451,7 @@ export function UnifiedInputScreen({
             <button
               type="button"
               onClick={handlePrintAll}
-              className="flex min-h-14 w-full items-center justify-center border border-[var(--accent)] bg-[var(--accent)] px-6 text-base font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[var(--accent)]/90 sm:col-span-2"
+              className="flex min-h-14 w-full items-center justify-center border border-[var(--accent)] bg-[var(--accent)] px-6 text-base font-bold uppercase tracking-[0.08em] text-white transition hover:rounded-[16px] bg-[var(--accent)]/90 sm:col-span-2"
             >
               Print All Forms
             </button>
@@ -1575,7 +1575,7 @@ export function UnifiedInputScreen({
               <button
                 type="button"
                 onClick={vinCheckConfirm}
-                className="min-h-12 border border-[var(--accent)] bg-[var(--accent)] font-bold uppercase tracking-[0.06em] text-white transition hover:bg-[var(--accent)]/90"
+                className="min-h-12 border border-[var(--accent)] bg-[var(--accent)] font-bold uppercase tracking-[0.06em] text-white transition hover:rounded-[16px] bg-[var(--accent)]/90"
               >
                 Yes, It&apos;s Correct
               </button>

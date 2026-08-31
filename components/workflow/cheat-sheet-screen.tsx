@@ -397,7 +397,7 @@ export function CheatSheetScreen() {
                   el?.scrollIntoView({ behavior: "smooth", block: "start" });
                 });
               }}
-              className="flex w-full items-center justify-between bg-[var(--accent)] bg-[url('/bg-card-3x2.jpg')] bg-cover bg-center px-5 py-4 text-left transition sm:px-6"
+              className="flex w-full items-center justify-between rounded-[16px] bg-[var(--accent)] bg-[url('/bg-card-3x2.jpg')] bg-cover bg-center px-5 py-4 text-left transition sm:px-6"
             >
               <h2 className="text-base font-bold text-white sm:text-lg">{section.title}</h2>
               <span className="ml-3 shrink-0 text-xl text-white/70" aria-hidden="true">

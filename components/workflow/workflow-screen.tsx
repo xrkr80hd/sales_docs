@@ -435,7 +435,7 @@ export function WorkflowScreen({ dealType = "used" }: { dealType?: "used" | "new
             tabIndex={0}
             onClick={() => setOpenSections(prev => ({ ...prev, overview: !prev.overview }))}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpenSections(prev => ({ ...prev, overview: !prev.overview })); } }}
-            className="flex w-full cursor-pointer items-center justify-between bg-[var(--accent)] bg-[url('/bg-card-3x2.jpg')] bg-cover bg-center p-5 text-left sm:p-6"
+            className="flex w-full cursor-pointer items-center justify-between rounded-[16px] bg-[var(--accent)] bg-[url('/bg-card-3x2.jpg')] bg-cover bg-center p-5 text-left sm:p-6"
           >
             <div>
               <h3 className="text-2xl font-bold text-white">Deal Overview</h3>

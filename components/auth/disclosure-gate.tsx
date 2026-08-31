@@ -151,7 +151,7 @@ export function DisclosureGate({ children }: { children: ReactNode }) {
           <button
             type="button"
             onClick={handleAccept}
-            className="inline-flex min-h-12 items-center justify-center border border-[var(--accent)] bg-[var(--accent)] px-6 text-sm font-bold uppercase tracking-[0.08em] text-white"
+            className="inline-flex min-h-12 items-center justify-center border border-[var(--accent)] rounded-[16px] bg-[var(--accent)] px-6 text-sm font-bold uppercase tracking-[0.08em] text-white"
           >
             I Agree &mdash; Continue
           </button>
