@@ -213,8 +213,7 @@ export function ProfileEditor() {
         <div className={styles.grid}>
           {([
             ["displayName", "Full name"], ["jobTitle", "Job title"], ["dealership", "Dealership"], ["location", "Location"],
-            ["phone", "Phone"], ["email", "Email"], ["languageLabel", "Language label"], ["logoUrl", "Logo URL"],
-            ["profileImageUrl", "Profile photo URL"], ["callingCardImageUrl", "Calling-card image URL"],
+            ["phone", "Phone"], ["email", "Email"], ["languageLabel", "Language label"],
           ] as Array<[keyof ConsultantProfileContent["identity"], string]>).map(([field, label]) => (
             <label key={field}>{label}<input value={draft.identity[field]} onChange={(event) => updateIdentity(field, event.target.value)} /></label>
           ))}
@@ -262,7 +261,6 @@ export function ProfileEditor() {
                   <label>Title or name<input value={entry.title} onChange={(event) => changeItem(key, index, "title", event.target.value)} /></label>
                   <label>Link<input type="url" value={entry.url} onChange={(event) => changeItem(key, index, "url", event.target.value)} /></label>
                   <label className={styles.wide}>Description or caption<textarea value={entry.description} onChange={(event) => changeItem(key, index, "description", event.target.value)} /></label>
-                  <label className={styles.wide}>Image, thumbnail or uploaded-video URL<input value={entry.imageUrl} onChange={(event) => changeItem(key, index, "imageUrl", event.target.value)} /></label>
                   <label>Upload media<input type="file" accept="image/*,video/mp4,video/webm,video/quicktime" onChange={(event) => uploadMedia(event, (url) => changeItem(key, index, "imageUrl", url))} /></label>
                   <label>Extra details<input value={entry.meta ?? ""} onChange={(event) => changeItem(key, index, "meta", event.target.value)} /></label>
                 </div>

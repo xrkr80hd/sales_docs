@@ -77,7 +77,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   <span className="text-sm font-black tracking-[0.08em]">NXTDox</span>
                   <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/40">Walker Automotive</span>
                 </Link>
-                <button type="button" onClick={() => setNavigationOpen(true)} aria-label="Open navigation" aria-expanded={navigationOpen} className="grid h-10 w-10 place-items-center rounded-md border border-white/15 bg-white/5 text-2xl leading-none text-white">
+                <button type="button" onClick={() => setNavigationOpen(true)} aria-label="Open navigation" aria-expanded={navigationOpen} className="grid h-10 w-10 place-items-center rounded-[16px] border border-white/15 bg-white/5 text-2xl leading-none text-white">
                   ☰
                 </button>
               </div>
@@ -88,14 +88,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <aside className="absolute right-0 top-0 flex h-full w-[min(86vw,340px)] flex-col bg-[#171719] text-white shadow-2xl">
                 <div className="flex h-16 items-center justify-between border-b border-white/10 px-5">
                   <div><p className="text-sm font-black tracking-wider">NXTDox</p><p className="text-[9px] uppercase tracking-[.2em] text-white/35">Navigation</p></div>
-                  <button type="button" onClick={() => setNavigationOpen(false)} aria-label="Close navigation" className="grid h-10 w-10 place-items-center rounded-md border border-white/10 text-xl">×</button>
+                  <button type="button" onClick={() => setNavigationOpen(false)} aria-label="Close navigation" className="grid h-10 w-10 place-items-center rounded-[16px] border border-white/10 text-xl">×</button>
                 </div>
                 <nav className="grid gap-1 p-3">
                   {[
                     ["Dashboard", "/dashboard"], ["Documents", "/documents"], ["Business Card", "/business-card"], ["NXTDox Messenger", "/messenger"], ["Previous Deals", "/deals"]
-                  ].map(([label, href]) => <Link key={href} href={href} className={`rounded-md px-4 py-3 text-sm font-bold ${pathname === href || (href !== "/dashboard" && pathname.startsWith(href)) ? "bg-[var(--accent)]" : "hover:bg-white/5"}`}>{label}</Link>)}
-                  {isWorkflowRoute && <button type="button" onClick={() => { setNavigationOpen(false); setDrawerOpen(true); }} className="rounded-md px-4 py-3 text-left text-sm font-bold hover:bg-white/5">Deal Documents</button>}
-                  {isAdmin && <><div className="my-2 border-t border-white/10"/><Link href="/admin" className={`rounded-md px-4 py-3 text-sm font-bold ${isAdminRoute ? "bg-[var(--accent)]" : "hover:bg-white/5"}`}>Admin Console</Link><Link href="/admin/messenger" className="rounded-md px-4 py-3 text-sm font-bold hover:bg-white/5">Messenger Permissions</Link></>}
+                  ].map(([label, href]) => <Link key={href} href={href} className={`rounded-[16px] px-4 py-3 text-sm font-bold ${pathname === href || (href !== "/dashboard" && pathname.startsWith(href)) ? "bg-[var(--accent)]" : "hover:bg-white/5"}`}>{label}</Link>)}
+                  {isWorkflowRoute && <button type="button" onClick={() => { setNavigationOpen(false); setDrawerOpen(true); }} className="rounded-[16px] px-4 py-3 text-left text-sm font-bold hover:bg-white/5">Deal Documents</button>}
+                  {isAdmin && <><div className="my-2 border-t border-white/10"/><Link href="/admin" className={`rounded-[16px] px-4 py-3 text-sm font-bold ${isAdminRoute ? "bg-[var(--accent)]" : "hover:bg-white/5"}`}>Admin Console</Link><Link href="/admin/messenger" className="rounded-[16px] px-4 py-3 text-sm font-bold hover:bg-white/5">Messenger Permissions</Link></>}
                 </nav>
                 <button type="button" onClick={() => { setNavigationOpen(false); setSettingsOpen(true); }} className="mt-auto border-t border-white/10 px-7 py-5 text-left text-sm font-bold text-white/70">Settings</button>
               </aside>

@@ -126,7 +126,7 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
         aria-label="Close settings"
       />
       <aside className="relative z-10 flex h-full w-full max-w-md flex-col overflow-y-auto bg-white shadow-2xl sm:max-w-lg">
-        <div className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--accent)] bg-[url('/bg-drawer-9x16.jpg')] bg-cover bg-top px-5 py-4 print:bg-none">
+        <div className="flex items-center justify-between border-b border-[var(--border)] rounded-[16px] bg-[var(--accent)] bg-[url('/bg-drawer-9x16.jpg')] bg-cover bg-top px-5 py-4 print:bg-none">
           <h2 className="text-xl font-bold text-white">Settings</h2>
           <button
             type="button"
@@ -190,7 +190,7 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
                   </div>
                 </div>
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <button type="button" onClick={saveDealerNow} disabled={saving} className="inline-flex min-h-10 items-center justify-center border border-[var(--accent)] bg-[var(--accent)] px-4 text-xs font-bold uppercase tracking-[0.08em] text-white disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
+                  <button type="button" onClick={saveDealerNow} disabled={saving} className="inline-flex min-h-10 items-center justify-center border border-[var(--accent)] rounded-[16px] bg-[var(--accent)] px-4 text-xs font-bold uppercase tracking-[0.08em] text-white disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
                   <button type="button" onClick={clearDealerNow} className="inline-flex min-h-10 items-center justify-center border border-[var(--foreground)] bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] text-[var(--foreground)]">Clear</button>
                   <button type="button" onClick={deleteDealerNow} className="inline-flex min-h-10 items-center justify-center border border-[var(--accent)] bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] text-[var(--accent)]">Delete</button>
                 </div>
@@ -235,7 +235,7 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
                   </label>
                 </div>
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <button type="button" onClick={saveConsultantNow} disabled={saving} className="inline-flex min-h-10 items-center justify-center border border-[var(--accent)] bg-[var(--accent)] px-4 text-xs font-bold uppercase tracking-[0.08em] text-white disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
+                  <button type="button" onClick={saveConsultantNow} disabled={saving} className="inline-flex min-h-10 items-center justify-center border border-[var(--accent)] rounded-[16px] bg-[var(--accent)] px-4 text-xs font-bold uppercase tracking-[0.08em] text-white disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
                   <button type="button" onClick={clearConsultantNow} className="inline-flex min-h-10 items-center justify-center border border-[var(--foreground)] bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] text-[var(--foreground)]">Clear</button>
                   <button type="button" onClick={deleteConsultantNow} className="inline-flex min-h-10 items-center justify-center border border-[var(--accent)] bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] text-[var(--accent)]">Delete</button>
                 </div>
@@ -249,7 +249,7 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
               <Link
                 href="/admin"
                 onClick={onClose}
-                className="flex w-full items-center justify-center gap-2 border border-[var(--accent)] bg-[var(--accent)] px-4 py-3 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:opacity-90"
+                className="flex w-full items-center justify-center gap-2 border border-[var(--accent)] rounded-[16px] bg-[var(--accent)] px-4 py-3 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:opacity-90"
               >
                 Go To Team Management
               </Link>

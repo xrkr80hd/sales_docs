@@ -87,9 +87,9 @@ export function DashboardScreen() {
     ? allDeals.filter((deal) => deal.id !== lastDeal.id)
     : allDeals;
   const pickerDeals = previousDeals.length > 0 ? previousDeals : allDeals;
-  const primaryButtonClass = "inline-flex h-12 w-full items-center justify-center border-2 border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[var(--accent)]/90 md:h-11";
-  const secondaryButtonClass = "inline-flex h-12 w-full items-center justify-center border border-white/15 bg-white/5 px-4 text-sm font-bold uppercase tracking-[0.08em] text-white/70 transition hover:bg-white/10 hover:text-white md:h-11";
-  const accentGhostButtonClass = "inline-flex h-12 w-full items-center justify-center border border-[var(--accent)] bg-[var(--accent)]/10 px-4 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[var(--accent)]/20 md:h-11";
+  const primaryButtonClass = "inline-flex h-12 w-full items-center justify-center rounded-[16px] border-2 border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[var(--accent)]/90 md:h-11";
+  const secondaryButtonClass = "inline-flex h-12 w-full items-center justify-center rounded-[16px] border border-white/15 bg-white/5 px-4 text-sm font-bold uppercase tracking-[0.08em] text-white/70 transition hover:bg-white/10 hover:text-white md:h-11";
+  const accentGhostButtonClass = "inline-flex h-12 w-full items-center justify-center rounded-[16px] border border-[var(--accent)] bg-[var(--accent)]/10 px-4 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[var(--accent)]/20 md:h-11";
 
   return (
     <>
@@ -142,7 +142,7 @@ export function DashboardScreen() {
                     <button
                       type="button"
                       onClick={() => resumeDeal(lastDeal)}
-                      className="inline-flex h-12 w-full flex-col items-center justify-center overflow-hidden border-2 border-[var(--accent)] bg-[var(--accent)] px-4 text-white transition hover:bg-[var(--accent)]/90 md:h-11"
+                      className="inline-flex h-12 w-full flex-col items-center justify-center overflow-hidden rounded-[16px] border-2 border-[var(--accent)] bg-[var(--accent)] px-4 text-white transition hover:bg-[var(--accent)]/90 md:h-11"
                     >
                       <span className="text-[11px] font-bold uppercase leading-tight tracking-[0.08em]">Resume Deal</span>
                       <span className="max-w-full truncate text-[10px] leading-tight text-white/80">{name}{vehicle ? ` · ${vehicle}` : ""}</span>
@@ -153,7 +153,7 @@ export function DashboardScreen() {
                   return (
                     <Link
                       href={localResume.dealType === "new" ? "/deal-sheet/new" : "/deal-sheet"}
-                      className="inline-flex h-12 w-full flex-col items-center justify-center overflow-hidden border-2 border-[var(--accent)] bg-[var(--accent)] px-4 text-white transition hover:bg-[var(--accent)]/90 md:h-11"
+                      className="inline-flex h-12 w-full flex-col items-center justify-center overflow-hidden rounded-[16px] border-2 border-[var(--accent)] bg-[var(--accent)] px-4 text-white transition hover:bg-[var(--accent)]/90 md:h-11"
                     >
                       <span className="text-[11px] font-bold uppercase leading-tight tracking-[0.08em]">Resume Deal</span>
                       <span className="max-w-full truncate text-[10px] leading-tight text-white/80">{localResume.name}</span>
@@ -254,7 +254,7 @@ export function DashboardScreen() {
                             const ok = await deleteDeal(deal.id);
                             if (ok) setAllDeals((prev) => prev.filter((d) => d.id !== deal.id));
                           }}
-                          className="mr-3 shrink-0 border border-transparent px-2 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white/40 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                          className="mr-3 shrink-0 rounded-[16px] border border-transparent px-2 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white/40 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
                           aria-label={`Delete ${name}'s deal`}
                         >
                           Delete

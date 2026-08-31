@@ -39,7 +39,7 @@ export function DocumentDrawer({ dealType, open, onClose }: DocumentDrawerProps)
         className={`relative z-10 flex h-full w-full max-w-sm flex-col overflow-y-auto shadow-[0_0_40px_rgba(190,23,23,0.15),0_0_80px_rgba(0,0,0,0.4)] transition-transform duration-200 ${open ? "translate-x-0" : "translate-x-full"}`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between bg-[var(--accent)] bg-[url('/bg-drawer-9x16.jpg')] bg-cover bg-top px-5 py-5">
+        <div className="flex items-center justify-between rounded-[16px] bg-[var(--accent)] bg-[url('/bg-drawer-9x16.jpg')] bg-cover bg-top px-5 py-5">
           <div>
             <h2 className="text-xl font-bold text-white">My Workflow</h2>
           </div>
@@ -147,7 +147,7 @@ export function DocumentDrawer({ dealType, open, onClose }: DocumentDrawerProps)
           <Link
             href="/documents/cheat-sheet"
             onClick={onClose}
-            className="inline-flex min-h-11 w-full items-center justify-center border border-[var(--accent)] bg-[var(--accent)] text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[var(--accent-strong)]"
+            className="inline-flex min-h-11 w-full items-center justify-center border border-[var(--accent)] rounded-[16px] bg-[var(--accent)] text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[var(--accent-strong)]"
           >
             Cheat Sheet
           </Link>
@@ -176,7 +176,7 @@ export function DocumentDrawerTrigger({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="fixed right-0 top-1/2 z-40 -translate-y-1/2 border border-r-0 border-white/20 bg-[var(--accent)] px-2 py-4 shadow-[0_0_20px_rgba(190,23,23,0.2),0_8px_24px_rgba(0,0,0,0.3)] transition hover:bg-[var(--accent-strong)] print:hidden"
+      className="fixed right-0 top-1/2 z-40 -translate-y-1/2 border border-r-0 border-white/20 rounded-[16px] bg-[var(--accent)] px-2 py-4 shadow-[0_0_20px_rgba(190,23,23,0.2),0_8px_24px_rgba(0,0,0,0.3)] transition hover:bg-[var(--accent-strong)] print:hidden"
       aria-label="Open documents"
     >
       <svg

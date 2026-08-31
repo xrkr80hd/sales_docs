@@ -70,7 +70,7 @@ export function DocToolbar({ vin, mileage, saved, onSave, onPrint, extraActions 
           <button
             type="button"
             onClick={onPrint}
-            className="inline-flex min-h-10 items-center justify-center border border-white/20 bg-[var(--accent)] px-4 text-sm font-bold text-white transition hover:bg-[var(--accent-strong)]"
+            className="inline-flex min-h-10 items-center justify-center border border-white/20 rounded-[16px] bg-[var(--accent)] px-4 text-sm font-bold text-white transition hover:bg-[var(--accent-strong)]"
           >
             Print Form
           </button>
@@ -132,7 +132,7 @@ export function DocToolbar({ vin, mileage, saved, onSave, onPrint, extraActions 
           <button
             type="button"
             onClick={() => { onPrint(); setMenuOpen(false); }}
-            className="inline-flex min-h-10 items-center justify-center border border-white/20 bg-[var(--accent)] px-4 text-sm font-bold text-white transition hover:bg-[var(--accent-strong)]"
+            className="inline-flex min-h-10 items-center justify-center border border-white/20 rounded-[16px] bg-[var(--accent)] px-4 text-sm font-bold text-white transition hover:bg-[var(--accent-strong)]"
           >
             Print Form
           </button>

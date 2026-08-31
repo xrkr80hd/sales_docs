@@ -90,7 +90,7 @@ export function useVinConfirmation() {
           <button
             type="button"
             onClick={() => finish(true)}
-            className="min-h-10 border border-[var(--accent)] bg-[var(--accent)] px-4 font-bold text-white"
+            className="min-h-10 border border-[var(--accent)] rounded-[16px] bg-[var(--accent)] px-4 font-bold text-white"
           >
             {request.vin ? "VIN Looks Right" : "Print Anyway"}
           </button>

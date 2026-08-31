@@ -20,7 +20,7 @@ export default function DocumentsPage() {
           href="/print/all"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 inline-flex min-h-11 items-center justify-center border border-[var(--accent)] bg-[var(--accent)] px-5 text-sm font-bold uppercase tracking-[0.08em] text-white"
+          className="mt-4 inline-flex min-h-11 items-center justify-center border border-[var(--accent)] rounded-[16px] bg-[var(--accent)] px-5 text-sm font-bold uppercase tracking-[0.08em] text-white"
         >
           Print All Forms
         </Link>
@@ -71,7 +71,7 @@ export default function DocumentsPage() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Link
                     href={doc.href}
-                    className="inline-flex min-h-11 items-center justify-center border border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-bold uppercase tracking-[0.08em] text-white"
+                    className="inline-flex min-h-11 items-center justify-center border border-[var(--accent)] rounded-[16px] bg-[var(--accent)] px-4 text-sm font-bold uppercase tracking-[0.08em] text-white"
                   >
                     Open Document
                   </Link>

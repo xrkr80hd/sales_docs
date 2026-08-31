@@ -61,7 +61,7 @@ export function NotificationPrompt() {
         <button
           type="button"
           onClick={handleAllow}
-          className="flex min-h-10 flex-1 items-center justify-center border border-[var(--accent)] bg-[var(--accent)] text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:brightness-110"
+          className="flex min-h-10 flex-1 items-center justify-center border border-[var(--accent)] rounded-[16px] bg-[var(--accent)] text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:brightness-110"
         >
           Allow
         </button>
