@@ -40,6 +40,20 @@ export function ReviewCarousel({ reviews }: { reviews: ReviewImage[] }) {
     lastTapRef.current = now;
   };
 
+  const expandedIndex = expanded ? reviews.findIndex((r) => r.src === expanded.src) : -1;
+
+  const showNext = () => {
+    if (expandedIndex < 0 || reviews.length <= 1) return;
+    const nextIdx = (expandedIndex + 1) % reviews.length;
+    setExpanded(reviews[nextIdx]);
+  };
+
+  const showPrev = () => {
+    if (expandedIndex < 0 || reviews.length <= 1) return;
+    const prevIdx = (expandedIndex - 1 + reviews.length) % reviews.length;
+    setExpanded(reviews[prevIdx]);
+  };
+
   return (
     <section className={styles.section} aria-labelledby="reviews-heading">
       <div className={styles.heading}>
@@ -64,9 +78,8 @@ export function ReviewCarousel({ reviews }: { reviews: ReviewImage[] }) {
               className={styles.card}
               tabIndex={0}
               role="button"
-              aria-label={`${review.alt}. Double-tap to expand.`}
-              onClick={() => handleTap(review)}
-              onDoubleClick={() => setExpanded(review)}
+              aria-label={`${review.alt}. Tap to expand.`}
+              onClick={() => setExpanded(review)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") setExpanded(review);
               }}
@@ -89,9 +102,7 @@ export function ReviewCarousel({ reviews }: { reviews: ReviewImage[] }) {
                   });
                 }}
               />
-              {needsExpansion.has(review.src) && (
-                <span className={styles.readMore}>Double-tap to read more</span>
-              )}
+              <span className={styles.readMore}>Tap to expand</span>
             </article>
           ))}
         </div>
@@ -102,8 +113,30 @@ export function ReviewCarousel({ reviews }: { reviews: ReviewImage[] }) {
           <button className={styles.close} type="button" onClick={() => setExpanded(null)} aria-label="Close review">
             ×
           </button>
-          <div className={styles.fullImage}>
-            <Image src={expanded.src} alt={expanded.alt} fill sizes="96vw" className={styles.image} />
+
+          {reviews.length > 1 && (
+            <>
+              <button
+                className={styles.navArrowPrev}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); showPrev(); }}
+                aria-label="Previous review"
+              >
+                ‹
+              </button>
+              <button
+                className={styles.navArrowNext}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); showNext(); }}
+                aria-label="Next review"
+              >
+                ›
+              </button>
+            </>
+          )}
+
+          <div className={styles.fullImage} onClick={(e) => e.stopPropagation()}>
+            <Image src={expanded.src} alt={expanded.alt} fill sizes="96vw" className={styles.image} priority />
           </div>
         </div>
       )}

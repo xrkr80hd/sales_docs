@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #1c1c1e;
-  --foreground: #171717;
-  --panel: #2a2a2e;
-  --panel-strong: #2a2a2e;
-  --border: #3a3a3e;
-  --muted: #999;
+  --background: #0d0e10;
+  --foreground: #f7f7f7;
+  --panel: #17191d;
+  --panel-strong: #22252a;
+  --border: #2e3035;
+  --muted: #9aa0a6;
   --accent: #be1717;
-  --accent-strong: #8f1111;
-  --success: #205f33;
+  --accent-strong: #df1c1c;
+  --success: #163d25;
   --warn: #8b5600;
 }
 
@@ -26,14 +26,19 @@
 
 html {
   background:
-    radial-gradient(circle at top left, rgb(190 23 23 / 0.12), transparent 34%),
-    linear-gradient(180deg, #222226 0%, #121214 100%);
+    radial-gradient(circle at 12% 0%, rgba(190, 23, 23, 0.24), transparent 32rem),
+    #0d0e10;
+  min-height: 100vh;
+  color-scheme: dark;
 }
 
 body {
-  background: #1c1c1e;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(190, 23, 23, 0.24), transparent 32rem),
+    #0d0e10;
   color: var(--foreground);
   font-family: var(--font-barlow), Arial, Helvetica, sans-serif;
+  min-height: 100vh;
 }
 
 a,
@@ -45,17 +50,22 @@ textarea {
 }
 
 ::selection {
-  background: rgb(190 23 23 / 0.18);
+  background: rgba(190, 23, 23, 0.35);
+  color: #fff;
+}
+
+.card-panel {
+  border: 1px solid #2e3035;
+  border-radius: 24px;
+  background: linear-gradient(155deg, #22252a, #131519 68%);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
 }
 
 @media print {
-  html {
-    background: #fff;
-  }
-
+  html,
   body {
-    background: #fff;
-    color: #000;
+    background: #fff !important;
+    color: #000 !important;
   }
 
   .print\:bg-none {

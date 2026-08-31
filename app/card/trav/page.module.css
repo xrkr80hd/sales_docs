@@ -562,13 +562,17 @@
 
 .vehicleMedia {
   display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
   overflow: hidden;
   text-decoration: none;
+  background: #000;
 }
 
 .vehicleMedia img {
   width: 100%;
   height: 100%;
+  aspect-ratio: 3 / 2;
   object-fit: cover;
 }
 

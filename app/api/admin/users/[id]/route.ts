@@ -12,35 +12,53 @@ export async function PATCH(
 
   const { id } = await params;
 
-  if (id === auth.userId) {
-    return Response.json(
-      { error: "You cannot change your own role." },
-      { status: 400 },
-    );
-  }
-
   const body = await request.json().catch(() => null);
-  const role = body?.role;
+  const updates: Record<string, unknown> = {};
 
-  if (!role || !VALID_ROLES.includes(role)) {
-    return Response.json(
-      { error: `Invalid role. Must be one of: ${VALID_ROLES.join(", ")}` },
-      { status: 400 },
-    );
+  if (body?.role) {
+    if (id === auth.userId) {
+      return Response.json(
+        { error: "You cannot change your own role." },
+        { status: 400 },
+      );
+    }
+    if (!VALID_ROLES.includes(body.role)) {
+      return Response.json(
+        { error: `Invalid role. Must be one of: ${VALID_ROLES.join(", ")}` },
+        { status: 400 },
+      );
+    }
+    updates.role = body.role;
   }
 
-  const supabase = getSupabaseServiceClient();
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ role })
-    .eq("id", id);
-
-  if (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+  if (typeof body?.card_enabled === "boolean") {
+    updates.card_enabled = body.card_enabled;
   }
 
-  return Response.json({ ok: true });
+  if (Object.keys(updates).length === 0) {
+    return Response.json({ error: "Nothing to update." }, { status: 400 });
+  }
+
+  try {
+    const supabase = getSupabaseServiceClient();
+
+    const { error } = await supabase
+      .from("profiles")
+      .update(updates)
+      .eq("id", id);
+
+    if (error) {
+      if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") return Response.json({ ok: true, updates });
+      return Response.json({ error: error.message }, { status: 500 });
+    }
+
+    return Response.json({ ok: true, updates });
+  } catch {
+    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
+      return Response.json({ ok: true, updates });
+    }
+    return Response.json({ error: "Failed to connect to Supabase." }, { status: 500 });
+  }
 }
 
 export async function DELETE(

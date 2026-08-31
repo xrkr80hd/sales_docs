@@ -12,6 +12,7 @@ type UserRow = {
   role: string;
   display_name: string | null;
   created_at: string;
+  card_enabled?: boolean;
 };
 
 type InviteRow = {
@@ -136,7 +137,6 @@ export default function AdminPage() {
 
   async function handleRoleChange(id: string, newRole: string) {
     setError("");
-    // Optimistic: update local state immediately so the page doesn't jump
     setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role: newRole } : u)));
     try {
       await apiFetch(`/api/admin/users/${id}`, {
@@ -145,7 +145,21 @@ export default function AdminPage() {
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update role.");
-      // Revert on failure
+      loadData();
+    }
+  }
+
+  async function handleToggleCard(id: string, currentStatus: boolean) {
+    setError("");
+    const nextStatus = !currentStatus;
+    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, card_enabled: nextStatus } : u)));
+    try {
+      await apiFetch(`/api/admin/users/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ card_enabled: nextStatus }),
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to toggle card permission.");
       loadData();
     }
   }
@@ -177,28 +191,28 @@ export default function AdminPage() {
       </section>
 
       {/* ── Error banner ── */}
-      <Link href="/admin/messenger" className="flex items-center justify-between border border-black/10 bg-white px-5 py-4 font-bold shadow-sm">
-        <span><span className="block text-xs uppercase tracking-widest text-[var(--accent)]">Organizations &amp; permissions</span>Manage NXTDox Messenger</span>
-        <span aria-hidden>→</span>
+      <Link href="/admin/messenger" className="flex items-center justify-between rounded-2xl border border-[#2e3035] bg-gradient-to-r from-[#22252a] to-[#131519] px-6 py-4 font-bold text-white shadow-lg transition hover:border-[#be1717]">
+        <span><span className="block text-xs uppercase tracking-widest text-[var(--accent)] font-mono">Organizations &amp; permissions</span>Manage NXTDox Messenger</span>
+        <span aria-hidden className="text-xl">→</span>
       </Link>
 
       {error && (
-        <div className="border border-red-900/20 bg-red-50 px-5 py-3 text-sm font-bold text-red-800">
+        <div className="rounded-xl border border-red-800/40 bg-red-950/40 px-5 py-3 text-sm font-bold text-red-300">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="border border-black/10 bg-white p-6">
-          <p className="text-sm font-bold text-[var(--muted)]">Loading…</p>
+        <div className="rounded-2xl border border-[#2e3035] bg-[#17191d] p-8 text-center">
+          <p className="text-sm font-bold text-neutral-400">Loading admin console…</p>
         </div>
       ) : (
-        /* ── Single unified panel ── */
-        <div className="overflow-hidden border border-black/10 bg-white shadow-[0_18px_44px_rgba(35,23,12,0.08)]">
+        /* ── Single unified dark panel ── */
+        <div className="overflow-hidden rounded-2xl border border-[#2e3035] bg-gradient-to-b from-[#1c1f24] to-[#121418] shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
 
           {/* ── Send Invite (inline) ── */}
-          <div className="px-5 py-4 sm:px-6">
-            <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+          <div className="px-5 py-5 sm:px-6">
+            <h3 className="text-xs font-black uppercase tracking-[0.18em] text-[var(--accent)] font-mono">
               Send Invite
             </h3>
             <form onSubmit={handleInvite} className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
@@ -208,13 +222,13 @@ export default function AdminPage() {
                 placeholder="team@walkerautomotive.com"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.currentTarget.value)}
-                className="h-10 border border-[var(--border)] bg-white px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+                className="h-11 rounded-xl border border-[#2e3035] bg-[#0f1114] px-4 text-sm text-[#f7f7f7] outline-none transition focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]"
               />
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.currentTarget.value as "user" | "admin")}
                 title="Invite role"
-                className="h-10 border border-[var(--border)] bg-white px-3 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+                className="h-11 rounded-xl border border-[#2e3035] bg-[#0f1114] px-4 text-sm text-[#f7f7f7] outline-none transition focus:border-[var(--accent)]"
               >
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
@@ -222,125 +236,156 @@ export default function AdminPage() {
               <button
                 type="submit"
                 disabled={inviteSending}
-                className="h-10 border border-[var(--accent)] bg-[var(--accent)] px-5 text-[11px] font-bold uppercase tracking-[0.08em] text-white disabled:opacity-40"
+                className="h-11 rounded-xl bg-[var(--accent)] px-6 text-[11px] font-black uppercase tracking-[0.1em] text-white transition hover:bg-red-600 disabled:opacity-40"
               >
                 {inviteSending ? "Sending…" : "Invite"}
               </button>
             </form>
             {inviteStatus && (
-              <p className="mt-2 text-xs font-bold text-[var(--success)]">
+              <p className="mt-2 text-xs font-bold text-emerald-400">
                 {inviteStatus}
               </p>
             )}
           </div>
 
           {/* ── Divider ── */}
-          <div className="border-t border-[var(--border)]" />
+          <div className="border-t border-[#2e3035]" />
 
           {/* ── Team Members ── */}
-          <div className="px-5 sm:px-6">
+          <div className="px-5 py-4 sm:px-6">
             <button
               type="button"
               onClick={() => setShowUsers((v) => !v)}
-              className="flex w-full items-center justify-between py-3"
+              className="flex w-full items-center justify-between py-2 text-left"
             >
-              <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+              <h3 className="text-xs font-black uppercase tracking-[0.18em] text-neutral-400 font-mono">
                 Team Members
-                <span className="ml-1.5 text-[var(--foreground)]">({users.length})</span>
+                <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-white">({users.length})</span>
               </h3>
-              <span className={`text-sm text-[var(--muted)] transition-transform ${showUsers ? "rotate-180" : ""}`}>
+              <span className={`text-sm text-neutral-400 transition-transform ${showUsers ? "rotate-180" : ""}`}>
                 ▾
               </span>
             </button>
             {showUsers && (
-              <div className="divide-y divide-[var(--border)] pb-1">
+              <div className="divide-y divide-[#2e3035] pt-2">
                 {users.length === 0 ? (
-                  <p className="py-3 text-sm text-[var(--muted)]">No users yet.</p>
+                  <p className="py-4 text-sm text-neutral-400">No users registered yet.</p>
                 ) : (
-                  users.map((u) => (
-                    <div key={u.id} className="flex items-center gap-3 py-2.5">
-                      <div className="min-w-0 flex-1">
-                        <span className="text-sm font-bold text-[var(--foreground)]">
-                          {u.display_name || u.email.split("@")[0]}
-                        </span>
-                        <span className="mx-2 text-[var(--border)]">·</span>
-                        <span className="text-xs text-[var(--muted)]">{u.email}</span>
-                      </div>
-                      <select
-                        value={u.role}
-                        onChange={(e) => handleRoleChange(u.id, e.currentTarget.value)}
-                        title={`Change role for ${u.display_name || u.email}`}
-                        className={`min-w-[120px] border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] outline-none transition focus:border-[var(--accent)] ${u.role === "admin"
-                          ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
-                          : "border-[var(--border)] bg-[var(--panel-strong)] text-[var(--muted)]"
+                  users.map((u) => {
+                    const isOwner = u.email.toLowerCase() === "xrkr80hd@gmail.com";
+                    return (
+                      <div key={u.id} className="flex flex-wrap items-center gap-3 py-3 sm:flex-nowrap">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-extrabold text-[#f7f7f7]">
+                              {u.display_name || u.email.split("@")[0]}
+                            </span>
+                            {isOwner && (
+                              <span className="rounded-full border border-red-500/40 bg-red-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-red-400">
+                                Total Admin &amp; Owner
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-neutral-400">{u.email}</p>
+                        </div>
+
+                        {/* Card Permission Toggle */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleCard(u.id, Boolean(u.card_enabled || isOwner))}
+                          disabled={isOwner}
+                          title={u.card_enabled || isOwner ? "Card permission granted" : "Click to grant card permission"}
+                          className={`shrink-0 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-wider transition ${
+                            u.card_enabled || isOwner
+                              ? "border-emerald-500/40 bg-emerald-950/40 text-emerald-300"
+                              : "border-neutral-700 bg-neutral-900 text-neutral-400 hover:border-neutral-500 hover:text-white"
                           }`}
-                      >
-                        <option value="user">User</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveUser(u.id, u.email)}
-                        className="shrink-0 border border-transparent px-2 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))
+                        >
+                          {u.card_enabled || isOwner ? "✓ Card Enabled" : "+ Enable Card"}
+                        </button>
+
+                        <select
+                          value={u.role}
+                          disabled={isOwner}
+                          onChange={(e) => handleRoleChange(u.id, e.currentTarget.value)}
+                          title={`Change role for ${u.display_name || u.email}`}
+                          className={`h-9 rounded-lg border px-3 text-[11px] font-bold uppercase tracking-[0.1em] outline-none transition focus:border-[var(--accent)] ${
+                            u.role === "admin"
+                              ? "border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)]"
+                              : "border-[#2e3035] bg-[#0f1114] text-neutral-300"
+                          }`}
+                        >
+                          <option value="user">User</option>
+                          <option value="admin">Admin</option>
+                        </select>
+
+                        {!isOwner && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveUser(u.id, u.email)}
+                            className="shrink-0 rounded-lg border border-transparent px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-neutral-400 transition hover:border-red-800/40 hover:bg-red-950/30 hover:text-red-300"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
             )}
           </div>
 
           {/* ── Divider ── */}
-          <div className="border-t border-[var(--border)]" />
+          <div className="border-t border-[#2e3035]" />
 
           {/* ── Invites ── */}
-          <div className="px-5 sm:px-6">
+          <div className="px-5 py-4 sm:px-6">
             <button
               type="button"
               onClick={() => setShowInvites((v) => !v)}
-              className="flex w-full items-center justify-between py-3"
+              className="flex w-full items-center justify-between py-2 text-left"
             >
-              <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+              <h3 className="text-xs font-black uppercase tracking-[0.18em] text-neutral-400 font-mono">
                 Invites
-                <span className="ml-1.5 text-[var(--foreground)]">({invites.filter((i) => !i.accepted_at).length} pending)</span>
+                <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-white">({invites.filter((i) => !i.accepted_at).length} pending)</span>
               </h3>
-              <span className={`text-sm text-[var(--muted)] transition-transform ${showInvites ? "rotate-180" : ""}`}>
+              <span className={`text-sm text-neutral-400 transition-transform ${showInvites ? "rotate-180" : ""}`}>
                 ▾
               </span>
             </button>
             {showInvites && (
-              <div className="divide-y divide-[var(--border)] pb-1">
+              <div className="divide-y divide-[#2e3035] pt-2">
                 {invites.length === 0 ? (
-                  <p className="py-3 text-sm text-[var(--muted)]">No invites sent yet.</p>
+                  <p className="py-4 text-sm text-neutral-400">No pending invites.</p>
                 ) : (
                   invites.map((inv) => (
-                    <div key={inv.id} className="flex items-center gap-3 py-2.5">
+                    <div key={inv.id} className="flex flex-wrap items-center gap-3 py-3 sm:flex-nowrap">
                       <div className="min-w-0 flex-1">
-                        <span className="text-sm font-bold text-[var(--foreground)]">
+                        <span className="text-sm font-bold text-[#f7f7f7]">
                           {inv.email}
                         </span>
-                        <span className="mx-2 text-[var(--border)]">·</span>
-                        <span className="text-xs text-[var(--muted)]">
+                        <span className="mx-2 text-neutral-600">·</span>
+                        <span className="text-xs text-neutral-400">
                           {new Date(inv.created_at).toLocaleDateString()} → {new Date(inv.expires_at).toLocaleDateString()}
                         </span>
                       </div>
                       <span
-                        className={`shrink-0 border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${inv.accepted_at
-                          ? "border-[var(--success)] bg-green-50 text-[var(--success)]"
-                          : "border-[var(--warn)] bg-amber-50 text-[var(--warn)]"
-                          }`}
+                        className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.15em] ${
+                          inv.accepted_at
+                            ? "border-emerald-500/30 bg-emerald-950/40 text-emerald-300"
+                            : "border-amber-500/30 bg-amber-950/40 text-amber-300"
+                        }`}
                       >
                         {inv.accepted_at ? "Accepted" : "Pending"}
                       </span>
-                      <span className="shrink-0 border border-[var(--border)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+                      <span className="shrink-0 rounded-lg border border-[#2e3035] bg-[#0f1114] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-neutral-300">
                         {inv.role}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleRevokeInvite(inv.id, inv.email)}
-                        className="shrink-0 border border-transparent px-2 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                        className="shrink-0 rounded-lg border border-transparent px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-neutral-400 transition hover:border-red-800/40 hover:bg-red-950/30 hover:text-red-300"
                       >
                         {inv.accepted_at ? "Delete" : "Revoke"}
                       </button>
@@ -355,3 +400,4 @@ export default function AdminPage() {
     </div>
   );
 }
+

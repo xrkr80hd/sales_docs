@@ -213,7 +213,16 @@ export function SupabaseSessionGate({
 
   // Auth bypass — pass through immediately
   if (authDisabled) {
-    return <>{children}</>;
+    return (
+      <SessionContext.Provider
+        value={{
+          sessionLabel: "xrkr80hd@gmail.com (Local Admin)",
+          signOut: () => {},
+        }}
+      >
+        {children}
+      </SessionContext.Provider>
+    );
   }
 
   if (!isSupabaseConfigured()) {

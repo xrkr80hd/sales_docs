@@ -85,15 +85,44 @@ export const travDefaultContent: ConsultantProfileContent = {
   socialLinks: [],
 };
 
-export function normalizeProfileContent(value: unknown): ConsultantProfileContent {
-  if (!value || typeof value !== "object") return structuredClone(travDefaultContent);
+export const emptyConsultantContent = (seed?: Partial<ProfileIdentity>): ConsultantProfileContent => ({
+  identity: {
+    displayName: seed?.displayName || "",
+    jobTitle: seed?.jobTitle || "Sales Consultant",
+    dealership: seed?.dealership || "Walker Automotive",
+    location: seed?.location || "Alexandria, Louisiana",
+    phone: seed?.phone || "",
+    email: seed?.email || "",
+    profileImageUrl: seed?.profileImageUrl || "",
+    callingCardImageUrl: seed?.callingCardImageUrl || "",
+    logoUrl: seed?.logoUrl || "",
+    languageLabel: seed?.languageLabel || "EN · ES",
+  },
+  content: {
+    primaryPhrase: "",
+    salesQuote: "",
+    bio: "",
+    inventoryUrl: "https://www.walkerautomotive.com/",
+    inventoryButtonLabel: "Browse Walker Inventory",
+  },
+  contact: { callLabel: "Call", textLabel: "Text", emailLabel: "Email" },
+  reviews: [],
+  vehicles: [],
+  soldGallery: [],
+  videos: [],
+  socialLinks: [],
+});
+
+export function normalizeProfileContent(value: unknown, isTrav = false): ConsultantProfileContent {
+  const fallback = isTrav ? structuredClone(travDefaultContent) : emptyConsultantContent();
+  if (!value || typeof value !== "object") return fallback;
   const candidate = value as Partial<ConsultantProfileContent>;
   return {
-    identity: { ...travDefaultContent.identity, ...(candidate.identity ?? {}) },
-    content: { ...travDefaultContent.content, ...(candidate.content ?? {}) },
-    contact: { ...travDefaultContent.contact, ...(candidate.contact ?? {}) },
-    reviews: Array.isArray(candidate.reviews) ? candidate.reviews : travDefaultContent.reviews,
-    vehicles: Array.isArray(candidate.vehicles) ? candidate.vehicles : [],
+    identity: { ...fallback.identity, ...(candidate.identity ?? {}) },
+    content: { ...fallback.content, ...(candidate.content ?? {}) },
+    contact: { ...fallback.contact, ...(candidate.contact ?? {}) },
+    reviews: Array.isArray(candidate.reviews) ? candidate.reviews : fallback.reviews,
+    vehicles: Array.isArray(candidate.vehicles) ? candidate.vehicles : fallback.vehicles,
     soldGallery: Array.isArray(candidate.soldGallery) ? candidate.soldGallery : [],
     videos: Array.isArray(candidate.videos) ? candidate.videos : [],
     socialLinks: Array.isArray(candidate.socialLinks) ? candidate.socialLinks : [],

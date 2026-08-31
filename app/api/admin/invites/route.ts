@@ -5,18 +5,26 @@ export async function GET(request: Request) {
   const auth = await requireAdmin(request);
   if (auth instanceof Response) return auth;
 
-  const supabase = getSupabaseServiceClient();
+  try {
+    const supabase = getSupabaseServiceClient();
 
-  const { data, error } = await supabase
-    .from("invites")
-    .select("id, email, role, created_at, expires_at, accepted_at")
-    .order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("invites")
+      .select("id, email, role, created_at, expires_at, accepted_at")
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    if (error) {
+      if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") return Response.json({ invites: [] });
+      return Response.json({ error: error.message }, { status: 500 });
+    }
+
+    return Response.json({ invites: data ?? [] });
+  } catch {
+    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
+      return Response.json({ invites: [] });
+    }
+    return Response.json({ error: "Failed to connect to Supabase." }, { status: 500 });
   }
-
-  return Response.json({ invites: data ?? [] });
 }
 
 export async function POST(request: Request) {

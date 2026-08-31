@@ -186,10 +186,23 @@ export default async function TravisWilkinsonProfile({
           <details className={styles.contactAccordion}>
             <summary>Contact</summary>
             <div className={styles.actions}>
-              <a className={styles.primaryAction} href={`tel:${profile.identity.phone}`}>{profile.contact.callLabel}</a>
-              <a className={styles.secondaryAction} href={`sms:${profile.identity.phone}`}>{profile.contact.textLabel}</a>
-              <a className={styles.secondaryAction} href={`mailto:${profile.identity.email}`}>{profile.contact.emailLabel}</a>
-              <button className={styles.secondaryAction} disabled>Save contact — not connected</button>
+              {profile.identity.phone && (
+                <>
+                  <a className={styles.primaryAction} href={`tel:${profile.identity.phone.replace(/[^\d+]/g, "")}`}>Call</a>
+                  <a className={styles.secondaryAction} href={`sms:${profile.identity.phone.replace(/[^\d+]/g, "")}`}>Text</a>
+                </>
+              )}
+              {profile.identity.email && (
+                <a className={styles.secondaryAction} href={`mailto:${profile.identity.email}`}>Email</a>
+              )}
+              <a
+                className={styles.secondaryAction}
+                href="/api/card/trav/vcard"
+                download
+                aria-label={`Save ${profile.identity.displayName} to phone contacts`}
+              >
+                Save Contact
+              </a>
             </div>
           </details>
         </header>

@@ -114,6 +114,58 @@
   object-fit: contain;
 }
 
+.navArrowPrev,
+.navArrowNext {
+  position: fixed;
+  z-index: 2;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 64px;
+  background: rgba(25, 27, 32, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 2.2rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.2s, background 0.2s, transform 0.2s;
+  user-select: none;
+}
+
+.navArrowPrev:hover,
+.navArrowNext:hover {
+  opacity: 0.9;
+  background: rgba(35, 38, 45, 0.85);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.navArrowPrev {
+  left: 18px;
+}
+
+.navArrowNext {
+  right: 18px;
+}
+
+@media (max-width: 768px) {
+  .navArrowPrev {
+    left: 8px;
+    width: 36px;
+    height: 48px;
+    font-size: 1.8rem;
+  }
+  .navArrowNext {
+    right: 8px;
+    width: 36px;
+    height: 48px;
+    font-size: 1.8rem;
+  }
+}
+
 @media (min-width: 620px) {
   .rail {
     grid-auto-columns: min(76%, 560px);

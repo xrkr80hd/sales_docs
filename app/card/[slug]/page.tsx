@@ -39,11 +39,23 @@ export default async function ConsultantCard({ params }: { params: Promise<{ slu
       <div className={styles.shell}>
         <header className={styles.hero}>
           <div className={styles.brandRow}>
-            <div className={styles.logoSlot}><Image src={profile.identity.logoUrl} alt="Business-card logo" fill priority sizes="170px" className={styles.logoImage} /></div>
+            {profile.identity.logoUrl ? (
+              <div className={styles.logoSlot}>
+                <Image src={profile.identity.logoUrl} alt="Business-card logo" fill priority sizes="170px" className={styles.logoImage} />
+              </div>
+            ) : <div style={{ minHeight: "36px" }} />}
             <span className={styles.language}>{profile.identity.languageLabel}</span>
           </div>
           <div className={styles.identity}>
-            <div className={styles.photoFrame}><Image src={profile.identity.profileImageUrl} alt={profile.identity.displayName} fill priority sizes="168px" className={styles.photo} /></div>
+            <div className={styles.photoFrame}>
+              {profile.identity.profileImageUrl ? (
+                <Image src={profile.identity.profileImageUrl} alt={profile.identity.displayName} fill priority sizes="168px" className={styles.photo} />
+              ) : (
+                <div style={{ display: "grid", placeItems: "center", width: "100%", height: "100%", background: "#22252a", color: "#be1717", fontSize: "2.5rem", fontWeight: 900 }}>
+                  {profile.identity.displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "WD"}
+                </div>
+              )}
+            </div>
             <div className={styles.identityCopy}>
               <p className={styles.eyebrow}>{profile.identity.jobTitle}</p>
               <h1>{profile.identity.displayName}</h1>
@@ -54,9 +66,23 @@ export default async function ConsultantCard({ params }: { params: Promise<{ slu
           <details className={styles.contactAccordion}>
             <summary>Contact</summary>
             <div className={styles.actions}>
-              <a className={styles.primaryAction} href={`tel:${profile.identity.phone}`}>{profile.contact.callLabel}</a>
-              <a className={styles.secondaryAction} href={`sms:${profile.identity.phone}`}>{profile.contact.textLabel}</a>
-              <a className={styles.secondaryAction} href={`mailto:${profile.identity.email}`}>{profile.contact.emailLabel}</a>
+              {profile.identity.phone && (
+                <>
+                  <a className={styles.primaryAction} href={`tel:${profile.identity.phone.replace(/[^\d+]/g, "")}`}>Call</a>
+                  <a className={styles.secondaryAction} href={`sms:${profile.identity.phone.replace(/[^\d+]/g, "")}`}>Text</a>
+                </>
+              )}
+              {profile.identity.email && (
+                <a className={styles.secondaryAction} href={`mailto:${profile.identity.email}`}>Email</a>
+              )}
+              <a
+                className={styles.secondaryAction}
+                href={`/api/card/${slug}/vcard`}
+                download
+                aria-label={`Save ${profile.identity.displayName} to phone contacts`}
+              >
+                Save Contact
+              </a>
             </div>
           </details>
         </header>
