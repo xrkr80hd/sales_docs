@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
 async function currentUser(request: Request) {
@@ -103,10 +104,23 @@ export async function GET(request: Request) {
 
     if (!membership?.chat_enabled) return Response.json({ membership, conversations: [], people: [], messages: [] });
 
-    const [{ data: people }, { data: conversations }] = await Promise.all([
-      db.from("organization_memberships").select("user_id,profiles(display_name)").eq("organization_id", membership.organization_id).eq("chat_enabled", true),
+    const [{ data: memberRows, error: membersError }, { data: conversations }] = await Promise.all([
+      db.from("organization_memberships").select("user_id").eq("organization_id", membership.organization_id).eq("chat_enabled", true),
       db.from("messenger_conversations").select("id,kind,title,updated_at,messenger_participants(user_id,last_read_at)").eq("organization_id", membership.organization_id).order("updated_at", { ascending: false }),
     ]);
+    if (membersError) return Response.json({ error: membersError.message }, { status: 500 });
+
+    const memberIds = (memberRows ?? []).map((member) => member.user_id);
+    const { data: memberProfiles, error: profilesError } = memberIds.length
+      ? await db.from("profiles").select("id,display_name").in("id", memberIds)
+      : { data: [], error: null };
+    if (profilesError) return Response.json({ error: profilesError.message }, { status: 500 });
+
+    const profileNames = new Map((memberProfiles ?? []).map((profile) => [profile.id, profile.display_name]));
+    const people = memberIds.map((userId) => ({
+      user_id: userId,
+      profiles: { display_name: profileNames.get(userId) || "Team Member" },
+    }));
 
     const ids = (conversations ?? []).filter((c: any) => c.kind === "organization" || c.messenger_participants?.some((p: any) => p.user_id === user.id)).map((c: any) => c.id);
     const { data: messages } = ids.length ? await db.from("messenger_messages").select("id,conversation_id,sender_id,body,created_at,edited_at,profiles(display_name)").in("conversation_id", ids).is("deleted_at", null).order("created_at") : { data: [] };

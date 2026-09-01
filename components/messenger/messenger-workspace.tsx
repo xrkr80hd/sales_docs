@@ -6,6 +6,33 @@ import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 import styles from "./messenger-workspace.module.css";
 
+let audioContext: AudioContext | null = null;
+
+function tone(frequency: number, start: number, duration: number, volume: number) {
+  audioContext ??= new AudioContext();
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  oscillator.type = "sine";
+  oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + start);
+  gain.gain.setValueAtTime(0.0001, audioContext.currentTime + start);
+  gain.gain.exponentialRampToValueAtTime(volume, audioContext.currentTime + start + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + start + duration);
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+  oscillator.start(audioContext.currentTime + start);
+  oscillator.stop(audioContext.currentTime + start + duration);
+}
+
+function playSentSound() {
+  tone(620, 0, 0.08, 0.035);
+  tone(880, 0.06, 0.1, 0.025);
+}
+
+function playReceivedSound() {
+  tone(880, 0, 0.1, 0.045);
+  tone(660, 0.09, 0.13, 0.035);
+}
+
 type Participant = { user_id: string; last_read_at: string };
 type Conversation = {
   id: string;
@@ -72,10 +99,24 @@ export function MessengerWorkspace() {
   const [sendingId, setSendingId] = useState("");
   const [error, setError] = useState("");
   const teamEndRef = useRef<HTMLDivElement>(null);
+  const knownMessageIdsRef = useRef<Set<string>>(new Set());
+  const loadedOnceRef = useRef(false);
 
   const load = useCallback(async () => {
     try {
-      setData(await call("/api/messenger"));
+      const nextData: MessengerPayload = await call("/api/messenger");
+      const nextMessages = nextData.messages ?? [];
+      if (loadedOnceRef.current) {
+        const received = nextMessages.some((message) =>
+          message.sender_id !== nextData.me
+          && !message.deleted_at
+          && !knownMessageIdsRef.current.has(String(message.id))
+        );
+        if (received && audioContext?.state === "running") playReceivedSound();
+      }
+      knownMessageIdsRef.current = new Set(nextMessages.map((message) => String(message.id)));
+      loadedOnceRef.current = true;
+      setData(nextData);
       setError("");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load Messenger.");
@@ -139,12 +180,15 @@ export function MessengerWorkspace() {
   async function send(conversationId: string, body: string, clear: () => void) {
     const message = body.trim();
     if (!message || sendingId) return;
+    audioContext ??= new AudioContext();
+    if (audioContext.state === "suspended") void audioContext.resume();
     setSendingId(conversationId);
     try {
       await call("/api/messenger", {
         method: "POST",
         body: JSON.stringify({ action: "send", conversationId, body: message }),
       });
+      playSentSound();
       clear();
       await load();
     } catch (sendError) {
