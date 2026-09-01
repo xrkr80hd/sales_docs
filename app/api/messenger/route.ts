@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
+import { sendMessengerPush } from "@/lib/messenger-push";
 
 async function currentUser(request: Request) {
   if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
@@ -233,6 +234,18 @@ export async function POST(request: Request) {
         const { data: createdMsg, error: messageError } = await db.from("messenger_messages").insert({ conversation_id: convo.id, sender_id: user.id, body: text }).select("id,created_at").single();
         if (messageError) return Response.json({ error: messageError.message }, { status: 500 });
         await db.from("messenger_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convo.id);
+        const participantRows = convo.messenger_participants as { user_id: string }[] | null;
+        const recipientIds = convo.kind === "dm"
+          ? (participantRows ?? []).map((participant) => participant.user_id).filter((userId) => userId !== user.id)
+          : ((await db.from("organization_memberships").select("user_id").eq("organization_id", mine.organization_id).eq("chat_enabled", true)).data ?? [])
+            .map((member) => member.user_id)
+            .filter((userId) => userId !== user.id);
+        const { data: senderProfile } = await db.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
+        await sendMessengerPush(recipientIds, {
+          title: convo.kind === "dm" ? senderProfile?.display_name || "New direct message" : "Walker Automotive Team Chat",
+          body: text,
+          url: "/messenger",
+        });
         return Response.json({ ok: true, message: createdMsg });
       }
       return Response.json({ ok: true });
@@ -247,6 +260,31 @@ export async function POST(request: Request) {
         return Response.json({ error: "You can only delete your own messages." }, { status: 403 });
       }
       await db.from("messenger_messages").update({ deleted_at: new Date().toISOString() }).eq("id", msgId);
+      return Response.json({ ok: true });
+    }
+
+    if (body.action === "edit") {
+      const msgId = body.messageId;
+      const text = String(body.body ?? "").trim();
+      if (!msgId || !text) return Response.json({ error: "Message and updated text are required." }, { status: 400 });
+      if (text.length > 4000) return Response.json({ error: "Messages must be 4,000 characters or fewer." }, { status: 400 });
+      const { data: existingMessage } = await db.from("messenger_messages").select("id,sender_id").eq("id", msgId).maybeSingle();
+      if (!existingMessage) return Response.json({ error: "Message not found." }, { status: 404 });
+      if (existingMessage.sender_id !== user.id) return Response.json({ error: "You can only edit your own messages." }, { status: 403 });
+      const { error: editError } = await db.from("messenger_messages").update({ body: text, edited_at: new Date().toISOString() }).eq("id", msgId);
+      if (editError) return Response.json({ error: editError.message }, { status: 500 });
+      return Response.json({ ok: true });
+    }
+
+    if (body.action === "clear-mine") {
+      const conversationId = body.conversationId;
+      if (!conversationId) return Response.json({ error: "Conversation ID required." }, { status: 400 });
+      const { error: clearError } = await db.from("messenger_messages")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("conversation_id", conversationId)
+        .eq("sender_id", user.id)
+        .is("deleted_at", null);
+      if (clearError) return Response.json({ error: clearError.message }, { status: 500 });
       return Response.json({ ok: true });
     }
 
@@ -299,6 +337,24 @@ export async function POST(request: Request) {
       if (body.action === "delete") {
         const msg = localStore.messages.find((m) => String(m.id) === String(body.messageId));
         if (msg) msg.deleted_at = new Date().toISOString();
+        return Response.json({ ok: true });
+      }
+
+      if (body.action === "edit") {
+        const msg = localStore.messages.find((message) => String(message.id) === String(body.messageId));
+        if (msg && msg.sender_id === user.id) {
+          msg.body = String(body.body ?? "").trim();
+          msg.edited_at = new Date().toISOString();
+        }
+        return Response.json({ ok: true });
+      }
+
+      if (body.action === "clear-mine") {
+        localStore.messages.forEach((message) => {
+          if (message.conversation_id === body.conversationId && message.sender_id === user.id) {
+            message.deleted_at = new Date().toISOString();
+          }
+        });
         return Response.json({ ok: true });
       }
 

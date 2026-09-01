@@ -15,7 +15,7 @@ import {
   setLocalDealId,
   type DealSummary
 } from "@/lib/deals";
-import { isSupabaseConfigured } from "@/lib/supabase-browser";
+import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase-browser";
 import {
   clearWorkflowSession,
   loadWorkflow,
@@ -30,6 +30,7 @@ export function DashboardScreen() {
   const [lastDeal, setLastDeal] = useState<DealSummary | null>(null);
   const [allDeals, setAllDeals] = useState<DealSummary[]>([]);
   const [showPicker, setShowPicker] = useState(false);
+  const [messengerUnread, setMessengerUnread] = useState(0);
   const [localResume] = useState<{ name: string; dealType: "new" | "used" } | null>(() => {
     const wf = loadWorkflow();
     if (!wf.customerName && !wf.vin && !wf.dealNumber) {
@@ -61,6 +62,33 @@ export function DashboardScreen() {
     }
     load();
     return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    let cancelled = false;
+    async function loadUnread() {
+      const { data: sessionData } = await getSupabaseBrowserClient().auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      const response = await fetch("/api/messenger", { headers: { authorization: `Bearer ${token}` } });
+      if (!response.ok) return;
+      const payload = await response.json();
+      const unread = (payload.conversations ?? []).reduce((total: number, conversation: { id: string; messenger_participants?: Array<{ user_id: string; last_read_at: string }> }) => {
+        const lastRead = conversation.messenger_participants?.find((participant) => participant.user_id === payload.me)?.last_read_at;
+        const threshold = lastRead ? new Date(lastRead).getTime() : 0;
+        return total + (payload.messages ?? []).filter((message: { conversation_id: string; sender_id: string; created_at: string; deleted_at?: string | null }) =>
+          message.conversation_id === conversation.id
+          && message.sender_id !== payload.me
+          && !message.deleted_at
+          && new Date(message.created_at).getTime() > threshold
+        ).length;
+      }, 0);
+      if (!cancelled) setMessengerUnread(unread);
+    }
+    void loadUnread();
+    const timer = window.setInterval(() => void loadUnread(), 15000);
+    return () => { cancelled = true; window.clearInterval(timer); };
   }, []);
 
   function startFreshDeal(dealType: "new" | "used") {
@@ -186,8 +214,9 @@ export function DashboardScreen() {
               >
                 Business Card
               </Link>
-              <Link href="/messenger" className={secondaryButtonClass}>
+              <Link href="/messenger" className={`${secondaryButtonClass} relative`}>
                 NXTDox Messenger
+                {messengerUnread > 0 && <span className="absolute right-2 top-2 grid h-5 min-w-5 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{messengerUnread}</span>}
               </Link>
               <button
                 type="button"

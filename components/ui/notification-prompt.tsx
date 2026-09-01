@@ -5,9 +5,11 @@ import {
   notificationsSupported,
   requestPermission,
   setDismissed,
+  subscribeToPush,
   wasDismissed,
 } from "@/lib/notifications";
 import { useEffect, useState } from "react";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 /**
  * A small banner that asks for browser notification permission.
@@ -33,10 +35,21 @@ export function NotificationPrompt() {
   async function handleAllow() {
     const result = await requestPermission();
     if (result === "granted") {
-      new Notification("Walker Docs", {
-        body: "Notifications enabled! You're all set.",
-        icon: "/walker-red-graphic-v2.png",
-      });
+      const { data } = await getSupabaseBrowserClient().auth.getSession();
+      const token = data.session?.access_token;
+      const subscribed = token ? await subscribeToPush(token) : false;
+      if (subscribed) {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.showNotification("Walker Docs", {
+          body: "Message notifications are enabled.",
+          icon: "/android-chrome-192x192.png",
+        });
+      } else {
+        new Notification("Walker Docs", {
+          body: "Notifications are enabled while the app is open.",
+          icon: "/android-chrome-192x192.png",
+        });
+      }
     }
     setVisible(false);
   }

@@ -17,6 +17,12 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Walker Docs",
   description: "Tablet and phone-first dealership workflow and print application.",
+  applicationName: "NXTDox Walker Docs",
+  appleWebApp: {
+    capable: true,
+    title: "NXTDox",
+    statusBarStyle: "black-translucent",
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

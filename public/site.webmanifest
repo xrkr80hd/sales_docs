@@ -1,6 +1,9 @@
 {
-  "name": "Sales Docs",
-  "short_name": "Sales Docs",
+  "id": "/dashboard",
+  "name": "NXTDox Walker Docs",
+  "short_name": "NXTDox",
+  "start_url": "/dashboard",
+  "scope": "/",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
@@ -15,5 +18,6 @@
   ],
   "theme_color": "#1c1c1e",
   "background_color": "#1c1c1e",
-  "display": "standalone"
+  "display": "standalone",
+  "orientation": "any"
 }
