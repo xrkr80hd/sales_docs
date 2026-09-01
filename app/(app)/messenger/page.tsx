@@ -1,2 +1,5 @@
-import { MessengerScreen } from "@/components/messenger/messenger-screen";
-export default function MessengerPage() { return <MessengerScreen />; }
+import { MessengerWorkspace } from "@/components/messenger/messenger-workspace";
+
+export default function MessengerPage() {
+	return <MessengerWorkspace />;
+}

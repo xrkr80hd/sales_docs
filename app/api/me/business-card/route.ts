@@ -475,7 +475,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const bucket = "consultant-media";
+  const bucket = `consultant-media-${user.id}`;
   const { error: bucketError } = await supabase.storage.getBucket(bucket);
   if (bucketError) {
     const { error: createError } = await supabase.storage.createBucket(bucket, {

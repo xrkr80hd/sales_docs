@@ -2,6 +2,14 @@ import { requireAdmin } from "@/lib/require-admin";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
 const VALID_ROLES = ["admin", "user", "fni", "sales_manager"] as const;
+const OWNER_EMAIL = "xrkr80hd@gmail.com";
+
+async function isOwnerAccount(id: string) {
+  const supabase = getSupabaseServiceClient();
+  const { data, error } = await supabase.auth.admin.getUserById(id);
+  if (error) throw error;
+  return data.user.email?.toLowerCase() === OWNER_EMAIL;
+}
 
 export async function PATCH(
   request: Request,
@@ -16,6 +24,12 @@ export async function PATCH(
   const updates: Record<string, unknown> = {};
 
   if (body?.role) {
+    if (await isOwnerAccount(id)) {
+      return Response.json(
+        { error: "The master admin role cannot be changed." },
+        { status: 400 },
+      );
+    }
     if (id === auth.userId) {
       return Response.json(
         { error: "You cannot change your own role." },
@@ -73,6 +87,13 @@ export async function DELETE(
   if (id === auth.userId) {
     return Response.json(
       { error: "You cannot remove yourself." },
+      { status: 400 },
+    );
+  }
+
+  if (await isOwnerAccount(id)) {
+    return Response.json(
+      { error: "The master admin account cannot be removed." },
       { status: 400 },
     );
   }

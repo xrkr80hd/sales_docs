@@ -56,7 +56,7 @@ export async function GET(request: Request) {
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const isOwner = user.email?.toLowerCase() === "xrkr80hd@gmail.com" || process.env.NEXT_PUBLIC_DISABLE_AUTH === "1";
-  const isDonaldGoff = user.email?.toLowerCase().includes("donald") || user.id === "donald-goff";
+  const isDonaldGoff = user.email?.toLowerCase().includes("goff") || user.id === "donald-goff";
 
   try {
     const db = getSupabaseServiceClient();
@@ -140,7 +140,7 @@ export async function POST(request: Request) {
   const user = await currentUser(request);
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
   const isOwner = user.email?.toLowerCase() === "xrkr80hd@gmail.com" || process.env.NEXT_PUBLIC_DISABLE_AUTH === "1";
-  const isDonaldGoff = user.email?.toLowerCase().includes("donald") || user.id === "donald-goff";
+  const isDonaldGoff = user.email?.toLowerCase().includes("goff") || user.id === "donald-goff";
 
   const body = await request.json();
 
@@ -148,13 +148,42 @@ export async function POST(request: Request) {
     const db = getSupabaseServiceClient();
     let { data: mine } = await db.from("organization_memberships").select("*").eq("user_id", user.id).maybeSingle();
 
-    if (isOwner && (!mine || !mine.chat_enabled)) {
-      mine = { organization_id: mine?.organization_id || "default-org-id", chat_enabled: true, can_dm: true, can_org_chat: true };
+    if (isOwner && (!mine || !mine.chat_enabled || !mine.can_dm || !mine.can_org_chat)) {
+      let organizationId = mine?.organization_id;
+      if (!organizationId) {
+        const { data: organization, error: organizationError } = await db
+          .from("organizations")
+          .select("id")
+          .order("name")
+          .limit(1)
+          .maybeSingle();
+        if (organizationError || !organization) {
+          return Response.json({ error: "Messenger organizations are not configured." }, { status: 500 });
+        }
+        organizationId = organization.id;
+      }
+      const ownerMembership = {
+        organization_id: organizationId,
+        user_id: user.id,
+        chat_enabled: true,
+        can_dm: true,
+        can_org_chat: true,
+      };
+      const { error: ownerMembershipError } = await db
+        .from("organization_memberships")
+        .upsert(ownerMembership, { onConflict: "user_id" });
+      if (ownerMembershipError) {
+        return Response.json({ error: ownerMembershipError.message }, { status: 500 });
+      }
+      mine = ownerMembership;
     }
 
     if (!mine?.chat_enabled) return Response.json({ error: "Messenger access has not been enabled." }, { status: 403 });
 
     if (body.action === "start-dm") {
+      if (!isOwner && !mine.can_dm) {
+        return Response.json({ error: "Direct messaging has not been enabled." }, { status: 403 });
+      }
       const { data: other } = await db.from("organization_memberships").select("*").eq("user_id", body.userId).eq("organization_id", mine.organization_id).maybeSingle();
       if (!isOwner && (!other?.chat_enabled || !other.can_dm)) return Response.json({ error: "That member cannot receive DMs." }, { status: 403 });
       const users = [user.id, body.userId].sort(); const dmKey = `${mine.organization_id}:${users.join(":")}`;
@@ -170,10 +199,25 @@ export async function POST(request: Request) {
 
     if (body.action === "send") {
       const text = String(body.body ?? "").trim(); if (!text) return Response.json({ error: "Message is empty." }, { status: 400 });
-      const { data: convo } = await db.from("messenger_conversations").select("*").eq("id", body.conversationId).maybeSingle();
-      if (!convo && !isOwner) return Response.json({ error: "Conversation not found." }, { status: 404 });
+      const { data: convo } = await db
+        .from("messenger_conversations")
+        .select("id,kind,organization_id,messenger_participants(user_id)")
+        .eq("id", body.conversationId)
+        .maybeSingle();
+      if (!convo) return Response.json({ error: "Conversation not found." }, { status: 404 });
+      if (convo.organization_id !== mine.organization_id) {
+        return Response.json({ error: "Conversation access denied." }, { status: 403 });
+      }
+      if (convo.kind === "organization" && !isOwner && !mine.can_org_chat) {
+        return Response.json({ error: "Organization chat has not been enabled." }, { status: 403 });
+      }
+      const participants = convo.messenger_participants as { user_id: string }[] | null;
+      if (convo.kind === "dm" && (!isOwner && !mine.can_dm || !participants?.some((item) => item.user_id === user.id))) {
+        return Response.json({ error: "Direct-message access denied." }, { status: 403 });
+      }
       if (convo) {
-        const { data: createdMsg } = await db.from("messenger_messages").insert({ conversation_id: convo.id, sender_id: user.id, body: text }).select("id,created_at").single();
+        const { data: createdMsg, error: messageError } = await db.from("messenger_messages").insert({ conversation_id: convo.id, sender_id: user.id, body: text }).select("id,created_at").single();
+        if (messageError) return Response.json({ error: messageError.message }, { status: 500 });
         await db.from("messenger_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convo.id);
         return Response.json({ ok: true, message: createdMsg });
       }
@@ -206,6 +250,21 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unknown action." }, { status: 400 });
   } catch {
     if (isOwner || isDonaldGoff) {
+      if (body.action === "start-dm") {
+        const users = [user.id, String(body.userId)].sort();
+        const conversationId = `dm-${users.join("-")}`;
+        if (!localStore.conversations.some((conversation) => conversation.id === conversationId)) {
+          localStore.conversations.push({
+            id: conversationId,
+            kind: "dm",
+            title: "Direct Message",
+            updated_at: new Date().toISOString(),
+            messenger_participants: users.map((userId) => ({ user_id: userId, last_read_at: new Date().toISOString() })),
+          });
+        }
+        return Response.json({ conversationId });
+      }
+
       if (body.action === "send") {
         const text = String(body.body ?? "").trim();
         if (text) {

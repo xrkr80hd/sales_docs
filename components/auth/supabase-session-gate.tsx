@@ -285,7 +285,8 @@ export function SupabaseSessionGate({
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="name@company.com"
-                  className="min-h-12 border border-white/10 bg-white px-4 text-base text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+                  className="min-h-12 border border-white/10 bg-white px-4 text-base !text-[#171719] caret-[#171719] [-webkit-text-fill-color:#171719] [color-scheme:light] outline-none transition placeholder:!text-neutral-500 focus:border-[var(--accent)]"
+                  style={{ color: "#171719", WebkitTextFillColor: "#171719", caretColor: "#171719", colorScheme: "light" }}
                   autoComplete="email"
                 />
               </label>
@@ -299,13 +300,15 @@ export function SupabaseSessionGate({
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       placeholder="••••••••"
-                      className="min-h-12 flex-1 border border-white/10 bg-white px-4 text-base text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
-                      autoComplete="current-password"
+                      className="min-h-12 flex-1 border border-white/10 bg-white px-4 text-base !text-[#171719] caret-[#171719] [-webkit-text-fill-color:#171719] [color-scheme:light] outline-none transition placeholder:!text-neutral-500 focus:border-[var(--accent)]"
+                      style={{ color: "#171719", WebkitTextFillColor: "#171719", caretColor: "#171719", colorScheme: "light" }}
+                      autoComplete={mode === "signup" ? "new-password" : "current-password"}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((s) => !s)}
-                      className="min-h-12 border border-l-0 border-white/10 bg-white/90 px-3 text-xs font-bold uppercase tracking-wider text-[var(--foreground)]/60 transition hover:text-[var(--foreground)]"
+                      className="min-h-12 border border-l-0 border-white/10 bg-white px-3 text-xs font-bold uppercase tracking-wider !text-[#34343a] transition hover:!text-[#171719]"
+                      style={{ color: "#34343a", WebkitTextFillColor: "#34343a", colorScheme: "light" }}
                     >
                       {showPassword ? "Hide" : "Show"}
                     </button>

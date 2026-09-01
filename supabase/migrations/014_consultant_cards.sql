@@ -143,6 +143,72 @@ create index if not exists idx_consultant_reviews_card on public.consultant_revi
 create index if not exists idx_consultant_vehicles_card on public.consultant_vehicles(card_id, sort_order);
 create index if not exists idx_consultant_videos_card on public.consultant_videos(card_id, sort_order);
 
+-- Give every profile an isolated media bucket. Existing shared-bucket URLs
+-- remain valid; new uploads are stored in the owner's dedicated bucket.
+create or replace function public.ensure_consultant_media_bucket()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into storage.buckets (
+    id,
+    name,
+    public,
+    file_size_limit,
+    allowed_mime_types
+  )
+  values (
+    'consultant-media-' || new.id::text,
+    'consultant-media-' || new.id::text,
+    true,
+    104857600,
+    array[
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'video/mp4',
+      'video/webm',
+      'video/quicktime'
+    ]
+  )
+  on conflict (id) do nothing;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_profile_create_media_bucket on public.profiles;
+create trigger on_profile_create_media_bucket
+  after insert on public.profiles
+  for each row execute function public.ensure_consultant_media_bucket();
+
+insert into storage.buckets (
+  id,
+  name,
+  public,
+  file_size_limit,
+  allowed_mime_types
+)
+select
+  'consultant-media-' || id::text,
+  'consultant-media-' || id::text,
+  true,
+  104857600,
+  array[
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+    'video/mp4',
+    'video/webm',
+    'video/quicktime'
+  ]
+from public.profiles
+on conflict (id) do nothing;
+
 -- Enable RLS
 alter table public.consultant_cards enable row level security;
 alter table public.consultant_reviews enable row level security;
