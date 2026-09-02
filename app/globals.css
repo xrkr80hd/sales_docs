@@ -49,6 +49,39 @@ textarea {
   font: inherit;
 }
 
+input.bg-white,
+select.bg-white,
+textarea.bg-white {
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+  caret-color: #000 !important;
+  color-scheme: light;
+}
+
+input.bg-white::placeholder,
+textarea.bg-white::placeholder {
+  color: #525252 !important;
+  -webkit-text-fill-color: #525252 !important;
+  opacity: 1;
+}
+
+input.bg-white:-webkit-autofill,
+input.bg-white:-webkit-autofill:hover,
+input.bg-white:-webkit-autofill:focus,
+textarea.bg-white:-webkit-autofill,
+select.bg-white:-webkit-autofill {
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+  box-shadow: 0 0 0 1000px #fff inset !important;
+  caret-color: #000 !important;
+}
+
+select.bg-white option {
+  background: #fff;
+  color: #000;
+}
+
 ::selection {
   background: rgba(190, 23, 23, 0.35);
   color: #fff;
