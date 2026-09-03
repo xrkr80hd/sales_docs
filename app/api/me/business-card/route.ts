@@ -447,7 +447,7 @@ export async function PUT(request: NextRequest) {
     incomingDraft.identity.logoUrl,
   ].filter(Boolean));
   const removedObjects = (existingVehicles ?? [])
-    .flatMap((vehicle) => [vehicle.image_url || "", ...(vehicle.builder_data?.photos?.map((photo) => photo.url || "") ?? [])])
+    .flatMap((vehicle) => [vehicle.image_url || "", ...(vehicle.builder_data?.photos?.map((photo: { url?: string }) => photo.url || "") ?? [])])
     .filter((imageUrl) => imageUrl && !retainedImageUrls.has(imageUrl))
     .map((imageUrl) => ownedStorageObject(imageUrl, user.id))
     .filter((object): object is { bucket: string; path: string } => Boolean(object));
