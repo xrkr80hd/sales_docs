@@ -765,6 +765,20 @@
   gap: 12px;
 }
 
+.editVehicle {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #be1717;
+  color: #fff;
+  padding: 10px 16px;
+  font-size: .84rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
 .vehicleEditorGrid {
   display: grid;
   grid-template-columns: 160px 1fr;
