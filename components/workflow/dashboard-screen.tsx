@@ -202,22 +202,31 @@ export function DashboardScreen() {
 
               <hr className="my-1 border-white/10" />
 
-              <Link
-                href="/documents/cheat-sheet"
-                className={secondaryButtonClass}
-              >
-                Cheat Sheet
-              </Link>
+              <p className="px-1 pt-1 text-left text-[10px] font-black uppercase tracking-[0.18em] text-white/55">
+                Consultant Tools
+              </p>
+
               <Link
                 href="/business-card"
                 className={secondaryButtonClass}
               >
                 Business Card
               </Link>
-              <Link href="/messenger" className={`${secondaryButtonClass} relative`}>
+              <Link
+                href="/messenger"
+                className={`${secondaryButtonClass} relative`}
+              >
                 NXTDox Messenger
                 {messengerUnread > 0 && <span className="absolute right-2 top-2 grid h-5 min-w-5 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{messengerUnread}</span>}
               </Link>
+              <Link
+                href="/documents/cheat-sheet"
+                className={secondaryButtonClass}
+              >
+                Training
+              </Link>
+
+              {/* Vehicle Collage Builder joins Consultant Tools only after its standalone test is approved. */}
               <button
                 type="button"
                 onClick={() => setSettingsOpen(true)}
