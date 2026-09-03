@@ -530,6 +530,7 @@ export function ProfileEditor() {
                     {v.meta && <p className={styles.help}>{v.meta}</p>}
                     {v.secondaryUrl && <p className={styles.help}>VIN: {v.secondaryUrl}</p>}
                     {v.url && <a href={v.url} target="_blank" rel="noreferrer">View Walker listing</a>}
+                    {v.builderData && <Link href={`/vehicle-collage?edit=${v.id}`}>Edit Collage</Link>}
                   </div>
                 </div>
               </article>
