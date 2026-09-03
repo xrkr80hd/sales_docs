@@ -22,7 +22,7 @@ type ProfileRow = {
 
 const limits: Record<CollectionKey, number | undefined> = {
   reviews: 10,
-  videos: 2,
+  videos: undefined,
   vehicles: 6,
   soldGallery: 12,
   socialLinks: 8,
@@ -334,6 +334,7 @@ export function ProfileEditor() {
   }
 
   const hasChanges = JSON.stringify(draft) !== savedDraft;
+  const uploadedVideoCount = draft.videos.filter((video) => Boolean(video.imageUrl)).length;
 
   return (
     <main className={styles.page}>
@@ -462,7 +463,7 @@ export function ProfileEditor() {
       </details>
 
       <h2 className={styles.sectionHeader}>Customer Reviews &amp; Inventory Media Pools</h2>
-      <p className={styles.sectionIntro}>Dedicated media pools for your five-star review screenshots, featured inventory carousel, and walk-around videos.</p>
+      <p className={styles.sectionIntro}>Dedicated media pools for your five-star review screenshots, featured inventory carousel, and videos.</p>
 
       {/* ── 3. Five-Star Reviews Pool (Max 10) ── */}
       <details className={styles.panel}>
@@ -577,23 +578,23 @@ export function ProfileEditor() {
         </div>
       </details>
 
-      {/* ── 5. Walk-Around Videos Pool (Max 2) ── */}
+      {/* ── 5. Videos ── */}
       <details className={styles.panel} open>
         <summary>
-          <span>5. Walk-Around Videos (Max 2)</span>
+          <span>5. Videos</span>
           <div className={styles.summaryRight}>
-            <small>{draft.videos.length} / 2</small>
+            <small>{uploadedVideoCount} / 2 uploads</small>
             <span className={styles.chevronArrow}>▼</span>
           </div>
         </summary>
         <p className={styles.help}>
-          Upload 1 to 2 walk-around vehicle videos (MP4/WebM/MOV) showcasing available vehicles or walkthrough tours.
+          Upload up to 2 video files, or add as many YouTube and TikTok links as you want. Everything appears in one video carousel.
         </p>
         <div className={styles.collection}>
           {draft.videos.map((vid, index) => (
             <article className={styles.item} key={vid.id}>
               <div className={styles.itemToolbar}>
-                <strong>{vid.title || `Walk-Around Video #${index + 1}`}</strong>
+                <strong>{vid.title || `Video #${index + 1}`}</strong>
                 <div>
                   <button type="button" className={styles.delete} onClick={() => removeItem("videos", index)}>Delete</button>
                 </div>
@@ -602,25 +603,38 @@ export function ProfileEditor() {
                 <label className={styles.wide}>
                   Video Title
                   <input
-                    placeholder="e.g. 2026 RAM 2500 Laramie Walk-Around Tour"
+                    placeholder="e.g. Funny dealership video or vehicle walkaround"
                     value={vid.title}
                     onChange={(e) => changeItem("videos", index, "title", e.target.value)}
                   />
                 </label>
                 <label className={styles.wide}>
-                  Upload Video File (MP4, WebM, MOV)
+                  Upload Video File (MP4, WebM, MOV) — {uploadedVideoCount}/2 used
                   <input
                     type="file"
                     accept="video/mp4,video/webm,video/quicktime"
-                    onChange={(e) => uploadBlobOrFile(e.target.files![0], e.target.files![0].name, "videos", (url) => changeItem("videos", index, "imageUrl", url))}
+                    disabled={uploadedVideoCount >= 2 && !vid.imageUrl}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) uploadBlobOrFile(file, file.name, "videos", (url) => changeItem("videos", index, "imageUrl", url));
+                    }}
                   />
                 </label>
                 {vid.imageUrl && <p className={styles.help}>Video uploaded successfully.</p>}
                 <label className={styles.wide}>
-                  Description / Features Highlighted
+                  YouTube or TikTok Link
+                  <input
+                    type="url"
+                    placeholder="Paste a YouTube or TikTok link"
+                    value={vid.url}
+                    onChange={(e) => changeItem("videos", index, "url", e.target.value)}
+                  />
+                </label>
+                <label className={styles.wide}>
+                  Video Description
                   <textarea
                     rows={2}
-                    placeholder="Walk-around highlights, package details, or customer notes."
+                    placeholder="Describe the video or add a short caption."
                     value={vid.description}
                     onChange={(e) => changeItem("videos", index, "description", e.target.value)}
                   />
@@ -632,10 +646,9 @@ export function ProfileEditor() {
         <button
           type="button"
           className={styles.add}
-          disabled={draft.videos.length >= 2}
           onClick={() => addItem("videos")}
         >
-          {draft.videos.length >= 2 ? "Video Limit Reached (2/2)" : "+ Add Walk-Around Video"}
+          + Add Video
         </button>
       </details>
 
