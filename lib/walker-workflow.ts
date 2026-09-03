@@ -4,6 +4,8 @@ export const DELIVERY_CHECKLIST_NOTES_STORAGE_KEY =
   "walker.document.deliveryChecklist.v1";
 export const WORKFLOW_SESSION_CHANNEL_NAME = "walker.workflow.session.v1";
 export const WORKFLOW_SESSION_CLEAR_EVENT = "workflow-session-cleared";
+const WORKFLOW_CREATED_AT_KEY = "walker.workflow.created-at.v1";
+const WORKFLOW_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 export const CHECKLIST_ITEMS = [
   { key: "validDriversLicense", label: "Valid Driver's License" },
@@ -287,6 +289,26 @@ function getBrowserStorage() {
   return window.sessionStorage;
 }
 
+function clearExpiredWorkflowSession(storage: Storage) {
+  const createdAt = Number(storage.getItem(WORKFLOW_CREATED_AT_KEY));
+  if (!createdAt || Date.now() - createdAt < WORKFLOW_MAX_AGE_MS) return false;
+
+  storage.removeItem(WORKFLOW_STORAGE_KEY);
+  storage.removeItem(SIGNATURE_STORAGE_KEY);
+  storage.removeItem(DELIVERY_CHECKLIST_NOTES_STORAGE_KEY);
+  storage.removeItem(WORKFLOW_CREATED_AT_KEY);
+  storage.removeItem("walker.deal.id.v1");
+  storage.removeItem("walker.workflow.view.v1");
+  return true;
+}
+
+function ensureWorkflowCreatedAt(storage: Storage) {
+  clearExpiredWorkflowSession(storage);
+  if (!storage.getItem(WORKFLOW_CREATED_AT_KEY)) {
+    storage.setItem(WORKFLOW_CREATED_AT_KEY, String(Date.now()));
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -556,6 +578,9 @@ export function clearWorkflowSession(options: { broadcast?: boolean } = {}) {
   storage?.removeItem(WORKFLOW_STORAGE_KEY);
   storage?.removeItem(SIGNATURE_STORAGE_KEY);
   storage?.removeItem(DELIVERY_CHECKLIST_NOTES_STORAGE_KEY);
+  storage?.removeItem(WORKFLOW_CREATED_AT_KEY);
+  storage?.removeItem("walker.deal.id.v1");
+  storage?.removeItem("walker.workflow.view.v1");
 
   if (options.broadcast !== false) {
     broadcastWorkflowSessionCleared();
@@ -583,6 +608,8 @@ export function loadWorkflow() {
     return createDefaultWorkflowData();
   }
 
+  clearExpiredWorkflowSession(storage);
+
   try {
     return normalizeWorkflowData(JSON.parse(storage.getItem(WORKFLOW_STORAGE_KEY) || "{}"));
   } catch {
@@ -594,6 +621,7 @@ export function saveWorkflow(data: WorkflowData) {
   const next = normalizeWorkflowData(data);
   const storage = getBrowserStorage();
   if (storage) {
+    ensureWorkflowCreatedAt(storage);
     storage.setItem(WORKFLOW_STORAGE_KEY, JSON.stringify(next));
   }
   return next;
@@ -605,6 +633,8 @@ export function loadSignatures() {
     return {};
   }
 
+  clearExpiredWorkflowSession(storage);
+
   try {
     return JSON.parse(storage.getItem(SIGNATURE_STORAGE_KEY) || "{}");
   } catch {
@@ -615,6 +645,7 @@ export function loadSignatures() {
 export function saveSignatures(store: SignatureStore) {
   const storage = getBrowserStorage();
   if (storage) {
+    ensureWorkflowCreatedAt(storage);
     storage.setItem(SIGNATURE_STORAGE_KEY, JSON.stringify(store));
   }
   return store;
@@ -634,6 +665,8 @@ export function loadDeliveryChecklistNotes() {
     return {};
   }
 
+  clearExpiredWorkflowSession(storage);
+
   try {
     return JSON.parse(
       storage.getItem(DELIVERY_CHECKLIST_NOTES_STORAGE_KEY) || "{}",
@@ -650,6 +683,7 @@ export function saveDeliveryChecklistNotes(notes: DeliveryChecklistNotes) {
 
   const storage = getBrowserStorage();
   if (storage) {
+    ensureWorkflowCreatedAt(storage);
     storage.setItem(DELIVERY_CHECKLIST_NOTES_STORAGE_KEY, JSON.stringify(next));
   }
 
