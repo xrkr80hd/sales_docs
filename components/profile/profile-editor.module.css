@@ -651,6 +651,54 @@
   align-items: start;
 }
 
+.reviewItem {
+  overflow: hidden;
+  border: 1px solid #4b4b4b;
+  border-radius: 12px;
+  background: #292929;
+}
+
+.reviewItemSummary {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  list-style: none;
+  cursor: pointer;
+  color: #f3f3f3;
+}
+
+.reviewItemSummary::-webkit-details-marker {
+  display: none;
+}
+
+.reviewChevron {
+  flex: 0 0 auto;
+  color: #b8b8b8;
+  font-size: .75rem;
+  transition: transform .2s ease;
+}
+
+.reviewItem[open] .reviewChevron {
+  transform: rotate(180deg);
+}
+
+.reviewItemBody {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-top: 1px solid #4b4b4b;
+  background: #191b1f;
+}
+
+.reviewActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
 .reviewThumbContainer,
 .vehicleThumbContainer {
   display: flex;
