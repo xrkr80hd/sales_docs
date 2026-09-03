@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ReviewCarousel } from "@/components/profile/review-carousel";
 import { VehicleCarousel } from "@/components/profile/vehicle-carousel";
 import { CopyCardLinkButton } from "@/components/profile/copy-card-link-button";
+import { VideoPlaylist } from "@/components/profile/video-playlist";
 import { getPublishedConsultantProfile } from "@/lib/public-consultant-profile";
 import styles from "../trav/page.module.css";
 
@@ -76,6 +77,7 @@ export default async function ConsultantCard({ params, searchParams }: CardPageP
   const reviews = profile.reviews.map((entry) => ({
     src: entry.imageUrl, alt: `Review from ${entry.title}`, isLong: entry.meta === "long",
   }));
+  const videos = profile.videos.map((entry) => ({ ...entry, embedUrl: getVideoEmbedUrl(entry.url) }));
 
   return (
     <main className={styles.page}>
@@ -139,17 +141,7 @@ export default async function ConsultantCard({ params, searchParams }: CardPageP
         {!!reviews.length && <ReviewCarousel reviews={reviews} />}
 
         {!!profile.soldGallery.length && <section className={styles.mediaSection}><h2>Sold gallery</h2><div className={styles.mediaRail}>{profile.soldGallery.map((entry) => <article key={entry.id}><img src={entry.imageUrl} alt={entry.title} /><strong>{entry.title}</strong><p>{entry.description}</p></article>)}</div></section>}
-        {!!profile.videos.length && <section className={styles.mediaSection}><h2>Videos</h2><div className={styles.mediaRail}>{profile.videos.map((entry) => {
-          const embedUrl = getVideoEmbedUrl(entry.url);
-          const isUploadedVideo = Boolean(entry.imageUrl && /\.(mp4|webm|mov)(\?|$)/i.test(entry.imageUrl));
-          return <article key={entry.id} id={`video-${entry.id}`}>
-            {isUploadedVideo ? <video src={entry.imageUrl} controls preload="metadata" /> : entry.imageUrl ? <img src={entry.imageUrl} alt={entry.title} /> : embedUrl ? <iframe src={embedUrl} title={entry.title || "Consultant video"} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : null}
-            <strong>{entry.title}</strong>
-            <p>{entry.description}</p>
-            {entry.url && <a href={entry.url} target="_blank" rel="noopener noreferrer">Open video</a>}
-            <CopyCardLinkButton query={{ video: entry.id }} hash={`video-${entry.id}`} label="Copy video link" className={styles.mediaCopyButton} />
-          </article>;
-        })}</div></section>}
+        {!!videos.length && <VideoPlaylist videos={videos} initialVideoId={selected.video} />}
 
         <div className={styles.sections}>
           <CopyCardLinkButton label="Copy profile link" className={styles.profileShareButton} />
