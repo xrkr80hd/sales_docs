@@ -507,6 +507,49 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
+.nfcLinkPanel {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.nfcLinkPanel p,
+.nfcLinkPanel small {
+  margin: 0;
+  color: #aeb3bc;
+  line-height: 1.5;
+}
+
+.nfcLinkRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nfcLinkRow code {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+  border: 1px solid #343840;
+  border-radius: 10px;
+  background: #0d0e10;
+  padding: 12px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.86rem;
+}
+
+@media (max-width: 600px) {
+  .nfcLinkRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .nfcLinkRow button {
+    width: 100%;
+  }
+}
+
 .permissionDenied {
   max-width: 540px;
   margin: 60px auto;
