@@ -256,6 +256,64 @@
   width: 100%;
 }
 
+.videoSection {
+  overflow: hidden;
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.videoSection > summary,
+.videoItem > summary {
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  list-style: none;
+}
+
+.videoSection > summary {
+  min-height: 58px;
+  padding: 0 18px;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.videoSection > summary::-webkit-details-marker,
+.videoItem > summary::-webkit-details-marker { display: none; }
+.videoSection > summary::after,
+.videoItem > summary::after { content: "+"; color: #ef6262; font-size: 1.2rem; }
+.videoSection[open] > summary::after,
+.videoItem[open] > summary::after { content: "−"; }
+.videoSection summary small { margin-left: auto; color: #8f939a; font-size: .7rem; }
+
+.videoList {
+  display: grid;
+  gap: 9px;
+  border-top: 1px solid #303339;
+  padding: 10px;
+}
+
+.videoItem {
+  overflow: hidden;
+  border: 1px solid #34373d;
+  border-radius: 13px;
+  background: #202329;
+}
+
+.videoItem > summary { min-height: 50px; padding: 0 13px; font-weight: 800; }
+.videoSnapshot { width: 58px; height: 42px; flex: 0 0 58px; border-radius: 7px; background: #000; object-fit: cover; pointer-events: none; }
+.videoBody { border-top: 1px solid #34373d; padding-bottom: 12px; }
+.videoBody video,
+.videoBody iframe,
+.videoBody img { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: #000; object-fit: contain; }
+.videoBody p { margin: 12px; color: #a7aab0; line-height: 1.45; }
+.videoActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 0 12px; }
+.videoActions a,
+.videoActions button { display: flex; min-height: 44px; align-items: center; justify-content: center; border: 1px solid #3a3d43; border-radius: 11px; background: #17191d; color: #fff; padding: 9px; font: inherit; font-size: .78rem; font-weight: 800; text-align: center; text-decoration: none; }
+
 .socialLinks {
   display: flex;
   flex-wrap: wrap;
