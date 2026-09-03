@@ -274,9 +274,9 @@ export default function AdminPage() {
                   users.map((u) => {
                     const isOwner = u.email.toLowerCase() === "xrkr80hd@gmail.com";
                     return (
-                      <div key={u.id} className="flex flex-wrap items-center gap-3 py-3 sm:flex-nowrap">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
+                      <div key={u.id} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
                             <span className="text-sm font-extrabold text-[#f7f7f7]">
                               {u.display_name || u.email.split("@")[0]}
                             </span>
@@ -286,48 +286,49 @@ export default function AdminPage() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-neutral-400">{u.email}</p>
+                          <p className="mt-1 break-all text-xs leading-4 text-neutral-400">{u.email}</p>
                         </div>
 
-                        {/* Card Permission Toggle */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleCard(u.id, Boolean(u.card_enabled || isOwner))}
-                          disabled={isOwner}
-                          title={u.card_enabled || isOwner ? "Card permission granted" : "Click to grant card permission"}
-                          className={`shrink-0 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-wider transition ${
-                            u.card_enabled || isOwner
-                              ? "border-emerald-500/40 bg-emerald-950/40 text-emerald-300"
-                              : "border-neutral-700 bg-neutral-900 text-neutral-400 hover:border-neutral-500 hover:text-white"
-                          }`}
-                        >
-                          {u.card_enabled || isOwner ? "✓ Card Enabled" : "+ Enable Card"}
-                        </button>
-
-                        <select
-                          value={u.role}
-                          disabled={isOwner}
-                          onChange={(e) => handleRoleChange(u.id, e.currentTarget.value)}
-                          title={`Change role for ${u.display_name || u.email}`}
-                          className={`h-9 rounded-lg border px-3 text-[11px] font-bold uppercase tracking-[0.1em] outline-none transition focus:border-[var(--accent)] ${
-                            u.role === "admin"
-                              ? "border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)]"
-                              : "border-[#2e3035] bg-[#0f1114] text-neutral-300"
-                          }`}
-                        >
-                          <option value="user">User</option>
-                          <option value="admin">Admin</option>
-                        </select>
-
-                        {!isOwner && (
+                        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
                           <button
                             type="button"
-                            onClick={() => handleRemoveUser(u.id, u.email)}
-                            className="shrink-0 rounded-lg border border-transparent px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-neutral-400 transition hover:border-red-800/40 hover:bg-red-950/30 hover:text-red-300"
+                            onClick={() => handleToggleCard(u.id, Boolean(u.card_enabled || isOwner))}
+                            disabled={isOwner}
+                            title={u.card_enabled || isOwner ? "Card permission granted" : "Click to grant card permission"}
+                            className={`min-h-10 rounded-lg border px-3 py-2 text-[10px] font-black uppercase tracking-wider transition sm:rounded-full ${
+                              u.card_enabled || isOwner
+                                ? "border-emerald-500/40 bg-emerald-950/40 text-emerald-300"
+                                : "border-neutral-700 bg-neutral-900 text-neutral-400 hover:border-neutral-500 hover:text-white"
+                            }`}
                           >
-                            Remove
+                            {u.card_enabled || isOwner ? "✓ Card Enabled" : "+ Enable Card"}
                           </button>
-                        )}
+
+                          <select
+                            value={u.role}
+                            disabled={isOwner}
+                            onChange={(e) => handleRoleChange(u.id, e.currentTarget.value)}
+                            title={`Change role for ${u.display_name || u.email}`}
+                            className={`h-10 min-w-0 rounded-lg border px-2 text-[11px] font-bold uppercase tracking-[0.08em] outline-none transition focus:border-[var(--accent)] ${
+                              u.role === "admin"
+                                ? "border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)]"
+                                : "border-[#2e3035] bg-[#0f1114] text-neutral-300"
+                            }`}
+                          >
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                          </select>
+
+                          {!isOwner && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveUser(u.id, u.email)}
+                              className="col-span-2 min-h-10 rounded-lg border border-[#2e3035] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-neutral-400 transition hover:border-red-800/40 hover:bg-red-950/30 hover:text-red-300 sm:col-span-1"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })
@@ -360,35 +361,26 @@ export default function AdminPage() {
                   <p className="py-4 text-sm text-neutral-400">No pending invites.</p>
                 ) : (
                   invites.map((inv) => (
-                    <div key={inv.id} className="flex flex-wrap items-center gap-3 py-3 sm:flex-nowrap">
-                      <div className="min-w-0 flex-1">
-                        <span className="text-sm font-bold text-[#f7f7f7]">
+                    <div key={inv.id} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                      <div className="min-w-0">
+                        <span className="block break-all text-sm font-bold text-[#f7f7f7]">
                           {inv.email}
                         </span>
-                        <span className="mx-2 text-neutral-600">·</span>
-                        <span className="text-xs text-neutral-400">
+                        <span className="mt-1 block text-xs text-neutral-400">
                           {new Date(inv.created_at).toLocaleDateString()} → {new Date(inv.expires_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <span
-                        className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.15em] ${
-                          inv.accepted_at
-                            ? "border-emerald-500/30 bg-emerald-950/40 text-emerald-300"
-                            : "border-amber-500/30 bg-amber-950/40 text-amber-300"
-                        }`}
-                      >
-                        {inv.accepted_at ? "Accepted" : "Pending"}
-                      </span>
-                      <span className="shrink-0 rounded-lg border border-[#2e3035] bg-[#0f1114] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-neutral-300">
-                        {inv.role}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRevokeInvite(inv.id, inv.email)}
-                        className="shrink-0 rounded-lg border border-transparent px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-neutral-400 transition hover:border-red-800/40 hover:bg-red-950/30 hover:text-red-300"
-                      >
-                        {inv.accepted_at ? "Delete" : "Revoke"}
-                      </button>
+                      <div className="grid grid-cols-3 items-center gap-2 sm:flex">
+                        <span className={`rounded-lg border px-2 py-2 text-center text-[9px] font-black uppercase tracking-[0.1em] sm:rounded-full sm:py-1 ${inv.accepted_at ? "border-emerald-500/30 bg-emerald-950/40 text-emerald-300" : "border-amber-500/30 bg-amber-950/40 text-amber-300"}`}>
+                          {inv.accepted_at ? "Accepted" : "Pending"}
+                        </span>
+                        <span className="rounded-lg border border-[#2e3035] bg-[#0f1114] px-2 py-2 text-center text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-300">
+                          {inv.role}
+                        </span>
+                        <button type="button" onClick={() => handleRevokeInvite(inv.id, inv.email)} className="rounded-lg border border-[#2e3035] px-2 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 transition hover:border-red-800/40 hover:bg-red-950/30 hover:text-red-300">
+                          {inv.accepted_at ? "Delete" : "Revoke"}
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -400,4 +392,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
