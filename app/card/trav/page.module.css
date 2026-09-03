@@ -232,6 +232,30 @@
   margin: 10px 12px 0;
 }
 
+.mediaCopyButton,
+.profileShareButton {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #3a3d43;
+  border-radius: 12px;
+  background: #22252a;
+  color: #fff;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 800;
+}
+
+.mediaCopyButton {
+  width: calc(100% - 24px);
+  margin: 10px 12px 0;
+}
+
+.profileShareButton {
+  width: 100%;
+}
+
 .socialLinks {
   display: flex;
   flex-wrap: wrap;
