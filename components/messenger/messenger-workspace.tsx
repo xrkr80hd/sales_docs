@@ -206,9 +206,10 @@ export function MessengerWorkspace() {
   const currentUserId = data?.me;
   const teamConversationId = teamConversation?.id;
   const teamMessageCount = teamMessages.length;
-  const onlinePeople = (data?.people ?? []).filter((person) =>
-    person.user_id !== currentUserId && onlineUserIds.has(person.user_id)
-  );
+  const people = (data?.people ?? [])
+    .filter((person) => person.user_id !== currentUserId)
+    .sort((a, b) => Number(onlineUserIds.has(b.user_id)) - Number(onlineUserIds.has(a.user_id)));
+  const onlineCount = people.filter((person) => onlineUserIds.has(person.user_id)).length;
 
   useEffect(() => {
     teamEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -472,14 +473,14 @@ export function MessengerWorkspace() {
         <aside className={styles.peoplePanel}>
           <div className={styles.panelHeading}>
             <p>People</p>
-            <span>{onlinePeople.length} online</span>
+            <span>{onlineCount} online · {people.length - onlineCount} offline</span>
           </div>
           <div className={styles.peopleList}>
-            {onlinePeople.map((person) => (
+            {people.map((person) => (
               <button key={person.user_id} type="button" className={styles.person} onClick={() => activatePerson(person.user_id)} disabled={!data.membership?.can_dm}>
-                <span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span>
+                <span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}<span className={`${styles.presenceDot} ${onlineUserIds.has(person.user_id) ? styles.presenceOnline : styles.presenceOffline}`} /></span>
                 <span>{personName(person.user_id)}</span>
-                <span className={styles.openDm}>Tap twice</span>
+                <span className={styles.openDm}>{onlineUserIds.has(person.user_id) ? "Online" : "Offline"} · Tap twice</span>
                 {identityUserId === person.user_id && <span className={styles.peopleIdentity}><span className={styles.identityPhoto}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><strong>@{person.profiles?.username || "member"}</strong></span>}
               </button>
             ))}
@@ -505,7 +506,7 @@ export function MessengerWorkspace() {
           const conversation = dmConversations.find((item) => item.id === conversationId);
           if (!conversation) return null;
           const otherUserId = conversation.messenger_participants?.find((participant) => participant.user_id !== data.me)?.user_id;
-          if (!otherUserId || !onlineUserIds.has(otherUserId)) return null;
+          if (!otherUserId) return null;
           const collapsed = collapsedDmIds.includes(conversationId);
           const messages = (data.messages ?? []).filter((message) => message.conversation_id === conversationId && !message.deleted_at);
           const name = dmName(conversation);
@@ -516,7 +517,7 @@ export function MessengerWorkspace() {
                   setCollapsedDmIds((current) => current.includes(conversationId) ? current.filter((id) => id !== conversationId) : [...current, conversationId]);
                   if (collapsed) markRead(conversationId);
                 }} aria-expanded={!collapsed}>
-                  <span className={styles.dmStatus} /><span>{name}</span>
+                  <span className={`${styles.dmStatus} ${onlineUserIds.has(otherUserId) ? styles.presenceOnline : styles.presenceOffline}`} /><span>{name}</span>
                 </button>
                 <button type="button" className={styles.dmClose} onClick={() => setOpenDmIds((current) => current.filter((id) => id !== conversationId))} aria-label={`Close chat with ${name}`}>×</button>
               </header>
@@ -536,7 +537,7 @@ export function MessengerWorkspace() {
       </div>
 
       {data.membership.can_dm && <nav className={styles.dmTray} aria-label="Personal direct messages">
-        {onlinePeople.map((person) => {
+        {people.map((person) => {
           const conversation = dmForPerson(person.user_id);
           const unread = unreadCount(conversation);
           const name = personName(person.user_id);
@@ -549,7 +550,7 @@ export function MessengerWorkspace() {
               onClick={() => openPersonDm(person.user_id)}
               aria-label={`${name}${unread ? `, ${unread} unread messages` : ""}`}
             >
-              <span className={styles.dmStatus} />
+              <span className={`${styles.dmStatus} ${onlineUserIds.has(person.user_id) ? styles.presenceOnline : styles.presenceOffline}`} />
               <span className={styles.dmTabName}>{name}</span>
               {unread > 0 && <span className={styles.unreadCount}>{unread}</span>}
             </button>
@@ -557,14 +558,14 @@ export function MessengerWorkspace() {
         })}
       </nav>}
 
-      <button type="button" className={styles.peopleTab} onClick={() => setPeopleOpen(true)} aria-label={`Show online members, ${onlinePeople.length} online`}>
-        People {onlinePeople.length}{totalUnread > 0 ? ` · ${totalUnread}` : ""}
+      <button type="button" className={styles.peopleTab} onClick={() => setPeopleOpen(true)} aria-label={`Show members, ${onlineCount} online`}>
+        People {onlineCount}/{people.length}{totalUnread > 0 ? ` · ${totalUnread}` : ""}
       </button>
       {peopleOpen && <div className={styles.mobilePeopleOverlay}>
         <button type="button" className={styles.mobilePeopleBackdrop} onClick={() => setPeopleOpen(false)} aria-label="Close online members" />
         <aside className={styles.mobilePeopleDrawer}>
-          <header><div><strong>Online now</strong><span>{onlinePeople.length} members</span></div><button type="button" onClick={() => setPeopleOpen(false)}>×</button></header>
-          {onlinePeople.map((person) => <button key={person.user_id} type="button" onClick={() => activatePerson(person.user_id)}><span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><span>{personName(person.user_id)}</span>{identityUserId === person.user_id && <span className={styles.drawerIdentity}><span className={styles.identityPhoto}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><strong>@{person.profiles?.username || "member"}</strong></span>}</button>)}
+          <header><div><strong>People</strong><span>{onlineCount} online · {people.length - onlineCount} offline</span></div><button type="button" onClick={() => setPeopleOpen(false)}>×</button></header>
+          {people.map((person) => <button key={person.user_id} type="button" onClick={() => activatePerson(person.user_id)}><span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}<span className={`${styles.presenceDot} ${onlineUserIds.has(person.user_id) ? styles.presenceOnline : styles.presenceOffline}`} /></span><span>{personName(person.user_id)}</span><span className={styles.drawerPresence}>{onlineUserIds.has(person.user_id) ? "Online" : "Offline"}</span>{identityUserId === person.user_id && <span className={styles.drawerIdentity}><span className={styles.identityPhoto}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><strong>@{person.profiles?.username || "member"}</strong></span>}</button>)}
         </aside>
       </div>}
     </div>
