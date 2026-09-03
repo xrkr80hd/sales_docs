@@ -214,6 +214,12 @@ export function ProfileEditor() {
     }
   }
 
+  function cancelChanges() {
+    if (!savedDraft) return;
+    setDraft(JSON.parse(savedDraft) as ConsultantProfileContent);
+    setNotice("Changes canceled.");
+  }
+
   function changeItem(key: CollectionKey, index: number, field: keyof ProfileListItem, value: string) {
     setDraft((current) => {
       if (!current) return current;
@@ -344,6 +350,7 @@ export function ProfileEditor() {
         <span className={profile.is_published ? styles.live : styles.draft}>{profile.is_published ? "Live" : "Not live"}</span>
         <div>
           {hasChanges && <button type="button" className={styles.publish} disabled={saving} onClick={saveChanges}>{saving ? "Saving…" : "Save"}</button>}
+          {hasChanges && <button type="button" className={styles.secondary} disabled={saving} onClick={cancelChanges}>Cancel</button>}
           {profile.is_published && <button type="button" className={styles.danger} onClick={unpublish}>Remove from site</button>}
         </div>
       </section>
@@ -709,6 +716,7 @@ export function ProfileEditor() {
 
       {hasChanges && <section className={styles.bottomActions}>
         <button type="button" className={styles.publish} disabled={saving} onClick={saveChanges}>{saving ? "Saving…" : "Save"}</button>
+        <button type="button" className={styles.secondary} disabled={saving} onClick={cancelChanges}>Cancel</button>
       </section>}
       {notice && <p className={styles.notice}>{notice}</p>}
 
