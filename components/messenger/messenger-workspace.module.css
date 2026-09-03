@@ -125,6 +125,7 @@
   .mobilePeopleDrawer header div { display: grid; gap: 2px; }
   .mobilePeopleDrawer header span { color: #777d88; font-size: .68rem; }
   .mobilePeopleDrawer header button { border: 0; background: transparent; color: #fff; font-size: 1.4rem; }
-  .mobilePeopleDrawer > button { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; border: 0; border-bottom: 1px solid #272a30; background: transparent; color: #fff; text-align: left; }
-  .drawerIdentity { margin-left: auto; color: #8b909a; font-size: .68rem; }
+  .mobilePeopleDrawer > button { position: relative; width: 100%; min-height: 48px; padding: 8px 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; border: 0; border-bottom: 1px solid #272a30; background: transparent; color: #fff; text-align: left; }
+  .drawerIdentity { flex-basis: 100%; margin: 2px 0 4px 42px; padding: 8px; display: flex; align-items: center; gap: 9px; border: 1px solid #343840; background: #17191d; color: #fff; font-size: .68rem; }
+  .drawerIdentity .identityPhoto { width: 44px; height: 44px; flex-basis: 44px; }
 }
