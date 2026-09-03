@@ -87,6 +87,7 @@ export function ProfileEditor() {
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [draft, setDraft] = useState<ConsultantProfileContent | null>(null);
+  const [savedDraft, setSavedDraft] = useState("");
   const [notice, setNotice] = useState("");
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [postedDialog, setPostedDialog] = useState(false);
@@ -132,8 +133,10 @@ export function ProfileEditor() {
         setLoading(false);
         return;
       }
+      const loadedDraft = normalizeProfileContent(result.card.draft, result.isAdmin);
       setProfile({ consultant_slug: result.card.slug, is_published: Boolean(result.card.publishedAt) });
-      setDraft(normalizeProfileContent(result.card.draft, result.isAdmin));
+      setDraft(loadedDraft);
+      setSavedDraft(JSON.stringify(loadedDraft));
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Failed to load profile.");
     } finally {
@@ -168,18 +171,7 @@ export function ProfileEditor() {
     setDraft((current) => current ? { ...current, contact: { ...current.contact, [field]: value } } : current);
   };
 
-  async function saveDraft() {
-    if (!profile || !draft) return;
-    setSaving(true);
-    const response = await authFetch("/api/me/business-card", {
-      method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "draft", draft }),
-    });
-    const result = await response.json();
-    setSaving(false);
-    setNotice(response.ok ? "Draft saved. Your public site has not changed." : result.error);
-  }
-
-  async function publish() {
+  async function saveChanges() {
     if (!profile || !draft) return;
     setSaving(true);
     setNotice("");
@@ -188,13 +180,13 @@ export function ProfileEditor() {
         method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "publish", draft }),
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || `Publish failed (${response.status}).`);
+      if (!response.ok) throw new Error(result.error || `Save failed (${response.status}).`);
       setProfile({ consultant_slug: result.card?.slug || profile.consultant_slug, is_published: true });
+      setSavedDraft(JSON.stringify(draft));
       setPostedDialog(true);
-      await loadProfile();
       router.refresh();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Your card could not be published. Please try again.");
+      setNotice(error instanceof Error ? error.message : "Your changes could not be saved. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -335,6 +327,8 @@ export function ProfileEditor() {
     );
   }
 
+  const hasChanges = JSON.stringify(draft) !== savedDraft;
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -347,11 +341,10 @@ export function ProfileEditor() {
       </header>
 
       <section className={styles.statusBar}>
-        <span className={profile.is_published ? styles.live : styles.draft}>{profile.is_published ? "Live" : "Draft only"}</span>
+        <span className={profile.is_published ? styles.live : styles.draft}>{profile.is_published ? "Live" : "Not live"}</span>
         <div>
-          <button type="button" className={styles.secondary} disabled={saving} onClick={saveDraft}>Save draft</button>
-          <button type="button" className={styles.publish} disabled={saving} onClick={publish}>Publish</button>
-          {profile.is_published && <button type="button" className={styles.danger} onClick={unpublish}>Unpublish</button>}
+          {hasChanges && <button type="button" className={styles.publish} disabled={saving} onClick={saveChanges}>{saving ? "Saving…" : "Save"}</button>}
+          {profile.is_published && <button type="button" className={styles.danger} onClick={unpublish}>Remove from site</button>}
         </div>
       </section>
 
@@ -714,18 +707,17 @@ export function ProfileEditor() {
         />
       )}
 
-      <section className={styles.bottomActions}>
-        <button type="button" className={styles.secondary} disabled={saving} onClick={saveDraft}>Save draft</button>
-        <button type="button" className={styles.publish} disabled={saving} onClick={publish}>Publish</button>
-      </section>
+      {hasChanges && <section className={styles.bottomActions}>
+        <button type="button" className={styles.publish} disabled={saving} onClick={saveChanges}>{saving ? "Saving…" : "Save"}</button>
+      </section>}
       {notice && <p className={styles.notice}>{notice}</p>}
 
       {postedDialog && (
         <div className={styles.dialogBackdrop} role="presentation">
           <section className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="posted-title">
             <span>✓</span>
-            <h2 id="posted-title">Posted to site</h2>
-            <p>Your published business card is now live at /card/{profile.consultant_slug}.</p>
+            <h2 id="posted-title">Saved</h2>
+            <p>Your changes are now live at /card/{profile.consultant_slug}.</p>
             <button type="button" onClick={() => setPostedDialog(false)}>Done</button>
           </section>
         </div>
