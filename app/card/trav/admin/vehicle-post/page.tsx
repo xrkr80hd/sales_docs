@@ -20,7 +20,7 @@ type VehicleForm = {
   stock: string; mileage: string; price: string; walkerUrl: string; consultantUrl: string;
 };
 
-type CropPhoto = { id: string; file: File; url: string; zoom: number; x: number; y: number; ratio: number; };
+type CropPhoto = { id: string; file?: File; url: string; zoom: number; x: number; y: number; ratio: number; };
 type Slot = { x: number; y: number; w: number; h: number; };
 type PhotoGuide = { shape: string; view: string; note: string; };
 
@@ -133,6 +133,7 @@ const renderCollage = async (
 
   await Promise.all(photos.map((photo, index) => new Promise<void>((resolve, reject) => {
     const image = new Image();
+    image.crossOrigin = "anonymous";
     image.onload = () => {
       drawCropped(context, image, slots[index], photo);
       context.strokeStyle = "#0b0c0e";
@@ -199,6 +200,7 @@ export default function VehiclePostBuilder() {
   const [selectedCaption, setSelectedCaption] = useState(0);
   const [editorOpen, setEditorOpen] = useState(false);
   const [savingCarousel, setSavingCarousel] = useState(false);
+  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [dealer, setDealer] = useState<DealerInfo>(createDefaultDealer);
   const [consultant, setConsultant] = useState<ConsultantInfo>(createDefaultConsultant);
@@ -447,6 +449,23 @@ INSTRUCTIONS
     return fetch(url, { ...init, headers: { ...init?.headers, authorization: `Bearer ${session.access_token}` } });
   };
 
+  useEffect(() => {
+    const editId = new URLSearchParams(window.location.search).get("edit");
+    if (!editId) return;
+    void authFetch("/api/me/business-card").then(async (response) => {
+      const result = await response.json();
+      const draft = normalizeProfileContent(result.card?.draft, Boolean(result.isAdmin));
+      const vehicle = draft.vehicles.find((item) => item.id === editId);
+      if (!vehicle?.builderData) throw new Error("This older collage does not have editable source photos.");
+      const project = vehicle.builderData;
+      setEditingVehicleId(editId);
+      setPhotoCount(project.photoCount);
+      setForm((current) => ({ ...current, ...project.form }));
+      setPhotos(project.photos.map((photo) => ({ id: crypto.randomUUID(), ...photo })));
+      setNotice("Editable collage loaded. Update it, then save it back to your carousel draft.");
+    }).catch((error) => setNotice(error instanceof Error ? error.message : "The collage could not be loaded."));
+  }, []);
+
   const buildCollageBlob = async () => {
     const canvas = document.createElement("canvas");
     await renderCollage(canvas, photos, form, dealer, consultant);
@@ -470,7 +489,19 @@ INSTRUCTIONS
       const cardResult = await cardResponse.json();
       if (!cardResponse.ok || cardResult.permitted === false) throw new Error(cardResult.error || "Your business card could not be opened.");
       const draft = normalizeProfileContent(cardResult.card?.draft, Boolean(cardResult.isAdmin));
-      if (draft.vehicles.length >= 6) throw new Error("Your carousel already has six vehicles. Delete one before adding another.");
+      const editingIndex = editingVehicleId ? draft.vehicles.findIndex((item) => item.id === editingVehicleId) : -1;
+      if (editingIndex < 0 && draft.vehicles.length >= 6) throw new Error("Your carousel already has six vehicles. Delete one before adding another.");
+
+      const sourcePhotos = await Promise.all(photos.map(async (photo, index) => {
+        if (!photo.file) return { url: photo.url, zoom: photo.zoom, x: photo.x, y: photo.y, ratio: photo.ratio };
+        const sourceBody = new FormData();
+        sourceBody.append("file", photo.file, photo.file.name || `photo-${index + 1}.jpg`);
+        sourceBody.append("category", "vehicles");
+        const sourceResponse = await authFetch("/api/me/business-card", { method: "POST", body: sourceBody });
+        const sourceResult = await sourceResponse.json();
+        if (!sourceResponse.ok) throw new Error(sourceResult.error || `Photo ${index + 1} could not be saved.`);
+        return { url: sourceResult.url, zoom: photo.zoom, x: photo.x, y: photo.y, ratio: photo.ratio };
+      }));
 
       const blob = await buildCollageBlob();
       const uploadBody = new FormData();
@@ -481,22 +512,26 @@ INSTRUCTIONS
       if (!uploadResponse.ok) throw new Error(uploadResult.error || "The collage could not be uploaded.");
 
       const vehicle = {
-        id: crypto.randomUUID(),
+        id: editingVehicleId || crypto.randomUUID(),
         title,
         description: form.mileage ? `${form.mileage} miles` : "",
         url: form.walkerUrl.trim(),
         imageUrl: uploadResult.url,
         secondaryUrl: form.vin.trim(),
         meta: [form.price.trim(), form.stock.trim() ? `Stock ${form.stock.trim()}` : ""].filter(Boolean).join(" · "),
+        builderData: { photoCount, form: { ...form }, photos: sourcePhotos },
       };
+      const vehicles = editingIndex >= 0
+        ? draft.vehicles.map((item, index) => index === editingIndex ? vehicle : item)
+        : [...draft.vehicles, vehicle];
       const saveResponse = await authFetch("/api/me/business-card", {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "draft", draft: { ...draft, vehicles: [...draft.vehicles, vehicle] } }),
+        body: JSON.stringify({ action: "draft", draft: { ...draft, vehicles } }),
       });
       const saveResult = await saveResponse.json();
       if (!saveResponse.ok) throw new Error(saveResult.error || "The carousel draft could not be saved.");
-      setNotice("Added to your carousel draft. Open Business Card and press Publish when you are ready.");
+      setNotice(editingIndex >= 0 ? "Collage updated in your card draft. Press Publish when you are ready." : "Added to your carousel draft. Open Business Card and press Publish when you are ready.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "The collage could not be added to your carousel.");
     } finally {
@@ -657,7 +692,7 @@ INSTRUCTIONS
             )}
             <div className={styles.actions}>
               <button className={styles.primary} type="button" disabled={!photoCount || photos.length !== photoCount} onClick={createCollage}>Download collage</button>
-              <button className={styles.secondary} type="button" disabled={savingCarousel || !photoCount || photos.length !== photoCount} onClick={addToCarousel}>{savingCarousel ? "Adding…" : "Add to My Carousel"}</button>
+              <button className={styles.secondary} type="button" disabled={savingCarousel || !photoCount || photos.length !== photoCount} onClick={addToCarousel}>{savingCarousel ? "Saving…" : editingVehicleId ? "Update Carousel Collage" : "Add to My Carousel"}</button>
             </div>
           </div>
         </details>
