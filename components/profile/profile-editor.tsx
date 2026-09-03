@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase-browser";
 import {
   ConsultantProfileContent,
@@ -79,6 +80,7 @@ export function getSocialIcon(urlOrName: string) {
 }
 
 export function ProfileEditor() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(true);
@@ -175,17 +177,22 @@ export function ProfileEditor() {
   async function publish() {
     if (!profile || !draft) return;
     setSaving(true);
-    const response = await authFetch("/api/me/business-card", {
-      method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "publish", draft }),
-    });
-    const result = await response.json();
-    setSaving(false);
-    if (!response.ok) {
-      setNotice(result.error);
-      return;
+    setNotice("");
+    try {
+      const response = await authFetch("/api/me/business-card", {
+        method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "publish", draft }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || `Publish failed (${response.status}).`);
+      setProfile({ consultant_slug: result.card?.slug || profile.consultant_slug, is_published: true });
+      setPostedDialog(true);
+      await loadProfile();
+      router.refresh();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Your card could not be published. Please try again.");
+    } finally {
+      setSaving(false);
     }
-    setProfile({ ...profile, is_published: true });
-    setPostedDialog(true);
   }
 
   async function unpublish() {
