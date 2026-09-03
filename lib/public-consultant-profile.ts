@@ -1,4 +1,4 @@
-import { ConsultantProfileContent, emptyConsultantContent, normalizeProfileContent, travDefaultContent } from "@/lib/consultant-profile";
+import { ConsultantProfileContent, emptyConsultantContent, normalizeProfileContent } from "@/lib/consultant-profile";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
 export async function getPublishedConsultantProfile(slug: string): Promise<ConsultantProfileContent | null> {
@@ -117,7 +117,7 @@ export async function getPublishedConsultantProfile(slug: string): Promise<Consu
       });
     }
 
-    return isTrav ? travDefaultContent : null;
+    return null;
   } catch {
     if (slug === "donald-goff" || slug === "donald") {
       return emptyConsultantContent({
@@ -129,6 +129,6 @@ export async function getPublishedConsultantProfile(slug: string): Promise<Consu
         email: "dgoff@walkerautomotive.com",
       });
     }
-    return isTrav ? travDefaultContent : null;
+    return null;
   }
 }
