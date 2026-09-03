@@ -319,6 +319,7 @@ export function MessengerWorkspace() {
     if (previous?.userId === userId && now - previous.at <= 450) {
       lastPersonActivationRef.current = null;
       setIdentityUserId(null);
+      setPeopleOpen(false);
       openPersonDm(userId);
       return;
     }
@@ -340,35 +341,6 @@ export function MessengerWorkspace() {
     } catch (nicknameError) {
       setError(nicknameError instanceof Error ? nicknameError.message : "Could not update your chat name.");
     }
-  }
-
-  function renderIdentityControl(userId: string) {
-    const identity = personIdentity(userId);
-    const nickname = identity?.nickname || identity?.display_name || "Team Member";
-    const username = identity?.username || "member";
-    const imageUrl = identity?.profile_image_url;
-    const open = identityUserId === userId;
-    return (
-      <span className={`${styles.identityControl} ${open ? styles.identityOpen : ""}`}>
-        <button
-          type="button"
-          className={styles.identityButton}
-          onClick={() => activatePerson(userId)}
-          aria-label={`${nickname}. Click once to view identity, twice to send a direct message.`}
-        >
-          <span className={styles.miniAvatar}>
-            {imageUrl ? <img src={imageUrl} alt="" /> : nickname.charAt(0)}
-          </span>
-          <span>{nickname}</span>
-        </button>
-        <span className={styles.identityPopover} role="status">
-          <span className={styles.identityPhoto}>
-            {imageUrl ? <img src={imageUrl} alt={`${username} profile`} /> : nickname.charAt(0)}
-          </span>
-          <strong>@{username}</strong>
-        </span>
-      </span>
-    );
   }
 
   async function deleteMessage(messageId: string | number) {
@@ -443,7 +415,7 @@ export function MessengerWorkspace() {
       const mine = message.sender_id === data?.me;
       return (
         <article key={message.id} className={`${styles.message} ${mine ? styles.mine : ""}`}>
-          {!mine && <div className={styles.sender}>{renderIdentityControl(message.sender_id)}</div>}
+          {!mine && <div className={styles.sender}>{personName(message.sender_id)}</div>}
           <div className={styles.messageLine}>
             {editingMessageId === message.id ? (
               <form className={styles.editForm} onSubmit={(event) => { event.preventDefault(); void editMessage(message.id); }}>
@@ -592,7 +564,7 @@ export function MessengerWorkspace() {
         <button type="button" className={styles.mobilePeopleBackdrop} onClick={() => setPeopleOpen(false)} aria-label="Close online members" />
         <aside className={styles.mobilePeopleDrawer}>
           <header><div><strong>Online now</strong><span>{onlinePeople.length} members</span></div><button type="button" onClick={() => setPeopleOpen(false)}>×</button></header>
-          {onlinePeople.map((person) => <button key={person.user_id} type="button" onClick={() => activatePerson(person.user_id)}><span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><span>{personName(person.user_id)}</span>{identityUserId === person.user_id && <span className={styles.drawerIdentity}>@{person.profiles?.username || "member"}</span>}</button>)}
+          {onlinePeople.map((person) => <button key={person.user_id} type="button" onClick={() => activatePerson(person.user_id)}><span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><span>{personName(person.user_id)}</span>{identityUserId === person.user_id && <span className={styles.drawerIdentity}><span className={styles.identityPhoto}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><strong>@{person.profiles?.username || "member"}</strong></span>}</button>)}
         </aside>
       </div>}
     </div>
