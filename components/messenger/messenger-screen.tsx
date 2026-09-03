@@ -80,6 +80,7 @@ export function MessengerScreen() {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const [mobileConversationOpen, setMobileConversationOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
@@ -166,6 +167,7 @@ export function MessengerScreen() {
         body: JSON.stringify({ action: "start-dm", userId }),
       });
       setSelected(res.conversationId);
+      setMobileConversationOpen(true);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not start direct message");
@@ -230,7 +232,7 @@ export function MessengerScreen() {
         </div>
       )}
 
-      <div className={styles.mainLayout}>
+      <div className={`${styles.mainLayout} ${mobileConversationOpen ? styles.mobileConversationOpen : styles.mobileConversationList}`}>
         {/* Sidebar */}
         <aside className={styles.sidebar}>
           <div className={styles.sidebarHeader}>Chats</div>
@@ -244,7 +246,10 @@ export function MessengerScreen() {
                 <button
                   key={convo.id}
                   type="button"
-                  onClick={() => setSelected(convo.id)}
+                  onClick={() => {
+                    setSelected(convo.id);
+                    setMobileConversationOpen(true);
+                  }}
                   className={`${styles.convoCard} ${isActive ? styles.convoCardActive : ""}`}
                 >
                   <div className={styles.convoAvatar}>{initial}</div>
@@ -287,6 +292,14 @@ export function MessengerScreen() {
           {/* Header */}
           <div className={styles.chatHeader}>
             <div className={styles.chatHeaderInfo}>
+              <button
+                type="button"
+                className={styles.mobileBackButton}
+                onClick={() => setMobileConversationOpen(false)}
+                aria-label="Back to conversations"
+              >
+                ‹
+              </button>
               <div className={styles.chatHeaderAvatar}>
                 {activeConvo?.kind === "organization" ? "🏢" : "👤"}
               </div>
