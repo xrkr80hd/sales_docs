@@ -465,7 +465,7 @@ export function ProfileEditor() {
       <p className={styles.sectionIntro}>Dedicated media pools for your five-star review screenshots, featured inventory carousel, and walk-around videos.</p>
 
       {/* ── 3. Five-Star Reviews Pool (Max 10) ── */}
-      <details className={styles.panel} open>
+      <details className={styles.panel}>
         <summary>
           <span>3. Five-Star Customer Reviews (Screenshot Pool)</span>
           <div className={styles.summaryRight}>
@@ -478,44 +478,47 @@ export function ProfileEditor() {
         </p>
         <div className={styles.collection}>
           {draft.reviews.map((review, index) => (
-            <article className={styles.item} key={review.id}>
-              <div className={styles.itemToolbar}>
+            <details className={styles.reviewItem} key={review.id}>
+              <summary className={styles.reviewItemSummary}>
                 <strong>{review.title ? `Review from ${review.title}` : `Review #${index + 1}`}</strong>
-                <div>
+                <span className={styles.reviewChevron}>▼</span>
+              </summary>
+              <div className={styles.reviewItemBody}>
+                <div className={styles.reviewActions}>
                   <button type="button" disabled={index === 0} onClick={() => moveItem("reviews", index, -1)}>↑</button>
                   <button type="button" disabled={index === draft.reviews.length - 1} onClick={() => moveItem("reviews", index, 1)}>↓</button>
                   <button type="button" className={styles.delete} onClick={() => removeItem("reviews", index)}>Delete</button>
                 </div>
-              </div>
-              <div className={styles.reviewEditorGrid}>
-                <div className={styles.reviewThumbContainer}>
-                  {review.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={review.imageUrl} alt={review.title || "Review screenshot"} className={styles.reviewThumbnail} />
-                  ) : (
-                    <div className={styles.reviewThumbPlaceholder}>No screenshot uploaded</div>
-                  )}
-                  <label className={styles.uploadReviewBtn}>
-                    <span>📷 Crop &amp; Upload Screenshot</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileSelectedWithCrop(e, "reviews", "free", `Crop Review #${index + 1}`, (url) => changeItem("reviews", index, "imageUrl", url))}
-                    />
-                  </label>
+                <div className={styles.reviewEditorGrid}>
+                  <div className={styles.reviewThumbContainer}>
+                    {review.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={review.imageUrl} alt={review.title || "Review screenshot"} className={styles.reviewThumbnail} />
+                    ) : (
+                      <div className={styles.reviewThumbPlaceholder}>No screenshot uploaded</div>
+                    )}
+                    <label className={styles.uploadReviewBtn}>
+                      <span>📷 Crop &amp; Upload Screenshot</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileSelectedWithCrop(e, "reviews", "free", `Crop Review #${index + 1}`, (url) => changeItem("reviews", index, "imageUrl", url))}
+                      />
+                    </label>
+                  </div>
+                  <div className={styles.reviewDetails}>
+                    <label>
+                      Reviewer Name (Customer)
+                      <input
+                        placeholder="e.g. Edward Ramer"
+                        value={review.title}
+                        onChange={(e) => changeItem("reviews", index, "title", e.target.value)}
+                      />
+                    </label>
+                  </div>
                 </div>
-                <div className={styles.reviewDetails}>
-                  <label>
-                    Reviewer Name (Customer)
-                    <input
-                      placeholder="e.g. Edward Ramer"
-                      value={review.title}
-                      onChange={(e) => changeItem("reviews", index, "title", e.target.value)}
-                    />
-                  </label>
-                </div>
               </div>
-            </article>
+            </details>
           ))}
         </div>
         <button
