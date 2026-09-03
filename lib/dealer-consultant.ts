@@ -124,6 +124,7 @@ export async function fetchServerSettings(): Promise<{ dealer: DealerInfo; consu
   try {
     const res = await fetch("/api/me/settings", {
       headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
     });
     if (!res.ok) return null;
     const json = await res.json();
