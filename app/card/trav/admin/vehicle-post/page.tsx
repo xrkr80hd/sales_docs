@@ -60,9 +60,24 @@ const getSlots = (count: number): Slot[] => count === 1
       : [{ x: 0, y: 0, w: 960, h: 405 }, { x: 960, y: 0, w: 960, h: 405 }, { x: 0, y: 405, w: 960, h: 405 }, { x: 960, y: 405, w: 960, h: 405 }];
 
 const drawCropped = (context: CanvasRenderingContext2D, image: HTMLImageElement, slot: Slot, photo: CropPhoto) => {
-  context.fillStyle = "#090a0c";
-  context.fillRect(slot.x, slot.y, slot.w, slot.h);
   const coverScale = Math.max(slot.w / image.width, slot.h / image.height);
+  const backgroundScale = coverScale * 1.08;
+  const backgroundWidth = image.width * backgroundScale;
+  const backgroundHeight = image.height * backgroundScale;
+  context.save();
+  context.beginPath();
+  context.rect(slot.x, slot.y, slot.w, slot.h);
+  context.clip();
+  context.filter = "blur(34px) brightness(0.72) saturate(0.9)";
+  context.drawImage(
+    image,
+    slot.x + (slot.w - backgroundWidth) / 2,
+    slot.y + (slot.h - backgroundHeight) / 2,
+    backgroundWidth,
+    backgroundHeight,
+  );
+  context.restore();
+
   const drawWidth = image.width * coverScale * photo.zoom;
   const drawHeight = image.height * coverScale * photo.zoom;
   const drawX = drawWidth >= slot.w
@@ -617,9 +632,12 @@ INSTRUCTIONS
               onPointerUp={editorPointerUp}
               onPointerCancel={editorPointerUp}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className={styles.editorBackground} src={active.url} alt="" draggable={false} aria-hidden="true" />
               {/* A local object URL is required here for immediate canvas-matched cropping. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
+                className={styles.editorForeground}
                 src={active.url}
                 alt="Vehicle crop preview"
                 draggable={false}
