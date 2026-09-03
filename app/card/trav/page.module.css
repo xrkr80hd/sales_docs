@@ -215,11 +215,14 @@
 }
 
 .mediaRail img,
-.mediaRail video {
+.mediaRail video,
+.mediaRail iframe {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
+  border: 0;
+  background: #000;
 }
 
 .mediaRail strong,
