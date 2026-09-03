@@ -766,9 +766,22 @@
   position: absolute;
   display: block;
   max-width: none;
-  object-fit: fill;
   pointer-events: none;
   user-select: none;
+}
+
+.editorBackground {
+  inset: -6%;
+  width: 112%;
+  height: 112%;
+  object-fit: cover;
+  filter: blur(20px) brightness(.72) saturate(.9);
+  transform: scale(1.05);
+}
+
+.editorForeground {
+  object-fit: fill;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, .35));
 }
 
 .editorControls {
