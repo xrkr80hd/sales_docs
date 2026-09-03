@@ -650,6 +650,25 @@
   font-weight: 800;
 }
 
+.vehicleHighlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vehicleHighlights li {
+  border: 1px solid rgba(239, 98, 98, .45);
+  border-radius: 999px;
+  background: rgba(190, 23, 23, .12);
+  color: #f3c5c5;
+  padding: 6px 9px;
+  font-size: .72rem;
+  font-weight: 750;
+}
+
 .vehicleDetails {
   margin: 16px 0;
   border: 1px solid #303339;
