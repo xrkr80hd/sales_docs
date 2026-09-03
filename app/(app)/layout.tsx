@@ -97,7 +97,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </div>
                 <nav className="grid gap-1 p-3">
                   {[
-                    ["Dashboard", "/dashboard"], ["Documents", "/documents"], ["Business Card", "/business-card"], ["NXTDox Messenger", "/messenger"], ["Previous Deals", "/deals"]
+                    ["Dashboard", "/dashboard"], ["Documents", "/documents"], ["Business Card", "/business-card"], ["Vehicle Collage", "/vehicle-collage"], ["NXTDox Messenger", "/messenger"], ["Previous Deals", "/deals"]
                   ].map(([label, href]) => <Link key={href} href={href} className={`rounded-md px-4 py-3 text-sm font-bold ${pathname === href || (href !== "/dashboard" && pathname.startsWith(href)) ? "bg-[var(--accent)]" : "hover:bg-white/5"}`}>{label}</Link>)}
                   {isWorkflowRoute && <button type="button" onClick={() => { setNavigationOpen(false); setDrawerOpen(true); }} className="rounded-md px-4 py-3 text-left text-sm font-bold hover:bg-white/5">Deal Documents</button>}
                   {isAdmin && <><div className="my-2 border-t border-white/10"/><Link href="/admin" className={`rounded-md px-4 py-3 text-sm font-bold ${isAdminRoute ? "bg-[var(--accent)]" : "hover:bg-white/5"}`}>Admin Console</Link><Link href="/admin/messenger" className="rounded-md px-4 py-3 text-sm font-bold hover:bg-white/5">Messenger Permissions</Link></>}
