@@ -317,7 +317,7 @@ export function ProfileEditor() {
         <div>
           <Link href="/dashboard" className={styles.backLink}>← Dashboard</Link>
           <h1>Business Card</h1>
-          <span>Public link: /card/{profile.consultant_slug}</span>
+          <span>Your public card: /card/{profile.consultant_slug}</span>
         </div>
         {profile.is_published && <a className={styles.viewCard} href={`/card/${profile.consultant_slug}`} target="_blank" rel="noopener noreferrer">View card</a>}
       </header>
@@ -414,7 +414,7 @@ export function ProfileEditor() {
           <label>Inventory button label<input value={draft.content.inventoryButtonLabel} onChange={(event) => updateContent("inventoryButtonLabel", event.target.value)} /></label>
           <label className={styles.wide}>Sales quote<textarea value={draft.content.salesQuote} onChange={(event) => updateContent("salesQuote", event.target.value)} /></label>
           <label className={styles.wide}>Bio<textarea value={draft.content.bio} onChange={(event) => updateContent("bio", event.target.value)} /></label>
-          <label className={styles.wide}>Inventory link<input type="url" value={draft.content.inventoryUrl} onChange={(event) => updateContent("inventoryUrl", event.target.value)} /></label>
+          <label className={styles.wide}>Walker inventory website<input type="url" value={draft.content.inventoryUrl} onChange={(event) => updateContent("inventoryUrl", event.target.value)} /></label>
         </div>
       </details>
 
@@ -530,7 +530,7 @@ export function ProfileEditor() {
                   </div>
                   <div className={styles.vehicleDetails}>
                     <label className={styles.wide}>
-                      Official Walker Listing URL
+                      Walker vehicle listing
                       <input
                         type="url"
                         placeholder="https://www.walkercdjr.net/inventory/..."
@@ -643,12 +643,7 @@ export function ProfileEditor() {
                     onChange={(e) => uploadBlobOrFile(e.target.files![0], e.target.files![0].name, "videos", (url) => changeItem("videos", index, "imageUrl", url))}
                   />
                 </label>
-                {vid.imageUrl && (
-                  <div className={styles.wide}>
-                    <p style={{ fontSize: "0.75rem", color: "#888", marginBottom: "4px" }}>Video file / link:</p>
-                    <input value={vid.imageUrl} readOnly style={{ opacity: 0.8 }} />
-                  </div>
-                )}
+                {vid.imageUrl && <p className={styles.help}>Video uploaded successfully.</p>}
                 <label className={styles.wide}>
                   Description / Features Highlighted
                   <textarea
@@ -728,7 +723,7 @@ export function ProfileEditor() {
               </div>
               <div className={styles.grid}>
                 <label>Platform Name<input placeholder="e.g. Facebook, Instagram, TikTok..." value={s.title} onChange={(e) => changeItem("socialLinks", index, "title", e.target.value)} /></label>
-                <label>Profile URL<input type="url" placeholder="https://facebook.com/..." value={s.url} onChange={(e) => changeItem("socialLinks", index, "url", e.target.value)} /></label>
+                <label>Social media page<input type="url" placeholder="Paste the page link here" value={s.url} onChange={(e) => changeItem("socialLinks", index, "url", e.target.value)} /></label>
               </div>
             </article>
           ))}
@@ -746,20 +741,6 @@ export function ProfileEditor() {
           onCancel={() => setCropTarget(null)}
         />
       )}
-
-      <details className={styles.panel}>
-        <summary>Bio, catchphrases and buttons</summary>
-        <div className={styles.grid}>
-          <label>Primary phrase<input value={draft.content.primaryPhrase} placeholder="#CallYourName" onChange={(event) => updateContent("primaryPhrase", event.target.value)} /></label>
-          <label>Inventory button label<input value={draft.content.inventoryButtonLabel} onChange={(event) => updateContent("inventoryButtonLabel", event.target.value)} /></label>
-          <label className={styles.wide}>Sales quote<textarea value={draft.content.salesQuote} onChange={(event) => updateContent("salesQuote", event.target.value)} /></label>
-          <label className={styles.wide}>Bio<textarea value={draft.content.bio} onChange={(event) => updateContent("bio", event.target.value)} /></label>
-          <label className={styles.wide}>Inventory link<input type="url" value={draft.content.inventoryUrl} onChange={(event) => updateContent("inventoryUrl", event.target.value)} /></label>
-          <label>Call button label<input value={draft.contact.callLabel} onChange={(event) => updateContact("callLabel", event.target.value)} /></label>
-          <label>Text button label<input value={draft.contact.textLabel} onChange={(event) => updateContact("textLabel", event.target.value)} /></label>
-          <label>Email button label<input value={draft.contact.emailLabel} onChange={(event) => updateContact("emailLabel", event.target.value)} /></label>
-        </div>
-      </details>
 
       <section className={styles.bottomActions}>
         <button type="button" className={styles.secondary} disabled={saving} onClick={saveDraft}>Save draft</button>
