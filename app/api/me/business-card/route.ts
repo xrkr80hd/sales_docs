@@ -160,6 +160,7 @@ export async function GET(request: NextRequest) {
         imageUrl: v.image_url || "",
         secondaryUrl: v.vin || undefined,
         meta: [v.price, v.stock ? `Stock ${v.stock}` : ""].filter(Boolean).join(" · "),
+        builderData: v.builder_data ?? undefined,
       })),
       videos: (videos ?? []).map((v) => ({
         id: v.id,
@@ -380,6 +381,7 @@ export async function PUT(request: NextRequest) {
           vin: v.secondaryUrl || "",
           stock: v.meta?.match(/Stock\s+([^·]+)/i)?.[1]?.trim() || "",
           price: v.meta?.split("·")[0]?.trim() || "",
+          builder_data: v.builderData ?? null,
           sort_order: i,
         }))
       )
@@ -437,6 +439,7 @@ export async function PUT(request: NextRequest) {
   // URLs outside this user's private consultant bucket are never touched.
   const retainedImageUrls = new Set([
     ...incomingDraft.vehicles.map((vehicle) => vehicle.imageUrl),
+    ...incomingDraft.vehicles.flatMap((vehicle) => vehicle.builderData?.photos.map((photo) => photo.url) ?? []),
     ...incomingDraft.reviews.map((review) => review.imageUrl),
     ...incomingDraft.soldGallery.map((photo) => photo.imageUrl),
     incomingDraft.identity.profileImageUrl,
