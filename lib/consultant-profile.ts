@@ -19,6 +19,11 @@ export type ProfileListItem = {
   imageUrl: string;
   secondaryUrl?: string;
   meta?: string;
+  builderData?: {
+    photoCount: number;
+    form: Record<string, string>;
+    photos: Array<{ url: string; zoom: number; x: number; y: number; ratio: number }>;
+  };
 };
 
 export type ConsultantProfileContent = {
