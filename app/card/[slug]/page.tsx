@@ -3,6 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ReviewCarousel } from "@/components/profile/review-carousel";
 import { VehicleCarousel } from "@/components/profile/vehicle-carousel";
+import { CopyCardLinkButton } from "@/components/profile/copy-card-link-button";
 import { getPublishedConsultantProfile } from "@/lib/public-consultant-profile";
 import styles from "../trav/page.module.css";
 
@@ -32,18 +33,33 @@ function getVideoEmbedUrl(rawUrl: string) {
   return null;
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+type CardPageProps = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ vehicle?: string; video?: string }>;
+};
+
+export async function generateMetadata({ params, searchParams }: CardPageProps): Promise<Metadata> {
   const { slug } = await params;
+  const selected = await searchParams;
   const profile = await getPublishedConsultantProfile(slug);
   if (!profile) return { title: "Consultant profile unavailable" };
+  const vehicle = profile.vehicles.find((entry) => entry.secondaryUrl === selected.vehicle || entry.id === selected.vehicle);
+  const video = profile.videos.find((entry) => entry.id === selected.video);
+  const sharedTitle = vehicle?.title || video?.title || `${profile.identity.displayName} | ${profile.identity.dealership}`;
+  const sharedDescription = vehicle?.description || video?.description || profile.content.salesQuote || `Contact ${profile.identity.displayName}.`;
+  const cardImage = profile.identity.callingCardImageUrl || profile.identity.profileImageUrl || profile.identity.logoUrl;
+  const imageUrl = cardImage ? new URL(cardImage, "https://nextdocs.xrkr80hd.studio").toString() : undefined;
   return {
-    title: `${profile.identity.displayName} | ${profile.identity.dealership}`,
-    description: profile.content.salesQuote || `Contact ${profile.identity.displayName}.`,
+    title: sharedTitle,
+    description: sharedDescription,
+    openGraph: { title: sharedTitle, description: sharedDescription, type: "website", images: imageUrl ? [{ url: imageUrl }] : undefined },
+    twitter: { card: "summary_large_image", title: sharedTitle, description: sharedDescription, images: imageUrl ? [imageUrl] : undefined },
   };
 }
 
-export default async function ConsultantCard({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ConsultantCard({ params, searchParams }: CardPageProps) {
   const { slug } = await params;
+  const selected = await searchParams;
   const profile = await getPublishedConsultantProfile(slug);
   if (!profile) notFound();
 
@@ -118,22 +134,24 @@ export default async function ConsultantCard({ params }: { params: Promise<{ slu
           {profile.content.bio && <section className={styles.emptyState}><div><h2>About {profile.identity.displayName}</h2><p>{profile.content.bio}</p></div></section>}
         </div>
 
-        {!!vehicles.length && <VehicleCarousel vehicles={vehicles} />}
+        {!!vehicles.length && <VehicleCarousel vehicles={vehicles} initialVehicleVin={selected.vehicle} consultantName={profile.identity.displayName} phone={profile.identity.phone} />}
         {!!reviews.length && <ReviewCarousel reviews={reviews} />}
 
         {!!profile.soldGallery.length && <section className={styles.mediaSection}><h2>Sold gallery</h2><div className={styles.mediaRail}>{profile.soldGallery.map((entry) => <article key={entry.id}><img src={entry.imageUrl} alt={entry.title} /><strong>{entry.title}</strong><p>{entry.description}</p></article>)}</div></section>}
         {!!profile.videos.length && <section className={styles.mediaSection}><h2>Videos</h2><div className={styles.mediaRail}>{profile.videos.map((entry) => {
           const embedUrl = getVideoEmbedUrl(entry.url);
           const isUploadedVideo = Boolean(entry.imageUrl && /\.(mp4|webm|mov)(\?|$)/i.test(entry.imageUrl));
-          return <article key={entry.id}>
+          return <article key={entry.id} id={`video-${entry.id}`}>
             {isUploadedVideo ? <video src={entry.imageUrl} controls preload="metadata" /> : entry.imageUrl ? <img src={entry.imageUrl} alt={entry.title} /> : embedUrl ? <iframe src={embedUrl} title={entry.title || "Consultant video"} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : null}
             <strong>{entry.title}</strong>
             <p>{entry.description}</p>
             {entry.url && <a href={entry.url} target="_blank" rel="noopener noreferrer">Open video</a>}
+            <CopyCardLinkButton query={{ video: entry.id }} hash={`video-${entry.id}`} label="Copy video link" className={styles.mediaCopyButton} />
           </article>;
         })}</div></section>}
 
         <div className={styles.sections}>
+          <CopyCardLinkButton label="Copy profile link" className={styles.profileShareButton} />
           <a className={styles.inventoryButton} href={profile.content.inventoryUrl} target="_blank" rel="noopener noreferrer">{profile.content.inventoryButtonLabel}</a>
           {!!profile.socialLinks.length && <nav className={styles.socialLinks} aria-label="Social profiles">{profile.socialLinks.map((entry) => <a key={entry.id} href={entry.url} target="_blank" rel="noopener noreferrer">{entry.title}</a>)}</nav>}
         </div>
