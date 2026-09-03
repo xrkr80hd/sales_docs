@@ -489,6 +489,84 @@
   background: #f0f0f0;
 }
 
+.collageBuilderButton {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 13px;
+  align-items: center;
+  min-height: 72px;
+  margin: 0 18px 18px;
+  border: 1px solid rgba(239, 98, 98, .55);
+  border-radius: 15px;
+  background: linear-gradient(135deg, #be1717, #851014);
+  box-shadow: 0 10px 28px rgba(190, 23, 23, .22);
+  color: #fff;
+  padding: 12px 14px;
+  text-decoration: none;
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+}
+
+.collageBuilderButton:hover {
+  transform: translateY(-1px);
+  border-color: #ff7b7b;
+  box-shadow: 0 14px 34px rgba(190, 23, 23, .3);
+}
+
+.collageBuilderIcon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .24);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .18);
+}
+
+.collageBuilderIcon svg {
+  width: 25px;
+  height: 25px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+
+.collageBuilderButton > span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.collageBuilderButton strong {
+  font-size: .94rem;
+  line-height: 1.15;
+}
+
+.collageBuilderButton small {
+  overflow: hidden;
+  color: rgba(255, 255, 255, .72);
+  font-size: .72rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+}
+
+.collageBuilderArrow {
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+@media (max-width: 430px) {
+  .collageBuilderButton {
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    min-height: 66px;
+    margin-inline: 12px;
+    padding: 10px 12px;
+  }
+
+  .collageBuilderIcon {
+    width: 42px;
+    height: 42px;
+  }
+}
+
 .bottomActions {
   justify-content: flex-end;
   padding: 20px 0;
