@@ -55,15 +55,22 @@ type Message = {
   created_at: string;
   edited_at?: string | null;
   deleted_at?: string | null;
-  profiles?: { display_name?: string };
+  profiles?: MessengerIdentity;
 };
-type Person = { user_id: string; profiles?: { display_name?: string } };
+type MessengerIdentity = {
+  display_name?: string;
+  username?: string;
+  nickname?: string;
+  profile_image_url?: string;
+};
+type Person = { user_id: string; profiles?: MessengerIdentity };
 type MessengerPayload = {
   membership?: {
     organization_id: string;
     chat_enabled: boolean;
     can_dm: boolean;
     can_org_chat: boolean;
+    chat_nickname?: string | null;
     organizations?: { name: string };
   };
   conversations?: Conversation[];
@@ -109,6 +116,9 @@ export function MessengerWorkspace() {
     try { return JSON.parse(localStorage.getItem("nxtdox.collapsed-dms") || "[]"); } catch { return []; }
   });
   const [peopleOpen, setPeopleOpen] = useState(false);
+  const [identityUserId, setIdentityUserId] = useState<string | null>(null);
+  const [nicknameOpen, setNicknameOpen] = useState(false);
+  const [nicknameDraft, setNicknameDraft] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | number | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const [customSoundUrl, setCustomSoundUrl] = useState(() => {
@@ -122,6 +132,7 @@ export function MessengerWorkspace() {
   const teamEndRef = useRef<HTMLDivElement>(null);
   const knownMessageIdsRef = useRef<Set<string>>(new Set());
   const loadedOnceRef = useRef(false);
+  const lastPersonActivationRef = useRef<{ userId: string; at: number } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -211,8 +222,13 @@ export function MessengerWorkspace() {
     }).catch(() => {});
   }, [teamConversationId, teamMessageCount]);
 
+  function personIdentity(userId: string) {
+    return data?.people?.find((person) => person.user_id === userId)?.profiles;
+  }
+
   function personName(userId: string) {
-    return data?.people?.find((person) => person.user_id === userId)?.profiles?.display_name || "Team Member";
+    const identity = personIdentity(userId);
+    return identity?.nickname || identity?.display_name || "Team Member";
   }
 
   function dmName(conversation: Conversation) {
@@ -297,6 +313,64 @@ export function MessengerWorkspace() {
     void startDm(userId);
   }
 
+  function activatePerson(userId: string) {
+    const now = Date.now();
+    const previous = lastPersonActivationRef.current;
+    if (previous?.userId === userId && now - previous.at <= 450) {
+      lastPersonActivationRef.current = null;
+      setIdentityUserId(null);
+      openPersonDm(userId);
+      return;
+    }
+    lastPersonActivationRef.current = { userId, at: now };
+    setIdentityUserId(userId);
+  }
+
+  async function saveNickname(event: FormEvent) {
+    event.preventDefault();
+    const nickname = nicknameDraft.trim();
+    if (!nickname) return;
+    try {
+      await call("/api/messenger", {
+        method: "POST",
+        body: JSON.stringify({ action: "update-nickname", nickname }),
+      });
+      setNicknameOpen(false);
+      await load();
+    } catch (nicknameError) {
+      setError(nicknameError instanceof Error ? nicknameError.message : "Could not update your chat name.");
+    }
+  }
+
+  function renderIdentityControl(userId: string) {
+    const identity = personIdentity(userId);
+    const nickname = identity?.nickname || identity?.display_name || "Team Member";
+    const username = identity?.username || "member";
+    const imageUrl = identity?.profile_image_url;
+    const open = identityUserId === userId;
+    return (
+      <span className={`${styles.identityControl} ${open ? styles.identityOpen : ""}`}>
+        <button
+          type="button"
+          className={styles.identityButton}
+          onClick={() => activatePerson(userId)}
+          aria-label={`${nickname}. Click once to view identity, twice to send a direct message.`}
+        >
+          <span className={styles.miniAvatar}>
+            {imageUrl ? <img src={imageUrl} alt="" /> : nickname.charAt(0)}
+          </span>
+          <span>{nickname}</span>
+        </button>
+        <span className={styles.identityPopover} role="status">
+          <span className={styles.identityPhoto}>
+            {imageUrl ? <img src={imageUrl} alt={`${username} profile`} /> : nickname.charAt(0)}
+          </span>
+          <strong>@{username}</strong>
+        </span>
+      </span>
+    );
+  }
+
   async function deleteMessage(messageId: string | number) {
     if (!window.confirm("Delete this message?")) return;
     try {
@@ -369,7 +443,7 @@ export function MessengerWorkspace() {
       const mine = message.sender_id === data?.me;
       return (
         <article key={message.id} className={`${styles.message} ${mine ? styles.mine : ""}`}>
-          {!mine && <p className={styles.sender}>{message.profiles?.display_name || "Team Member"}</p>}
+          {!mine && <div className={styles.sender}>{renderIdentityControl(message.sender_id)}</div>}
           <div className={styles.messageLine}>
             {editingMessageId === message.id ? (
               <form className={styles.editForm} onSubmit={(event) => { event.preventDefault(); void editMessage(message.id); }}>
@@ -402,6 +476,10 @@ export function MessengerWorkspace() {
           <h1>Team Messenger {totalUnread > 0 && <span className={styles.headerUnread}>{totalUnread}</span>}</h1>
         </div>
         <div className={styles.headerTools}>
+          <button type="button" className={styles.nicknameButton} onClick={() => {
+            setNicknameDraft(data.membership?.chat_nickname || "");
+            setNicknameOpen((current) => !current);
+          }}>Chat name</button>
           <label className={styles.soundUpload} title="Upload received-message sound">
             <input type="file" accept="audio/*" onChange={(event) => uploadSound(event.target.files?.[0])} />
             Sound{customSoundName ? `: ${customSoundName}` : ""}
@@ -409,6 +487,12 @@ export function MessengerWorkspace() {
           <span className={styles.online}>Online</span>
         </div>
       </header>
+
+      {nicknameOpen && <form className={styles.nicknameEditor} onSubmit={saveNickname}>
+        <label>Chat nickname<input value={nicknameDraft} onChange={(event) => setNicknameDraft(event.target.value)} maxLength={32} autoFocus /></label>
+        <button type="submit" disabled={!nicknameDraft.trim()}>Save</button>
+        <button type="button" onClick={() => setNicknameOpen(false)}>Cancel</button>
+      </form>}
 
       {error && <div className={styles.error}>{error}<button type="button" onClick={() => setError("")} aria-label="Dismiss error">×</button></div>}
 
@@ -420,10 +504,11 @@ export function MessengerWorkspace() {
           </div>
           <div className={styles.peopleList}>
             {onlinePeople.map((person) => (
-              <button key={person.user_id} type="button" className={styles.person} onClick={() => openPersonDm(person.user_id)} disabled={!data.membership?.can_dm}>
-                <span className={styles.avatar}>{personName(person.user_id).charAt(0)}</span>
+              <button key={person.user_id} type="button" className={styles.person} onClick={() => activatePerson(person.user_id)} disabled={!data.membership?.can_dm}>
+                <span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span>
                 <span>{personName(person.user_id)}</span>
-                <span className={styles.openDm}>Message</span>
+                <span className={styles.openDm}>Tap twice</span>
+                {identityUserId === person.user_id && <span className={styles.peopleIdentity}><span className={styles.identityPhoto}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><strong>@{person.profiles?.username || "member"}</strong></span>}
               </button>
             ))}
           </div>
@@ -507,7 +592,7 @@ export function MessengerWorkspace() {
         <button type="button" className={styles.mobilePeopleBackdrop} onClick={() => setPeopleOpen(false)} aria-label="Close online members" />
         <aside className={styles.mobilePeopleDrawer}>
           <header><div><strong>Online now</strong><span>{onlinePeople.length} members</span></div><button type="button" onClick={() => setPeopleOpen(false)}>×</button></header>
-          {onlinePeople.map((person) => <button key={person.user_id} type="button" onClick={() => { openPersonDm(person.user_id); setPeopleOpen(false); }}><span className={styles.avatar}>{personName(person.user_id).charAt(0)}</span><span>{personName(person.user_id)}</span></button>)}
+          {onlinePeople.map((person) => <button key={person.user_id} type="button" onClick={() => activatePerson(person.user_id)}><span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><span>{personName(person.user_id)}</span>{identityUserId === person.user_id && <span className={styles.drawerIdentity}>@{person.profiles?.username || "member"}</span>}</button>)}
         </aside>
       </div>}
     </div>
