@@ -90,6 +90,8 @@ export function ProfileEditor() {
   const [notice, setNotice] = useState("");
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [postedDialog, setPostedDialog] = useState(false);
+  const [nfcLinkCopied, setNfcLinkCopied] = useState(false);
+  const [cardOrigin, setCardOrigin] = useState("");
 
   // Active Cropper Modal State
   const [cropTarget, setCropTarget] = useState<{
@@ -139,7 +141,10 @@ export function ProfileEditor() {
     }
   }
 
-  useEffect(() => { void loadProfile(); }, []);
+  useEffect(() => {
+    setCardOrigin(window.location.origin);
+    void loadProfile();
+  }, []);
 
   async function signIn() {
     setLoading(true);
@@ -203,6 +208,18 @@ export function ProfileEditor() {
     const result = await response.json();
     if (response.ok) setProfile({ ...profile, is_published: false });
     setNotice(response.ok ? "Business card removed from the public site." : result.error);
+  }
+
+  async function copyNfcCardLink() {
+    if (!profile) return;
+    const cardUrl = `${window.location.origin}/card/${profile.consultant_slug}`;
+    try {
+      await navigator.clipboard.writeText(cardUrl);
+      setNfcLinkCopied(true);
+      window.setTimeout(() => setNfcLinkCopied(false), 2500);
+    } catch {
+      window.prompt("Copy this business-card link:", cardUrl);
+    }
   }
 
   function changeItem(key: CollectionKey, index: number, field: keyof ProfileListItem, value: string) {
@@ -337,6 +354,25 @@ export function ProfileEditor() {
           {profile.is_published && <button type="button" className={styles.danger} onClick={unpublish}>Unpublish</button>}
         </div>
       </section>
+
+      <details className={styles.panel}>
+        <summary>
+          <span>NFC Card Link</span>
+          <div className={styles.summaryRight}>
+            <span className={styles.chevronArrow}>▼</span>
+          </div>
+        </summary>
+        <div className={styles.nfcLinkPanel}>
+          <p>Use this as the only website link written to your NFC tag. It opens the same public business card on iPhone and Android.</p>
+          <div className={styles.nfcLinkRow}>
+            <code>{cardOrigin ? `${cardOrigin}/card/${profile.consultant_slug}` : `/card/${profile.consultant_slug}`}</code>
+            <button type="button" className={styles.publish} onClick={copyNfcCardLink}>
+              {nfcLinkCopied ? "Link copied" : "Copy NFC link"}
+            </button>
+          </div>
+          <small>In your NFC-writing app, choose Website or URL. Do not choose Phone, Contact, or Telephone.</small>
+        </div>
+      </details>
 
       <h2 className={styles.sectionHeader}>Business Card Basics</h2>
       <p className={styles.sectionIntro}>Headshot photo (1:1), Calling Card artwork (2:3), and contact details.</p>
