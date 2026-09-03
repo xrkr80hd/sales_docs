@@ -471,7 +471,26 @@ INSTRUCTIONS
       const result = await response.json();
       const draft = normalizeProfileContent(result.card?.draft, Boolean(result.isAdmin));
       const vehicle = draft.vehicles.find((item) => item.id === editId);
-      if (!vehicle?.builderData) throw new Error("This older collage does not have editable source photos.");
+      if (!vehicle) throw new Error("That vehicle could not be found in your card.");
+      if (!vehicle.builderData) {
+        const titleParts = vehicle.title.trim().split(/\s+/);
+        const price = vehicle.meta?.split("·")[0] || "";
+        const stock = vehicle.meta?.match(/Stock\s+([^·]+)/i)?.[1]?.trim() || "";
+        setEditingVehicleId(editId);
+        setForm((current) => ({
+          ...current,
+          year: /^\d{4}$/.test(titleParts[0] || "") ? titleParts.shift()! : "",
+          make: titleParts.shift() || "",
+          model: titleParts.shift() || "",
+          trim: titleParts.join(" "),
+          vin: vehicle.secondaryUrl || "",
+          stock,
+          price: numericPrice(price),
+          walkerUrl: vehicle.url,
+        }));
+        setNotice("Vehicle information loaded. Choose a photo layout and add the source photos to rebuild this older collage.");
+        return;
+      }
       const project = vehicle.builderData;
       setEditingVehicleId(editId);
       setPhotoCount(project.photoCount);
