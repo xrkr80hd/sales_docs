@@ -15,7 +15,7 @@ import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase-b
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(process.env.NEXT_PUBLIC_DISABLE_AUTH === "1");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [navigationOpen, setNavigationOpen] = useState(false);
@@ -31,7 +31,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
-      setIsAdmin(true);
       return;
     }
     if (!isSupabaseConfigured()) return;
@@ -96,9 +95,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   <button type="button" onClick={() => setNavigationOpen(false)} aria-label="Close navigation" className="grid h-10 w-10 place-items-center rounded-md border border-white/10 text-xl">×</button>
                 </div>
                 <nav className="grid gap-1 p-3">
-                  {[
-                    ["Dashboard", "/dashboard"], ["Documents", "/documents"], ["Business Card", "/business-card"], ["Vehicle Collage", "/vehicle-collage"], ["NXTDox Messenger", "/messenger"], ["Previous Deals", "/deals"]
-                  ].map(([label, href]) => <Link key={href} href={href} className={`rounded-md px-4 py-3 text-sm font-bold ${pathname === href || (href !== "/dashboard" && pathname.startsWith(href)) ? "bg-[var(--accent)]" : "hover:bg-white/5"}`}>{label}</Link>)}
+                  {[["Dashboard", "/dashboard"], ["Documents", "/documents"], ["Previous Deals", "/deals"]].map(([label, href]) => <Link key={href} href={href} className={`rounded-md px-4 py-3 text-sm font-bold ${pathname === href || (href !== "/dashboard" && pathname.startsWith(href)) ? "bg-[var(--accent)]" : "hover:bg-white/5"}`}>{label}</Link>)}
+                  <details className="group rounded-md open:bg-white/[.03]">
+                    <summary className="flex cursor-pointer list-none items-center justify-between rounded-md px-4 py-3 text-sm font-bold hover:bg-white/5 [&::-webkit-details-marker]:hidden">
+                      Consultant Tools
+                      <span className="text-xs text-white/45 transition group-open:rotate-180">▼</span>
+                    </summary>
+                    <div className="grid gap-1 px-2 pb-2">
+                      {[["Cheat Sheet", "/documents/cheat-sheet"], ["Business Card", "/business-card"], ["Vehicle Collage", "/vehicle-collage"], ["NXTDox Messenger", "/messenger"]].map(([label, href]) => <Link key={href} href={href} className={`rounded-md px-4 py-3 text-sm font-semibold ${pathname === href || pathname.startsWith(`${href}/`) ? "bg-[var(--accent)]" : "text-white/75 hover:bg-white/5 hover:text-white"}`}>{label}</Link>)}
+                    </div>
+                  </details>
                   {isWorkflowRoute && <button type="button" onClick={() => { setNavigationOpen(false); setDrawerOpen(true); }} className="rounded-md px-4 py-3 text-left text-sm font-bold hover:bg-white/5">Deal Documents</button>}
                   {isAdmin && <><div className="my-2 border-t border-white/10"/><Link href="/admin" className={`rounded-md px-4 py-3 text-sm font-bold ${isAdminRoute ? "bg-[var(--accent)]" : "hover:bg-white/5"}`}>Admin Console</Link><Link href="/admin/messenger" className="rounded-md px-4 py-3 text-sm font-bold hover:bg-white/5">Messenger Permissions</Link></>}
                 </nav>
