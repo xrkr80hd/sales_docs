@@ -467,10 +467,18 @@ export async function PUT(request: NextRequest) {
     published: isPublished ? incomingDraft : null,
     publishedAt,
   };
+  const { data: existingSettings } = await supabase
+    .from("user_settings")
+    .select("dealer_info, consultant_info")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const existingConsultantInfo = existingSettings?.consultant_info && typeof existingSettings.consultant_info === "object"
+    ? existingSettings.consultant_info as Record<string, unknown>
+    : {};
   await supabase.from("user_settings").upsert({
     user_id: user.id,
-    dealer_info: {},
-    consultant_info: { business_card: legacyCard },
+    dealer_info: existingSettings?.dealer_info ?? {},
+    consultant_info: { ...existingConsultantInfo, business_card: legacyCard },
     updated_at: now,
   });
 

@@ -1,6 +1,18 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createDefaultConsultant,
+  createDefaultDealer,
+  fetchServerSettings,
+  getDealerFullAddress,
+  loadConsultant,
+  loadDealer,
+  type ConsultantInfo,
+  type DealerInfo,
+} from "@/lib/dealer-consultant";
+import { normalizeProfileContent } from "@/lib/consultant-profile";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import styles from "./page.module.css";
 
 type VehicleForm = {
@@ -8,8 +20,9 @@ type VehicleForm = {
   stock: string; mileage: string; price: string; walkerUrl: string; consultantUrl: string;
 };
 
-type CropPhoto = { id: string; file: File; url: string; zoom: number; x: number; y: number; };
+type CropPhoto = { id: string; file: File; url: string; zoom: number; x: number; y: number; ratio: number; };
 type Slot = { x: number; y: number; w: number; h: number; };
+type PhotoGuide = { shape: string; view: string; note: string; };
 
 const disclaimer = "This page is not a buy, sell, or trade platform. All vehicle availability, pricing, financing, trade evaluations, and transactions are handled exclusively through Walker Automotive. Information is subject to verification.";
 
@@ -18,35 +31,98 @@ const initialForm: VehicleForm = {
   consultantUrl: "https://walker-next-docs-git-feature-trav-dig-b5f2fe-xrkr80hds-projects.vercel.app/card/trav",
 };
 
-// The collage is always 16:9, but each photo has a locked source shape:
- // Photo 1 = 3:2 landscape. Photos 2-4 = 2:3 portrait.
-const getSlots = (count: number): Slot[] => count === 1
-  ? [{ x: 150, y: 40, w: 1620, h: 1080 }]
-  : count === 2
-    ? [{ x: 40, y: 140, w: 1200, h: 800 }, { x: 1347, y: 140, w: 533, h: 800 }]
-    : count === 3
-      ? [{ x: 40, y: 140, w: 1200, h: 800 }, { x: 1440, y: 40, w: 320, h: 480 }, { x: 1440, y: 560, w: 320, h: 480 }]
-      : [{ x: 40, y: 140, w: 1200, h: 800 }, { x: 1320, y: 40, w: 320, h: 480 }, { x: 1640, y: 40, w: 240, h: 360 }, { x: 1480, y: 600, w: 280, h: 420 }];
+const PHOTO_HEIGHT = 810;
 
-const getPhotoRequirement = (index: number) => index === 0
-  ? "3:2 landscape"
-  : "2:3 portrait";
-
-const drawCropped = (context: CanvasRenderingContext2D, image: HTMLImageElement, slot: Slot, photo: CropPhoto) => {
-  const slotRatio = slot.w / slot.h;
-  const imageRatio = image.width / image.height;
-  let cropWidth = image.width;
-  let cropHeight = image.height;
-  if (imageRatio > slotRatio) cropWidth = image.height * slotRatio;
-  else cropHeight = image.width / slotRatio;
-  cropWidth /= photo.zoom;
-  cropHeight /= photo.zoom;
-  const sourceX = (image.width - cropWidth) * (photo.x / 100);
-  const sourceY = (image.height - cropHeight) * (photo.y / 100);
-  context.drawImage(image, sourceX, sourceY, cropWidth, cropHeight, slot.x, slot.y, slot.w, slot.h);
+const PHOTO_GUIDES: Record<number, PhotoGuide[]> = {
+  1: [{ shape: "Wide landscape", view: "Three-quarter front view", note: "Keep the entire vehicle visible with room around it." }],
+  2: [
+    { shape: "Tall or square", view: "Three-quarter front view", note: "This fills the left half." },
+    { shape: "Tall or square", view: "Three-quarter rear view", note: "This fills the right half." },
+  ],
+  3: [
+    { shape: "Wide landscape", view: "Full side view", note: "This fills the upper-left frame." },
+    { shape: "Wide landscape", view: "Three-quarter view", note: "This fills the lower-left frame." },
+    { shape: "Portrait or square", view: "Straight front view", note: "This fills the entire right half." },
+  ],
+  4: [
+    { shape: "Wide landscape", view: "Three-quarter front view", note: "Upper-left frame." },
+    { shape: "Wide landscape", view: "Full side view", note: "Upper-right frame." },
+    { shape: "Wide landscape", view: "Straight front view", note: "Lower-left frame." },
+    { shape: "Wide landscape", view: "Three-quarter rear view", note: "Lower-right frame." },
+  ],
+  5: [
+    { shape: "Wide landscape", view: "Top-left image", note: "Suggested: full side or wide three-quarter view." },
+    { shape: "Wide landscape", view: "Top-right image", note: "Suggested: another wide vehicle view." },
+    { shape: "Flexible", view: "Bottom-left card", note: "Use a vehicle photo, calling card, emblem, or eye-catcher." },
+    { shape: "Flexible", view: "Bottom-center card", note: "Use a vehicle photo, calling card, emblem, or eye-catcher." },
+    { shape: "Flexible", view: "Bottom-right card", note: "Use a vehicle photo, calling card, emblem, or eye-catcher." },
+  ],
 };
 
-const renderCollage = async (canvas: HTMLCanvasElement, photos: CropPhoto[], selected = -1) => {
+// Preview and download share these exact final frames.
+const getSlots = (count: number): Slot[] => count === 1
+  ? [{ x: 0, y: 0, w: 1920, h: PHOTO_HEIGHT }]
+  : count === 2
+    ? [{ x: 0, y: 0, w: 960, h: PHOTO_HEIGHT }, { x: 960, y: 0, w: 960, h: PHOTO_HEIGHT }]
+    : count === 3
+      ? [{ x: 0, y: 0, w: 960, h: 405 }, { x: 0, y: 405, w: 960, h: 405 }, { x: 960, y: 0, w: 960, h: PHOTO_HEIGHT }]
+      : count === 4
+        ? [{ x: 0, y: 0, w: 960, h: 405 }, { x: 960, y: 0, w: 960, h: 405 }, { x: 0, y: 405, w: 960, h: 405 }, { x: 960, y: 405, w: 960, h: 405 }]
+        : [{ x: 0, y: 0, w: 960, h: 405 }, { x: 960, y: 0, w: 960, h: 405 }, { x: 0, y: 405, w: 640, h: 405 }, { x: 640, y: 405, w: 640, h: 405 }, { x: 1280, y: 405, w: 640, h: 405 }];
+
+const drawCropped = (context: CanvasRenderingContext2D, image: HTMLImageElement, slot: Slot, photo: CropPhoto) => {
+  const coverScale = Math.max(slot.w / image.width, slot.h / image.height);
+  const backgroundScale = coverScale * 1.08;
+  const backgroundWidth = image.width * backgroundScale;
+  const backgroundHeight = image.height * backgroundScale;
+  context.save();
+  context.beginPath();
+  context.rect(slot.x, slot.y, slot.w, slot.h);
+  context.clip();
+  context.filter = "blur(34px) brightness(0.72) saturate(0.9)";
+  context.drawImage(
+    image,
+    slot.x + (slot.w - backgroundWidth) / 2,
+    slot.y + (slot.h - backgroundHeight) / 2,
+    backgroundWidth,
+    backgroundHeight,
+  );
+  context.restore();
+
+  const drawWidth = image.width * coverScale * photo.zoom;
+  const drawHeight = image.height * coverScale * photo.zoom;
+  const drawX = drawWidth >= slot.w
+    ? slot.x - (drawWidth - slot.w) * (photo.x / 100)
+    : slot.x + (slot.w - drawWidth) / 2;
+  const drawY = drawHeight >= slot.h
+    ? slot.y - (drawHeight - slot.h) * (photo.y / 100)
+    : slot.y + (slot.h - drawHeight) / 2;
+  context.save();
+  context.beginPath();
+  context.rect(slot.x, slot.y, slot.w, slot.h);
+  context.clip();
+  context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+  context.restore();
+};
+
+const fitText = (context: CanvasRenderingContext2D, text: string, maxWidth: number, start: number, minimum: number) => {
+  let size = start;
+  while (size > minimum) {
+    context.font = `900 ${size}px Arial, sans-serif`;
+    if (context.measureText(text).width <= maxWidth) break;
+    size -= 2;
+  }
+  return size;
+};
+
+const renderCollage = async (
+  canvas: HTMLCanvasElement,
+  photos: CropPhoto[],
+  form: VehicleForm,
+  dealer: DealerInfo,
+  consultant: ConsultantInfo,
+  selected = -1,
+) => {
   canvas.width = 1920;
   canvas.height = 1080;
   const context = canvas.getContext("2d");
@@ -59,9 +135,9 @@ const renderCollage = async (canvas: HTMLCanvasElement, photos: CropPhoto[], sel
     const image = new Image();
     image.onload = () => {
       drawCropped(context, image, slots[index], photo);
-      context.strokeStyle = "#111317";
-      context.lineWidth = 10;
-      context.strokeRect(slots[index].x + 5, slots[index].y + 5, slots[index].w - 10, slots[index].h - 10);
+      context.strokeStyle = "#0b0c0e";
+      context.lineWidth = 8;
+      context.strokeRect(slots[index].x + 4, slots[index].y + 4, slots[index].w - 8, slots[index].h - 8);
       if (index === selected) {
         context.strokeStyle = "#ef3b3b";
         context.lineWidth = 12;
@@ -72,6 +148,39 @@ const renderCollage = async (canvas: HTMLCanvasElement, photos: CropPhoto[], sel
     image.onerror = reject;
     image.src = photo.url;
   })));
+
+  const vehicle = [form.year, form.make, form.model, form.trim].filter(Boolean).join(" ") || "Vehicle details";
+  const dealership = [dealer.dealershipName, getDealerFullAddress(dealer)].filter(Boolean).join("  •  ");
+  const contact = [consultant.name, consultant.phone].filter(Boolean).join("  •  ");
+  const identifiers = [form.stock && `Stock # ${form.stock}`, form.vin && `VIN ${form.vin}`].filter(Boolean).join("   •   ");
+
+  context.fillStyle = "#111317";
+  context.fillRect(0, PHOTO_HEIGHT, 1920, 270);
+  context.fillStyle = "#c5161d";
+  context.fillRect(0, PHOTO_HEIGHT, 16, 270);
+
+  const titleSize = fitText(context, vehicle, 1160, 70, 38);
+  context.font = `900 ${titleSize}px Arial, sans-serif`;
+  context.fillStyle = "#fff";
+  context.fillText(vehicle, 62, 895);
+  context.font = "700 31px Arial, sans-serif";
+  context.fillStyle = "#c9cbd0";
+  context.fillText(identifiers || "Stock number and VIN", 64, 950);
+  context.font = "600 25px Arial, sans-serif";
+  context.fillStyle = "#9ea2a9";
+  context.fillText(dealership || "Dealership information", 64, 1001);
+  context.fillText(contact || "Consultant information", 64, 1041);
+
+  const price = form.price.trim() || "Price available at dealership";
+  const priceSize = fitText(context, price, 570, 66, 38);
+  context.textAlign = "right";
+  context.font = `900 ${priceSize}px Arial, sans-serif`;
+  context.fillStyle = "#fff";
+  context.fillText(price, 1854, 918);
+  context.font = "700 25px Arial, sans-serif";
+  context.fillStyle = "#ef6262";
+  context.fillText("SEE LISTING FOR CURRENT DETAILS", 1854, 970);
+  context.textAlign = "left";
 };
 
 const canvasToPngBlob = (canvas: HTMLCanvasElement) => new Promise<Blob>((resolve, reject) => {
@@ -83,18 +192,34 @@ const canvasToPngBlob = (canvas: HTMLCanvasElement) => new Promise<Blob>((resolv
 
 export default function VehiclePostBuilder() {
   const [form, setForm] = useState(initialForm);
+  const [photoCount, setPhotoCount] = useState<number | null>(null);
   const [photos, setPhotos] = useState<CropPhoto[]>([]);
+  const [uploadSlot, setUploadSlot] = useState(0);
   const [selectedPhoto, setSelectedPhoto] = useState(0);
   const [selectedCaption, setSelectedCaption] = useState(0);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [savingCarousel, setSavingCarousel] = useState(false);
   const [notice, setNotice] = useState("");
+  const [dealer, setDealer] = useState<DealerInfo>(createDefaultDealer);
+  const [consultant, setConsultant] = useState<ConsultantInfo>(createDefaultConsultant);
   const inputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLCanvasElement>(null);
   const dragRef = useRef<{ index: number; startX: number; startY: number; initialX: number; initialY: number } | null>(null);
+  const didDragRef = useRef(false);
+  const editorPointers = useRef(new Map<number, { x: number; y: number }>());
+  const editorGesture = useRef<{ distance: number; zoom: number } | null>(null);
 
   useEffect(() => {
     if (!previewRef.current) return;
-    void renderCollage(previewRef.current, photos, selectedPhoto);
-  }, [photos, selectedPhoto]);
+    void renderCollage(previewRef.current, photos, form, dealer, consultant, selectedPhoto);
+  }, [photos, form, dealer, consultant, selectedPhoto]);
+
+  useEffect(() => {
+    void fetchServerSettings().then((saved) => {
+      setDealer(saved?.dealer ?? loadDealer());
+      setConsultant(saved?.consultant ?? loadConsultant());
+    });
+  }, []);
 
   const prompt = useMemo(() => {
     const vehicle = [form.year, form.make, form.model, form.trim].filter(Boolean).join(" ");
@@ -158,16 +283,30 @@ INSTRUCTIONS
     setForm((current) => ({ ...current, [key]: event.target.value }));
   };
 
-  const acceptFiles = (files: FileList | File[]) => {
-    photos.forEach((photo) => URL.revokeObjectURL(photo.url));
-    const incoming = Array.from(files).filter((file) => file.type.startsWith("image/")).slice(0, 4);
-    setPhotos(incoming.map((file, index) => ({
-      id: `${file.name}-${file.lastModified}-${index}`, file, url: URL.createObjectURL(file), zoom: 1, x: 50, y: 50,
-    })));
+  const choosePhotoCount = (count: number) => {
+    setPhotoCount(count);
+    setPhotos((current) => {
+      current.slice(count).forEach((photo) => URL.revokeObjectURL(photo.url));
+      return current.slice(0, count);
+    });
     setSelectedPhoto(0);
-    setNotice(incoming.length
-      ? "Fresh crop loaded. Photo 1 is landscape; every remaining photo is portrait."
-      : "Choose image files.");
+    setNotice(`${count}-photo layout selected. Follow the guide for each picture.`);
+  };
+
+  const acceptPhoto = async (file: File | undefined) => {
+    if (!file || !file.type.startsWith("image/") || photoCount === null) return;
+    const bitmap = await createImageBitmap(file);
+    const ratio = bitmap.width / bitmap.height;
+    bitmap.close();
+    const nextPhoto = { id: `${file.name}-${file.lastModified}-${uploadSlot}`, file, url: URL.createObjectURL(file), zoom: 1, x: 50, y: 50, ratio };
+    setPhotos((current) => {
+      const next = [...current];
+      if (next[uploadSlot]) URL.revokeObjectURL(next[uploadSlot].url);
+      next[uploadSlot] = nextPhoto;
+      return next.filter(Boolean).slice(0, photoCount);
+    });
+    setSelectedPhoto(uploadSlot);
+    setNotice(`Photo ${uploadSlot + 1} added. Drag it in the final preview to fine-tune the crop.`);
   };
 
   const chooseSlot = (clientX: number, clientY: number) => {
@@ -189,6 +328,7 @@ INSTRUCTIONS
     if (index < 0) return;
     setSelectedPhoto(index);
     const photo = photos[index];
+    didDragRef.current = false;
     dragRef.current = { index, startX: event.clientX, startY: event.clientY, initialX: photo.x, initialY: photo.y };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
@@ -197,6 +337,7 @@ INSTRUCTIONS
     const drag = dragRef.current;
     const canvas = previewRef.current;
     if (!drag || !canvas) return;
+    if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 4) didDragRef.current = true;
     const rect = canvas.getBoundingClientRect();
     const slot = getSlots(photos.length)[drag.index];
     const slotWidth = rect.width * (slot.w / 1920);
@@ -213,8 +354,55 @@ INSTRUCTIONS
 
   const adjustZoom = (amount: number) => {
     setPhotos((current) => current.map((photo, index) => index === selectedPhoto
-      ? { ...photo, zoom: Math.max(1, Math.min(2.5, Number((photo.zoom + amount).toFixed(2)))) }
+      ? { ...photo, zoom: Math.max(0.5, Math.min(3, Number((photo.zoom + amount).toFixed(2)))) }
       : photo));
+  };
+
+  const openPhotoEditor = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (didDragRef.current) return;
+    const index = chooseSlot(event.clientX, event.clientY);
+    if (index < 0) return;
+    setSelectedPhoto(index);
+    setEditorOpen(true);
+  };
+
+  const updatePhotoPosition = (index: number, x: number, y: number) => {
+    setPhotos((current) => current.map((photo, photoIndex) => photoIndex === index
+      ? { ...photo, x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) }
+      : photo));
+  };
+
+  const editorPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    editorPointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    event.currentTarget.setPointerCapture(event.pointerId);
+    if (editorPointers.current.size === 2) {
+      const points = [...editorPointers.current.values()];
+      editorGesture.current = { distance: Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y), zoom: photos[selectedPhoto].zoom };
+    }
+  };
+
+  const editorPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const previous = editorPointers.current.get(event.pointerId);
+    if (!previous) return;
+    editorPointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (editorPointers.current.size === 2 && editorGesture.current) {
+      const points = [...editorPointers.current.values()];
+      const distance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+      const zoom = Math.max(0.5, Math.min(3, editorGesture.current.zoom * distance / editorGesture.current.distance));
+      setPhotos((current) => current.map((photo, index) => index === selectedPhoto ? { ...photo, zoom } : photo));
+      return;
+    }
+    if (editorPointers.current.size === 1) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const photo = photos[selectedPhoto];
+      updatePhotoPosition(selectedPhoto, photo.x - ((event.clientX - previous.x) / rect.width) * 100, photo.y - ((event.clientY - previous.y) / rect.height) * 100);
+    }
+  };
+
+  const editorPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    editorPointers.current.delete(event.pointerId);
+    editorGesture.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
   const removePhoto = (indexToRemove: number) => {
@@ -226,20 +414,15 @@ INSTRUCTIONS
     setNotice(`Photo ${indexToRemove + 1} removed. Remaining photos reflowed.`);
   };
 
-  const onDrop = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    acceptFiles(event.dataTransfer.files);
-  };
-
   const createCollage = async () => {
-    if (!photos.length) {
-      setNotice("Add at least one vehicle photo first.");
+    if (!photoCount || photos.length !== photoCount) {
+      setNotice(`Add all ${photoCount ?? "required"} photos before downloading.`);
       return;
     }
     try {
       setNotice("Building the complete collage…");
       const canvas = document.createElement("canvas");
-      await renderCollage(canvas, photos);
+      await renderCollage(canvas, photos, form, dealer, consultant);
       const blob = await canvasToPngBlob(canvas);
       const downloadUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -252,6 +435,72 @@ INSTRUCTIONS
       setNotice("The complete 1920 × 1080 collage downloaded as one PNG image.");
     } catch {
       setNotice("The collage did not download. Please try again after the photos finish loading.");
+    }
+  };
+
+  const authFetch = async (url: string, init?: RequestInit) => {
+    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
+      return fetch(url, { ...init, headers: { ...init?.headers, authorization: "Bearer local-dev-token" } });
+    }
+    const { data: { session } } = await getSupabaseBrowserClient().auth.getSession();
+    if (!session) throw new Error("Please log in again.");
+    return fetch(url, { ...init, headers: { ...init?.headers, authorization: `Bearer ${session.access_token}` } });
+  };
+
+  const buildCollageBlob = async () => {
+    const canvas = document.createElement("canvas");
+    await renderCollage(canvas, photos, form, dealer, consultant);
+    return canvasToPngBlob(canvas);
+  };
+
+  const addToCarousel = async () => {
+    if (!photoCount || photos.length !== photoCount) {
+      setNotice(`Add all ${photoCount ?? "required"} photos first.`);
+      return;
+    }
+    const title = [form.year, form.make, form.model, form.trim].filter(Boolean).join(" ");
+    if (!title || !form.walkerUrl.trim()) {
+      setNotice("Enter the vehicle name and official Walker listing first.");
+      return;
+    }
+    setSavingCarousel(true);
+    setNotice("Adding the finished collage to your card draft…");
+    try {
+      const cardResponse = await authFetch("/api/me/business-card");
+      const cardResult = await cardResponse.json();
+      if (!cardResponse.ok || cardResult.permitted === false) throw new Error(cardResult.error || "Your business card could not be opened.");
+      const draft = normalizeProfileContent(cardResult.card?.draft, Boolean(cardResult.isAdmin));
+      if (draft.vehicles.length >= 6) throw new Error("Your carousel already has six vehicles. Delete one before adding another.");
+
+      const blob = await buildCollageBlob();
+      const uploadBody = new FormData();
+      uploadBody.append("file", blob, `${[form.year, form.make, form.model].filter(Boolean).join("-") || "vehicle"}-collage.png`);
+      uploadBody.append("category", "vehicles");
+      const uploadResponse = await authFetch("/api/me/business-card", { method: "POST", body: uploadBody });
+      const uploadResult = await uploadResponse.json();
+      if (!uploadResponse.ok) throw new Error(uploadResult.error || "The collage could not be uploaded.");
+
+      const vehicle = {
+        id: crypto.randomUUID(),
+        title,
+        description: form.mileage ? `${form.mileage} miles` : "",
+        url: form.walkerUrl.trim(),
+        imageUrl: uploadResult.url,
+        secondaryUrl: form.vin.trim(),
+        meta: [form.price.trim(), form.stock.trim() ? `Stock ${form.stock.trim()}` : ""].filter(Boolean).join(" · "),
+      };
+      const saveResponse = await authFetch("/api/me/business-card", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "draft", draft: { ...draft, vehicles: [...draft.vehicles, vehicle] } }),
+      });
+      const saveResult = await saveResponse.json();
+      if (!saveResponse.ok) throw new Error(saveResult.error || "The carousel draft could not be saved.");
+      setNotice("Added to your carousel draft. Open Business Card and press Publish when you are ready.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "The collage could not be added to your carousel.");
+    } finally {
+      setSavingCarousel(false);
     }
   };
 
@@ -276,18 +525,49 @@ INSTRUCTIONS
   };
 
   const active = photos[selectedPhoto];
+  const editorSlot = active ? getSlots(photos.length)[selectedPhoto] : null;
+  const editorFrameRatio = editorSlot ? editorSlot.w / editorSlot.h : 1;
+  const editorBaseWidth = active && active.ratio > editorFrameRatio ? (active.ratio / editorFrameRatio) * 100 : 100;
+  const editorBaseHeight = active && active.ratio > editorFrameRatio ? 100 : active ? (editorFrameRatio / active.ratio) * 100 : 100;
+  const editorWidth = editorBaseWidth * (active?.zoom ?? 1);
+  const editorHeight = editorBaseHeight * (active?.zoom ?? 1);
+  const editorLeft = editorWidth >= 100 ? -(editorWidth - 100) * ((active?.x ?? 50) / 100) : (100 - editorWidth) / 2;
+  const editorTop = editorHeight >= 100 ? -(editorHeight - 100) * ((active?.y ?? 50) / 100) : (100 - editorHeight) / 2;
 
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
         <header className={styles.header}>
           <p>Consultant backend</p>
-          <h1>Vehicle Post Builder</h1>
+          <h1>Vehicle Collage Builder</h1>
           <span>Build a true 1920 × 1080 collage. What you see is exactly what downloads.</span>
         </header>
 
         <details className={styles.panel} open>
-          <summary><span>01</span> Vehicle information</summary>
+          <summary><span>01</span> How many photos?</summary>
+          <div className={styles.panelBody}>
+            <p className={styles.helperText}>Choose a layout first. The builder will then tell you which vehicle views fit each space.</p>
+            <div className={styles.layoutCatalog}>
+              {[1, 2, 3, 4, 5].map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  className={photoCount === count ? styles.layoutActive : styles.layoutChoice}
+                  onClick={() => choosePhotoCount(count)}
+                  aria-pressed={photoCount === count}
+                >
+                  <span className={`${styles.layoutDiagram} ${styles[`layout${count}`]}`}>
+                    {Array.from({ length: count }, (_, index) => <i key={index}>{index + 1}</i>)}
+                  </span>
+                  <strong>{count} photo{count > 1 ? "s" : ""}</strong>
+                </button>
+              ))}
+            </div>
+          </div>
+        </details>
+
+        <details className={styles.panel} open>
+          <summary><span>02</span> Vehicle information</summary>
           <div className={styles.panelBody}>
             <div className={styles.grid}>
               <label>Year<input inputMode="numeric" value={form.year} onChange={update("year")} /></label>
@@ -297,29 +577,45 @@ INSTRUCTIONS
               <label>VIN<input value={form.vin} onChange={update("vin")} /></label>
               <label>Stock number<input value={form.stock} onChange={update("stock")} /></label>
               <label>Mileage<input inputMode="numeric" value={form.mileage} onChange={update("mileage")} /></label>
-              <label>Price<input value={form.price} onChange={update("price")} /></label>
+              <label>Price<input value={form.price} onChange={update("price")} placeholder="$00,000" /></label>
             </div>
             <label>Official Walker listing<input type="url" value={form.walkerUrl} onChange={update("walkerUrl")} /></label>
-            <label>Consultant page<input type="url" value={form.consultantUrl} onChange={update("consultantUrl")} /></label>
+            <div className={styles.savedInfo}>
+              <strong>Added from your saved settings</strong>
+              <span>{consultant.name || "Consultant name not set"} · {consultant.phone || "Phone not set"}</span>
+              <span>{dealer.dealershipName || "Dealership not set"}{getDealerFullAddress(dealer) ? ` · ${getDealerFullAddress(dealer)}` : ""}</span>
+            </div>
           </div>
         </details>
 
         <details className={styles.panel} open>
-          <summary><span>02</span> Upload and crop photos</summary>
+          <summary><span>03</span> Add and position photos</summary>
           <div className={styles.panelBody}>
-            <div className={styles.dropzone} onDragOver={(event) => event.preventDefault()} onDrop={onDrop} onClick={() => inputRef.current?.click()} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter") inputRef.current?.click(); }}>
-              <strong>Drag and drop up to four photos</strong>
-              <span>Photo 1: 3:2 landscape · Photos 2–4: 2:3 portrait</span>
-              <span>or tap to browse</span>
-              <input ref={inputRef} hidden type="file" accept="image/*" multiple onChange={(event) => event.target.files && acceptFiles(event.target.files)} />
-            </div>
-
-            <div className={styles.slotGuide} aria-label="Required collage photo shapes">
-              <div><strong>Photo 1</strong><span>3:2 Landscape</span></div>
-              <div><strong>Photo 2</strong><span>2:3 Portrait</span></div>
-              <div><strong>Photo 3</strong><span>2:3 Portrait</span></div>
-              <div><strong>Photo 4</strong><span>2:3 Portrait</span></div>
-            </div>
+            {photoCount === null ? (
+              <p className={styles.emptyGuide}>Choose the number of photos above to see the upload guide.</p>
+            ) : (
+              <div className={styles.photoQuestions}>
+                {PHOTO_GUIDES[photoCount].map((guide, index) => {
+                  const photo = photos[index];
+                  const locked = index > photos.length;
+                  return (
+                    <button
+                      key={`${photoCount}-${index}`}
+                      type="button"
+                      className={photo ? styles.photoQuestionReady : styles.photoQuestion}
+                      disabled={locked}
+                      onClick={() => { setUploadSlot(index); inputRef.current?.click(); }}
+                    >
+                      <span>Photo {index + 1}</span>
+                      <strong>{guide.view}</strong>
+                      <em>{guide.shape}</em>
+                      <small>{photo ? "Photo added — tap to replace" : locked ? "Add the previous photo first" : guide.note}</small>
+                    </button>
+                  );
+                })}
+                <input ref={inputRef} hidden type="file" accept="image/*" onChange={(event) => { void acceptPhoto(event.target.files?.[0]); event.currentTarget.value = ""; }} />
+              </div>
+            )}
 
             {!!photos.length && (
               <section className={styles.finalCrop}>
@@ -333,6 +629,7 @@ INSTRUCTIONS
                     onPointerMove={moveDrag}
                     onPointerUp={stopDrag}
                     onPointerCancel={stopDrag}
+                    onClick={openPhotoEditor}
                   />
                   {getSlots(photos.length).map((slot, index) => (
                     <button
@@ -349,21 +646,24 @@ INSTRUCTIONS
                   ))}
                 </div>
                 <div className={styles.cropToolbar}>
-                  <span>Photo {selectedPhoto + 1} · {getPhotoRequirement(selectedPhoto)} — drag to reposition</span>
+                  <span>Photo {selectedPhoto + 1} — drag the vehicle into place</span>
                   <div>
-                    <button type="button" disabled={!active || active.zoom <= 1} onClick={() => adjustZoom(-0.1)} aria-label="Zoom selected photo out">−</button>
+                    <button type="button" disabled={!active || active.zoom <= 0.5} onClick={() => adjustZoom(-0.1)} aria-label="Zoom selected photo out">−</button>
                     <strong>{active ? Math.round(active.zoom * 100) : 100}%</strong>
                     <button type="button" onClick={() => adjustZoom(0.1)} aria-label="Zoom selected photo in">+</button>
                   </div>
                 </div>
               </section>
             )}
-            <button className={styles.primary} type="button" onClick={createCollage}>Download complete collage</button>
+            <div className={styles.actions}>
+              <button className={styles.primary} type="button" disabled={!photoCount || photos.length !== photoCount} onClick={createCollage}>Download collage</button>
+              <button className={styles.secondary} type="button" disabled={savingCarousel || !photoCount || photos.length !== photoCount} onClick={addToCarousel}>{savingCarousel ? "Adding…" : "Add to My Carousel"}</button>
+            </div>
           </div>
         </details>
 
         <details className={styles.panel} open>
-          <summary><span>03</span> Facebook-ready posts</summary>
+          <summary><span>04</span> Facebook-ready posts</summary>
           <div className={styles.panelBody}>
             <p className={styles.helperText}>Choose a post style. Vehicle details and the Walker disclaimer are added automatically.</p>
             <div className={styles.captionChoices}>
@@ -384,7 +684,7 @@ INSTRUCTIONS
         </details>
 
         <details className={styles.panel}>
-          <summary><span>04</span> GPT post prompt</summary>
+          <summary><span>05</span> GPT post prompt</summary>
           <div className={styles.panelBody}>
             <textarea className={styles.prompt} value={prompt} readOnly aria-label="Generated GPT vehicle-post prompt" />
             <div className={styles.actions}>
@@ -397,6 +697,43 @@ INSTRUCTIONS
         <p className={styles.notice} aria-live="polite">{notice || "Enter verified information, then create the assets."}</p>
         <footer className={styles.disclaimer}>{disclaimer}</footer>
       </div>
+
+      {editorOpen && active && editorSlot && (
+        <div className={styles.editorBackdrop} role="dialog" aria-modal="true" aria-label={`Edit photo ${selectedPhoto + 1}`}>
+          <div className={styles.editorPanel}>
+            <div className={styles.editorHeading}>
+              <div><strong>Position photo {selectedPhoto + 1}</strong><span>Drag with one finger · pinch with two</span></div>
+              <button type="button" onClick={() => setEditorOpen(false)} aria-label="Close photo editor">×</button>
+            </div>
+            <div
+              className={styles.editorFrame}
+              style={{ aspectRatio: `${editorSlot.w} / ${editorSlot.h}` }}
+              onPointerDown={editorPointerDown}
+              onPointerMove={editorPointerMove}
+              onPointerUp={editorPointerUp}
+              onPointerCancel={editorPointerUp}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className={styles.editorBackground} src={active.url} alt="" draggable={false} aria-hidden="true" />
+              {/* A local object URL is required here for immediate canvas-matched cropping. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className={styles.editorForeground}
+                src={active.url}
+                alt="Vehicle crop preview"
+                draggable={false}
+                style={{ width: `${editorWidth}%`, height: `${editorHeight}%`, left: `${editorLeft}%`, top: `${editorTop}%` }}
+              />
+            </div>
+            <div className={styles.editorControls}>
+              <button type="button" disabled={active.zoom <= 0.5} onClick={() => adjustZoom(-0.1)}>−</button>
+              <span>{Math.round(active.zoom * 100)}%</span>
+              <button type="button" disabled={active.zoom >= 3} onClick={() => adjustZoom(0.1)}>+</button>
+            </div>
+            <button className={styles.primary} type="button" onClick={() => setEditorOpen(false)}>Done</button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
