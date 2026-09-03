@@ -60,17 +60,23 @@ const getSlots = (count: number): Slot[] => count === 1
       : [{ x: 0, y: 0, w: 960, h: 405 }, { x: 960, y: 0, w: 960, h: 405 }, { x: 0, y: 405, w: 960, h: 405 }, { x: 960, y: 405, w: 960, h: 405 }];
 
 const drawCropped = (context: CanvasRenderingContext2D, image: HTMLImageElement, slot: Slot, photo: CropPhoto) => {
-  const slotRatio = slot.w / slot.h;
-  const imageRatio = image.width / image.height;
-  let cropWidth = image.width;
-  let cropHeight = image.height;
-  if (imageRatio > slotRatio) cropWidth = image.height * slotRatio;
-  else cropHeight = image.width / slotRatio;
-  cropWidth /= photo.zoom;
-  cropHeight /= photo.zoom;
-  const sourceX = (image.width - cropWidth) * (photo.x / 100);
-  const sourceY = (image.height - cropHeight) * (photo.y / 100);
-  context.drawImage(image, sourceX, sourceY, cropWidth, cropHeight, slot.x, slot.y, slot.w, slot.h);
+  context.fillStyle = "#090a0c";
+  context.fillRect(slot.x, slot.y, slot.w, slot.h);
+  const coverScale = Math.max(slot.w / image.width, slot.h / image.height);
+  const drawWidth = image.width * coverScale * photo.zoom;
+  const drawHeight = image.height * coverScale * photo.zoom;
+  const drawX = drawWidth >= slot.w
+    ? slot.x - (drawWidth - slot.w) * (photo.x / 100)
+    : slot.x + (slot.w - drawWidth) / 2;
+  const drawY = drawHeight >= slot.h
+    ? slot.y - (drawHeight - slot.h) * (photo.y / 100)
+    : slot.y + (slot.h - drawHeight) / 2;
+  context.save();
+  context.beginPath();
+  context.rect(slot.x, slot.y, slot.w, slot.h);
+  context.clip();
+  context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+  context.restore();
 };
 
 const fitText = (context: CanvasRenderingContext2D, text: string, maxWidth: number, start: number, minimum: number) => {
@@ -165,12 +171,16 @@ export default function VehiclePostBuilder() {
   const [uploadSlot, setUploadSlot] = useState(0);
   const [selectedPhoto, setSelectedPhoto] = useState(0);
   const [selectedCaption, setSelectedCaption] = useState(0);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [dealer, setDealer] = useState<DealerInfo>(createDefaultDealer);
   const [consultant, setConsultant] = useState<ConsultantInfo>(createDefaultConsultant);
   const inputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLCanvasElement>(null);
   const dragRef = useRef<{ index: number; startX: number; startY: number; initialX: number; initialY: number } | null>(null);
+  const didDragRef = useRef(false);
+  const editorPointers = useRef(new Map<number, { x: number; y: number }>());
+  const editorGesture = useRef<{ distance: number; zoom: number } | null>(null);
 
   useEffect(() => {
     if (!previewRef.current) return;
@@ -291,6 +301,7 @@ INSTRUCTIONS
     if (index < 0) return;
     setSelectedPhoto(index);
     const photo = photos[index];
+    didDragRef.current = false;
     dragRef.current = { index, startX: event.clientX, startY: event.clientY, initialX: photo.x, initialY: photo.y };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
@@ -299,6 +310,7 @@ INSTRUCTIONS
     const drag = dragRef.current;
     const canvas = previewRef.current;
     if (!drag || !canvas) return;
+    if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 4) didDragRef.current = true;
     const rect = canvas.getBoundingClientRect();
     const slot = getSlots(photos.length)[drag.index];
     const slotWidth = rect.width * (slot.w / 1920);
@@ -315,8 +327,55 @@ INSTRUCTIONS
 
   const adjustZoom = (amount: number) => {
     setPhotos((current) => current.map((photo, index) => index === selectedPhoto
-      ? { ...photo, zoom: Math.max(1, Math.min(2.5, Number((photo.zoom + amount).toFixed(2)))) }
+      ? { ...photo, zoom: Math.max(0.5, Math.min(3, Number((photo.zoom + amount).toFixed(2)))) }
       : photo));
+  };
+
+  const openPhotoEditor = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (didDragRef.current) return;
+    const index = chooseSlot(event.clientX, event.clientY);
+    if (index < 0) return;
+    setSelectedPhoto(index);
+    setEditorOpen(true);
+  };
+
+  const updatePhotoPosition = (index: number, x: number, y: number) => {
+    setPhotos((current) => current.map((photo, photoIndex) => photoIndex === index
+      ? { ...photo, x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) }
+      : photo));
+  };
+
+  const editorPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    editorPointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    event.currentTarget.setPointerCapture(event.pointerId);
+    if (editorPointers.current.size === 2) {
+      const points = [...editorPointers.current.values()];
+      editorGesture.current = { distance: Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y), zoom: photos[selectedPhoto].zoom };
+    }
+  };
+
+  const editorPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const previous = editorPointers.current.get(event.pointerId);
+    if (!previous) return;
+    editorPointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (editorPointers.current.size === 2 && editorGesture.current) {
+      const points = [...editorPointers.current.values()];
+      const distance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+      const zoom = Math.max(0.5, Math.min(3, editorGesture.current.zoom * distance / editorGesture.current.distance));
+      setPhotos((current) => current.map((photo, index) => index === selectedPhoto ? { ...photo, zoom } : photo));
+      return;
+    }
+    if (editorPointers.current.size === 1) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const photo = photos[selectedPhoto];
+      updatePhotoPosition(selectedPhoto, photo.x - ((event.clientX - previous.x) / rect.width) * 100, photo.y - ((event.clientY - previous.y) / rect.height) * 100);
+    }
+  };
+
+  const editorPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    editorPointers.current.delete(event.pointerId);
+    editorGesture.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
   const removePhoto = (indexToRemove: number) => {
@@ -373,6 +432,14 @@ INSTRUCTIONS
   };
 
   const active = photos[selectedPhoto];
+  const editorSlot = active ? getSlots(photos.length)[selectedPhoto] : null;
+  const editorFrameRatio = editorSlot ? editorSlot.w / editorSlot.h : 1;
+  const editorBaseWidth = active && active.ratio > editorFrameRatio ? (active.ratio / editorFrameRatio) * 100 : 100;
+  const editorBaseHeight = active && active.ratio > editorFrameRatio ? 100 : active ? (editorFrameRatio / active.ratio) * 100 : 100;
+  const editorWidth = editorBaseWidth * (active?.zoom ?? 1);
+  const editorHeight = editorBaseHeight * (active?.zoom ?? 1);
+  const editorLeft = editorWidth >= 100 ? -(editorWidth - 100) * ((active?.x ?? 50) / 100) : (100 - editorWidth) / 2;
+  const editorTop = editorHeight >= 100 ? -(editorHeight - 100) * ((active?.y ?? 50) / 100) : (100 - editorHeight) / 2;
 
   return (
     <main className={styles.page}>
@@ -469,6 +536,7 @@ INSTRUCTIONS
                     onPointerMove={moveDrag}
                     onPointerUp={stopDrag}
                     onPointerCancel={stopDrag}
+                    onClick={openPhotoEditor}
                   />
                   {getSlots(photos.length).map((slot, index) => (
                     <button
@@ -487,7 +555,7 @@ INSTRUCTIONS
                 <div className={styles.cropToolbar}>
                   <span>Photo {selectedPhoto + 1} — drag the vehicle into place</span>
                   <div>
-                    <button type="button" disabled={!active || active.zoom <= 1} onClick={() => adjustZoom(-0.1)} aria-label="Zoom selected photo out">−</button>
+                    <button type="button" disabled={!active || active.zoom <= 0.5} onClick={() => adjustZoom(-0.1)} aria-label="Zoom selected photo out">−</button>
                     <strong>{active ? Math.round(active.zoom * 100) : 100}%</strong>
                     <button type="button" onClick={() => adjustZoom(0.1)} aria-label="Zoom selected photo in">+</button>
                   </div>
@@ -533,6 +601,40 @@ INSTRUCTIONS
         <p className={styles.notice} aria-live="polite">{notice || "Enter verified information, then create the assets."}</p>
         <footer className={styles.disclaimer}>{disclaimer}</footer>
       </div>
+
+      {editorOpen && active && editorSlot && (
+        <div className={styles.editorBackdrop} role="dialog" aria-modal="true" aria-label={`Edit photo ${selectedPhoto + 1}`}>
+          <div className={styles.editorPanel}>
+            <div className={styles.editorHeading}>
+              <div><strong>Position photo {selectedPhoto + 1}</strong><span>Drag with one finger · pinch with two</span></div>
+              <button type="button" onClick={() => setEditorOpen(false)} aria-label="Close photo editor">×</button>
+            </div>
+            <div
+              className={styles.editorFrame}
+              style={{ aspectRatio: `${editorSlot.w} / ${editorSlot.h}` }}
+              onPointerDown={editorPointerDown}
+              onPointerMove={editorPointerMove}
+              onPointerUp={editorPointerUp}
+              onPointerCancel={editorPointerUp}
+            >
+              {/* A local object URL is required here for immediate canvas-matched cropping. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={active.url}
+                alt="Vehicle crop preview"
+                draggable={false}
+                style={{ width: `${editorWidth}%`, height: `${editorHeight}%`, left: `${editorLeft}%`, top: `${editorTop}%` }}
+              />
+            </div>
+            <div className={styles.editorControls}>
+              <button type="button" disabled={active.zoom <= 0.5} onClick={() => adjustZoom(-0.1)}>−</button>
+              <span>{Math.round(active.zoom * 100)}%</span>
+              <button type="button" disabled={active.zoom >= 3} onClick={() => adjustZoom(0.1)}>+</button>
+            </div>
+            <button className={styles.primary} type="button" onClick={() => setEditorOpen(false)}>Done</button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
