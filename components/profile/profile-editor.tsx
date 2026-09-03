@@ -379,7 +379,7 @@ export function ProfileEditor() {
       <p className={styles.sectionIntro}>Headshot photo (1:1), Calling Card artwork (2:3), and contact details.</p>
 
       {/* ── Identity & Artwork ── */}
-      <details className={styles.panel} open>
+      <details className={styles.panel}>
         <summary>
           <span>1. Profile Photo (1:1) &amp; Calling Card (2:3)</span>
           <div className={styles.summaryRight}>
@@ -592,11 +592,24 @@ export function ProfileEditor() {
         </p>
         <div className={styles.collection}>
           {draft.videos.map((vid, index) => (
-            <article className={styles.item} key={vid.id}>
+            <details className={styles.videoEditorItem} key={vid.id}>
+              <summary>
+                <span>{vid.title || `Video #${index + 1}`}</span>
+                <small>{vid.imageUrl ? "Uploaded file" : vid.url ? "Linked video" : "Not added"}</small>
+              </summary>
+              <div className={styles.videoEditorBody}>
+              {vid.imageUrl && (
+                <div className={styles.videoPreview}>
+                  <video src={vid.imageUrl} controls muted playsInline preload="metadata" />
+                  <span>Uploaded successfully</span>
+                </div>
+              )}
               <div className={styles.itemToolbar}>
-                <strong>{vid.title || `Video #${index + 1}`}</strong>
+                <strong>Video controls</strong>
                 <div>
-                  <button type="button" className={styles.delete} onClick={() => removeItem("videos", index)}>Delete</button>
+                  <button type="button" disabled={index === 0} onClick={() => moveItem("videos", index, -1)}>↑</button>
+                  <button type="button" disabled={index === draft.videos.length - 1} onClick={() => moveItem("videos", index, 1)}>↓</button>
+                  <button type="button" className={styles.delete} onClick={() => { if (window.confirm("Delete this video from your card?")) removeItem("videos", index); }}>Delete</button>
                 </div>
               </div>
               <div className={styles.grid}>
@@ -616,7 +629,10 @@ export function ProfileEditor() {
                     disabled={uploadedVideoCount >= 2 && !vid.imageUrl}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) uploadBlobOrFile(file, file.name, "videos", (url) => changeItem("videos", index, "imageUrl", url));
+                      if (file) uploadBlobOrFile(file, file.name, "videos", (url) => {
+                        changeItem("videos", index, "imageUrl", url);
+                        setNotice(`${vid.title || `Video #${index + 1}`} uploaded successfully.`);
+                      });
                     }}
                   />
                 </label>
@@ -640,7 +656,8 @@ export function ProfileEditor() {
                   />
                 </label>
               </div>
-            </article>
+              </div>
+            </details>
           ))}
         </div>
         <button
