@@ -16,6 +16,24 @@ function slugify(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "consultant";
 }
 
+function ownedStorageObject(publicUrl: string, userId: string) {
+  try {
+    const url = new URL(publicUrl);
+    const marker = "/storage/v1/object/public/";
+    const markerIndex = url.pathname.indexOf(marker);
+    if (markerIndex === -1) return null;
+
+    const objectParts = url.pathname.slice(markerIndex + marker.length).split("/").map(decodeURIComponent);
+    const bucket = objectParts.shift();
+    const path = objectParts.join("/");
+    const expectedBucket = `consultant-media-${userId}`;
+    if (bucket !== expectedBucket || !path.startsWith(`${userId}/vehicles/`)) return null;
+    return { bucket, path };
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const isLocalDev = process.env.NEXT_PUBLIC_DISABLE_AUTH === "1";
   const token = bearer(request);
@@ -280,6 +298,10 @@ export async function PUT(request: NextRequest) {
     .eq("user_id", user.id)
     .maybeSingle();
 
+  const { data: existingVehicles } = existingCard
+    ? await supabase.from("consultant_vehicles").select("image_url").eq("card_id", existingCard.id)
+    : { data: [] as { image_url: string | null }[] };
+
   const isPublished = isPublishAction ? true : isUnpublishAction ? false : (existingCard?.is_published ?? false);
   const publishedAt = isPublishAction ? now : isUnpublishAction ? null : existingCard?.published_at ?? null;
 
@@ -405,7 +427,38 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  await Promise.all(insertPromises);
+  const insertResults = await Promise.all(insertPromises);
+  const insertError = insertResults.find((result) => result.error)?.error;
+  if (insertError) {
+    return NextResponse.json({ error: insertError.message }, { status: 500 });
+  }
+
+  // Permanently remove files that belonged to vehicle records the consultant removed.
+  // URLs outside this user's private consultant bucket are never touched.
+  const retainedImageUrls = new Set([
+    ...incomingDraft.vehicles.map((vehicle) => vehicle.imageUrl),
+    ...incomingDraft.reviews.map((review) => review.imageUrl),
+    ...incomingDraft.soldGallery.map((photo) => photo.imageUrl),
+    incomingDraft.identity.profileImageUrl,
+    incomingDraft.identity.callingCardImageUrl,
+    incomingDraft.identity.logoUrl,
+  ].filter(Boolean));
+  const removedObjects = (existingVehicles ?? [])
+    .map((vehicle) => vehicle.image_url || "")
+    .filter((imageUrl) => imageUrl && !retainedImageUrls.has(imageUrl))
+    .map((imageUrl) => ownedStorageObject(imageUrl, user.id))
+    .filter((object): object is { bucket: string; path: string } => Boolean(object));
+
+  const removalsByBucket = new Map<string, string[]>();
+  for (const object of removedObjects) {
+    removalsByBucket.set(object.bucket, [...(removalsByBucket.get(object.bucket) ?? []), object.path]);
+  }
+  for (const [bucket, paths] of removalsByBucket) {
+    const { error: removeError } = await supabase.storage.from(bucket).remove(paths);
+    if (removeError) {
+      console.error("Failed to remove deleted vehicle media", { userId: user.id, bucket, error: removeError.message });
+    }
+  }
 
   // Sync to user_settings for legacy backward compatibility
   const legacyCard = {
