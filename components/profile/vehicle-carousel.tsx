@@ -7,9 +7,11 @@ import styles from "../../app/card/trav/page.module.css";
 type VehicleCarouselProps = {
   vehicles: VehiclePreviewCardProps[];
   initialVehicleVin?: string;
+  consultantName: string;
+  phone: string;
 };
 
-export function VehicleCarousel({ vehicles, initialVehicleVin }: VehicleCarouselProps) {
+export function VehicleCarousel({ vehicles, initialVehicleVin, consultantName, phone }: VehicleCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(() => {
     const matchedIndex = vehicles.findIndex(({ verifiedFallback }) => verifiedFallback?.vin === initialVehicleVin);
     return matchedIndex >= 0 ? matchedIndex : 0;
@@ -17,6 +19,7 @@ export function VehicleCarousel({ vehicles, initialVehicleVin }: VehicleCarousel
   const [copied, setCopied] = useState(false);
   const railRef = useRef<HTMLDivElement>(null);
   const activeVehicle = vehicles[activeIndex] ?? vehicles[0];
+  const phoneLink = phone.replace(/[^\d+]/g, "");
 
   useEffect(() => {
     const rail = railRef.current;
@@ -39,7 +42,7 @@ export function VehicleCarousel({ vehicles, initialVehicleVin }: VehicleCarousel
     <section className={styles.vehicleSection} aria-labelledby="vehicle-section-heading">
       <div className={styles.sectionHeading}>
         <div>
-          <p className={styles.vehicleLabel}>Trav’s picks</p>
+          <p className={styles.vehicleLabel}>{consultantName}’s picks</p>
           <h2 id="vehicle-section-heading">Vehicles worth a look</h2>
         </div>
         <span>{activeIndex + 1} / {vehicles.length}</span>
@@ -71,8 +74,8 @@ export function VehicleCarousel({ vehicles, initialVehicleVin }: VehicleCarousel
           <button type="button" onClick={copyVehicleLink}>{copied ? "Link copied!" : "Copy link"}</button>
         </div>
         <div className={styles.vehicleDockContact}>
-          <a href="tel:+13187877887">Call</a>
-          <a href="sms:+13187877887">Text</a>
+          <a href={`tel:${phoneLink}`}>Call</a>
+          <a href={`sms:${phoneLink}`}>Text</a>
         </div>
       </div>
     </section>
