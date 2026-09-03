@@ -214,6 +214,12 @@ export function DashboardScreen() {
               >
                 Business Card
               </Link>
+              <Link
+                href="/vehicle-collage"
+                className={secondaryButtonClass}
+              >
+                Vehicle Collage
+              </Link>
               <Link href="/messenger" className={`${secondaryButtonClass} relative`}>
                 NXTDox Messenger
                 {messengerUnread > 0 && <span className="absolute right-2 top-2 grid h-5 min-w-5 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{messengerUnread}</span>}
