@@ -121,6 +121,41 @@
   box-shadow: 0 0 0 3px rgba(239, 98, 98, .12);
 }
 
+.priceInput {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  overflow: hidden;
+  min-height: 48px;
+  border: 1px solid #3a3e45;
+  border-radius: 13px;
+  background: #202329;
+}
+
+.priceInput:focus-within {
+  border-color: #ef6262;
+  box-shadow: 0 0 0 3px rgba(239, 98, 98, .12);
+}
+
+.priceInput span {
+  display: grid;
+  height: 100%;
+  place-items: center;
+  border-right: 1px solid #3a3e45;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.priceInput input {
+  min-height: 46px;
+  border: 0;
+  border-radius: 0;
+}
+
+.priceInput input:focus {
+  box-shadow: none;
+}
+
 .savedInfo {
   display: grid;
   gap: 5px;
