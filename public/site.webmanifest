@@ -1,19 +1,26 @@
 {
   "id": "/dashboard",
-  "name": "NXTDox Walker Docs",
-  "short_name": "NXTDox",
+  "name": "NXTDOCS",
+  "short_name": "NXTDOCS",
   "start_url": "/dashboard",
   "scope": "/",
   "icons": [
     {
-      "src": "/android-chrome-192x192.png",
+      "src": "/icons/nxtdocs-icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/android-chrome-512x512.png",
+      "src": "/icons/nxtdocs-icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/nxtdocs-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "theme_color": "#1c1c1e",
