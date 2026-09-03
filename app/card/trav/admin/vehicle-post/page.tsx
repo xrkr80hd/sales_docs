@@ -11,6 +11,8 @@ import {
   type ConsultantInfo,
   type DealerInfo,
 } from "@/lib/dealer-consultant";
+import { normalizeProfileContent } from "@/lib/consultant-profile";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import styles from "./page.module.css";
 
 type VehicleForm = {
@@ -196,6 +198,7 @@ export default function VehiclePostBuilder() {
   const [selectedPhoto, setSelectedPhoto] = useState(0);
   const [selectedCaption, setSelectedCaption] = useState(0);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [savingCarousel, setSavingCarousel] = useState(false);
   const [notice, setNotice] = useState("");
   const [dealer, setDealer] = useState<DealerInfo>(createDefaultDealer);
   const [consultant, setConsultant] = useState<ConsultantInfo>(createDefaultConsultant);
@@ -435,6 +438,72 @@ INSTRUCTIONS
     }
   };
 
+  const authFetch = async (url: string, init?: RequestInit) => {
+    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
+      return fetch(url, { ...init, headers: { ...init?.headers, authorization: "Bearer local-dev-token" } });
+    }
+    const { data: { session } } = await getSupabaseBrowserClient().auth.getSession();
+    if (!session) throw new Error("Please log in again.");
+    return fetch(url, { ...init, headers: { ...init?.headers, authorization: `Bearer ${session.access_token}` } });
+  };
+
+  const buildCollageBlob = async () => {
+    const canvas = document.createElement("canvas");
+    await renderCollage(canvas, photos, form, dealer, consultant);
+    return canvasToPngBlob(canvas);
+  };
+
+  const addToCarousel = async () => {
+    if (!photoCount || photos.length !== photoCount) {
+      setNotice(`Add all ${photoCount ?? "required"} photos first.`);
+      return;
+    }
+    const title = [form.year, form.make, form.model, form.trim].filter(Boolean).join(" ");
+    if (!title || !form.walkerUrl.trim()) {
+      setNotice("Enter the vehicle name and official Walker listing first.");
+      return;
+    }
+    setSavingCarousel(true);
+    setNotice("Adding the finished collage to your card draft…");
+    try {
+      const cardResponse = await authFetch("/api/me/business-card");
+      const cardResult = await cardResponse.json();
+      if (!cardResponse.ok || cardResult.permitted === false) throw new Error(cardResult.error || "Your business card could not be opened.");
+      const draft = normalizeProfileContent(cardResult.card?.draft, Boolean(cardResult.isAdmin));
+      if (draft.vehicles.length >= 6) throw new Error("Your carousel already has six vehicles. Delete one before adding another.");
+
+      const blob = await buildCollageBlob();
+      const uploadBody = new FormData();
+      uploadBody.append("file", blob, `${[form.year, form.make, form.model].filter(Boolean).join("-") || "vehicle"}-collage.png`);
+      uploadBody.append("category", "vehicles");
+      const uploadResponse = await authFetch("/api/me/business-card", { method: "POST", body: uploadBody });
+      const uploadResult = await uploadResponse.json();
+      if (!uploadResponse.ok) throw new Error(uploadResult.error || "The collage could not be uploaded.");
+
+      const vehicle = {
+        id: crypto.randomUUID(),
+        title,
+        description: form.mileage ? `${form.mileage} miles` : "",
+        url: form.walkerUrl.trim(),
+        imageUrl: uploadResult.url,
+        secondaryUrl: form.vin.trim(),
+        meta: [form.price.trim(), form.stock.trim() ? `Stock ${form.stock.trim()}` : ""].filter(Boolean).join(" · "),
+      };
+      const saveResponse = await authFetch("/api/me/business-card", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "draft", draft: { ...draft, vehicles: [...draft.vehicles, vehicle] } }),
+      });
+      const saveResult = await saveResponse.json();
+      if (!saveResponse.ok) throw new Error(saveResult.error || "The carousel draft could not be saved.");
+      setNotice("Added to your carousel draft. Open Business Card and press Publish when you are ready.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "The collage could not be added to your carousel.");
+    } finally {
+      setSavingCarousel(false);
+    }
+  };
+
   const copyCaption = async () => {
     await navigator.clipboard.writeText(captions[selectedCaption].text);
     setNotice(`${captions[selectedCaption].title} post copied.`);
@@ -586,7 +655,10 @@ INSTRUCTIONS
                 </div>
               </section>
             )}
-            <button className={styles.primary} type="button" disabled={!photoCount || photos.length !== photoCount} onClick={createCollage}>Download complete collage</button>
+            <div className={styles.actions}>
+              <button className={styles.primary} type="button" disabled={!photoCount || photos.length !== photoCount} onClick={createCollage}>Download collage</button>
+              <button className={styles.secondary} type="button" disabled={savingCarousel || !photoCount || photos.length !== photoCount} onClick={addToCarousel}>{savingCarousel ? "Adding…" : "Add to My Carousel"}</button>
+            </div>
           </div>
         </details>
 
