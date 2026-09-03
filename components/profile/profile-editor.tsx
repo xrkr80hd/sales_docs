@@ -544,7 +544,20 @@ export function ProfileEditor() {
         <p className={styles.help}>
           Build the vehicle once, download its finished collage, and add that same collage to your swipeable business-card carousel.
         </p>
-        <Link href="/vehicle-collage" className={styles.add}>Build a Vehicle Collage</Link>
+        <Link href="/vehicle-collage" className={styles.collageBuilderButton}>
+          <span className={styles.collageBuilderIcon} aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="3" width="8" height="8" rx="1.5" />
+              <rect x="13" y="3" width="8" height="8" rx="1.5" />
+              <rect x="3" y="13" width="18" height="8" rx="1.5" />
+            </svg>
+          </span>
+          <span>
+            <strong>Build Vehicle Collage</strong>
+            <small>Create, crop, and add a vehicle to your card</small>
+          </span>
+          <span className={styles.collageBuilderArrow} aria-hidden="true">→</span>
+        </Link>
         <div className={styles.collection}>
           {draft.vehicles.map((v, index) => (
               <article className={styles.item} key={v.id}>
