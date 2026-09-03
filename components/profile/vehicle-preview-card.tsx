@@ -11,6 +11,7 @@ export type VehiclePreview = {
   vin: string | null;
   stock: string | null;
   price: string | null;
+  features?: string[];
 };
 
 export type VehiclePreviewCardProps = {
@@ -43,7 +44,7 @@ export function VehiclePreviewCard({ listingUrl, verifiedFallback }: VehiclePrev
       .then(async (response) => {
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "Vehicle import failed.");
-        return result as VehiclePreview;
+        return { ...(result as VehiclePreview), features: verifiedFallback?.features ?? [] };
       })
       .then(setVehicle)
       .catch((requestError) => {
@@ -97,6 +98,7 @@ export function VehiclePreviewCard({ listingUrl, verifiedFallback }: VehiclePrev
         <p className={styles.vehicleLabel}>Featured vehicle</p>
         <h2>{vehicle.title}</h2>
         {vehicle.price && <p className={styles.vehiclePrice}>{vehicle.price}</p>}
+        {!!vehicle.features?.length && <ul className={styles.vehicleHighlights}>{vehicle.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>}
 
         <details className={styles.vehicleDetails}>
           <summary>Vehicle info</summary>
