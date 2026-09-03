@@ -21,6 +21,18 @@ export type VehiclePreviewCardProps = {
 export function VehiclePreviewCard({ listingUrl, verifiedFallback }: VehiclePreviewCardProps) {
   const [vehicle, setVehicle] = useState<VehiclePreview | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setExpanded(false); };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", close);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", close);
+    };
+  }, [expanded]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -73,14 +85,14 @@ export function VehiclePreviewCard({ listingUrl, verifiedFallback }: VehiclePrev
 
   return (
     <article className={styles.vehicleCard}>
-      <a className={styles.vehicleMedia} href={vehicle.sourceUrl} target="_blank" rel="noopener noreferrer">
+      <button className={styles.vehicleMedia} type="button" onClick={() => vehicle.imageUrl && setExpanded(true)} aria-label={`Open full collage for ${vehicle.title}`}>
         <span>07</span>
         {vehicle.imageUrl ? (
           <img src={vehicle.imageUrl} alt={vehicle.title} />
         ) : (
           <p>The listing did not provide a preview image.</p>
         )}
-      </a>
+      </button>
       <div className={styles.vehicleBody}>
         <p className={styles.vehicleLabel}>Featured vehicle</p>
         <h2>{vehicle.title}</h2>
@@ -97,6 +109,12 @@ export function VehiclePreviewCard({ listingUrl, verifiedFallback }: VehiclePrev
 
         <p className={styles.priceNote}>Availability and pricing must be confirmed on the live Walker listing.</p>
       </div>
+      {expanded && vehicle.imageUrl && (
+        <div className={styles.vehicleLightbox} role="dialog" aria-modal="true" aria-label={vehicle.title} onClick={() => setExpanded(false)}>
+          <button type="button" className={styles.vehicleLightboxClose} onClick={() => setExpanded(false)} aria-label="Close collage">×</button>
+          <img src={vehicle.imageUrl} alt={vehicle.title} onClick={(event) => event.stopPropagation()} />
+        </div>
+      )}
     </article>
   );
 }
