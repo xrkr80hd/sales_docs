@@ -14,26 +14,37 @@ const AUTH_STORAGE_KEY = "walker-docs-next.auth.session";
 
 let browserClient: SupabaseClient | null = null;
 
-const browserSessionStorage: BrowserStorageAdapter = {
+const persistentBrowserStorage: BrowserStorageAdapter = {
   getItem(key) {
     if (typeof window === "undefined") {
       return null;
     }
 
-    return window.sessionStorage.getItem(key);
+    const persisted = window.localStorage.getItem(key);
+    if (persisted) return persisted;
+
+    // Preserve an existing login when upgrading from tab-only session storage.
+    const previousSession = window.sessionStorage.getItem(key);
+    if (previousSession) {
+      window.localStorage.setItem(key, previousSession);
+      window.sessionStorage.removeItem(key);
+    }
+    return previousSession;
   },
   setItem(key, value) {
     if (typeof window === "undefined") {
       return;
     }
 
-    window.sessionStorage.setItem(key, value);
+    window.localStorage.setItem(key, value);
+    window.sessionStorage.removeItem(key);
   },
   removeItem(key) {
     if (typeof window === "undefined") {
       return;
     }
 
+    window.localStorage.removeItem(key);
     window.sessionStorage.removeItem(key);
   },
 };
@@ -72,7 +83,7 @@ export function getSupabaseBrowserClient() {
         detectSessionInUrl: true,
         flowType: "implicit",
         persistSession: true,
-        storage: browserSessionStorage,
+        storage: persistentBrowserStorage,
         storageKey: AUTH_STORAGE_KEY,
       },
     });
