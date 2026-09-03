@@ -26,6 +26,12 @@ type PhotoGuide = { shape: string; view: string; note: string; };
 
 const disclaimer = "This page is not a buy, sell, or trade platform. All vehicle availability, pricing, financing, trade evaluations, and transactions are handled exclusively through Walker Automotive. Information is subject to verification.";
 
+const numericPrice = (value: string) => value.replace(/[^0-9.]/g, "");
+const displayPrice = (value: string) => {
+  const amount = Number(numericPrice(value));
+  return amount > 0 ? `$${amount.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "";
+};
+
 const initialForm: VehicleForm = {
   year: "", make: "", model: "", trim: "", vin: "", stock: "", mileage: "", price: "", walkerUrl: "",
   consultantUrl: "https://walker-next-docs-git-feature-trav-dig-b5f2fe-xrkr80hds-projects.vercel.app/card/trav",
@@ -172,7 +178,7 @@ const renderCollage = async (
   context.fillText(dealership || "Dealership information", 64, 1001);
   context.fillText(contact || "Consultant information", 64, 1041);
 
-  const price = form.price.trim() || "Price available at dealership";
+  const price = displayPrice(form.price) || "Price available at dealership";
   const priceSize = fitText(context, price, 570, 66, 38);
   context.textAlign = "right";
   context.font = `900 ${priceSize}px Arial, sans-serif`;
@@ -232,7 +238,7 @@ Vehicle: ${vehicle || "[not entered]"}
 VIN: ${form.vin || "[not entered]"}
 Stock number: ${form.stock || "[not entered]"}
 Mileage: ${form.mileage || "[not entered]"}
-Price: ${form.price || "[not entered]"}
+Price: ${displayPrice(form.price) || "[not entered]"}
 Official Walker listing: ${form.walkerUrl || "[not entered]"}
 Consultant page: ${form.consultantUrl}
 
@@ -259,7 +265,7 @@ INSTRUCTIONS
   const captions = useMemo(() => {
     const vehicle = [form.year, form.make, form.model, form.trim].filter(Boolean).join(" ") || "this vehicle";
     const details = [
-      form.price && `Price: ${form.price}`,
+      form.price && `Price: ${displayPrice(form.price)}`,
       form.mileage && `Mileage: ${form.mileage}`,
       form.stock && `Stock #${form.stock}`,
       form.vin && `VIN: ${form.vin}`,
@@ -282,7 +288,8 @@ INSTRUCTIONS
   }, [form]);
 
   const update = (key: keyof VehicleForm) => (event: ChangeEvent<HTMLInputElement>) => {
-    setForm((current) => ({ ...current, [key]: event.target.value }));
+    const value = key === "price" ? numericPrice(event.target.value) : event.target.value;
+    setForm((current) => ({ ...current, [key]: value }));
   };
 
   const choosePhotoCount = (count: number) => {
@@ -460,7 +467,7 @@ INSTRUCTIONS
       const project = vehicle.builderData;
       setEditingVehicleId(editId);
       setPhotoCount(project.photoCount);
-      setForm((current) => ({ ...current, ...project.form }));
+      setForm((current) => ({ ...current, ...project.form, price: numericPrice(project.form.price || "") }));
       setPhotos(project.photos.map((photo) => ({ id: crypto.randomUUID(), ...photo })));
       setNotice("Editable collage loaded. Update it, then save it back to your carousel draft.");
     }).catch((error) => setNotice(error instanceof Error ? error.message : "The collage could not be loaded."));
@@ -518,7 +525,7 @@ INSTRUCTIONS
         url: form.walkerUrl.trim(),
         imageUrl: uploadResult.url,
         secondaryUrl: form.vin.trim(),
-        meta: [form.price.trim(), form.stock.trim() ? `Stock ${form.stock.trim()}` : ""].filter(Boolean).join(" · "),
+        meta: [displayPrice(form.price), form.stock.trim() ? `Stock ${form.stock.trim()}` : ""].filter(Boolean).join(" · "),
         builderData: { photoCount, form: { ...form }, photos: sourcePhotos },
       };
       const vehicles = editingIndex >= 0
@@ -612,7 +619,7 @@ INSTRUCTIONS
               <label>VIN<input value={form.vin} onChange={update("vin")} /></label>
               <label>Stock number<input value={form.stock} onChange={update("stock")} /></label>
               <label>Mileage<input inputMode="numeric" value={form.mileage} onChange={update("mileage")} /></label>
-              <label>Price<input value={form.price} onChange={update("price")} placeholder="$00,000" /></label>
+              <label>Price<div className={styles.priceInput}><span>$</span><input type="number" min="0" step="1" inputMode="decimal" value={form.price} onChange={update("price")} placeholder="00,000" /></div></label>
             </div>
             <label>Official Walker listing<input type="url" value={form.walkerUrl} onChange={update("walkerUrl")} /></label>
             <div className={styles.savedInfo}>
