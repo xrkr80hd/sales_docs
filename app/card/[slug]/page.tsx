@@ -6,6 +6,8 @@ import { VehicleCarousel } from "@/components/profile/vehicle-carousel";
 import { getPublishedConsultantProfile } from "@/lib/public-consultant-profile";
 import styles from "../trav/page.module.css";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const profile = await getPublishedConsultantProfile(slug);
