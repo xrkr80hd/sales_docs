@@ -201,29 +201,22 @@ export function DashboardScreen() {
               </button>
 
               <hr className="my-1 border-white/10" />
-
-              <Link
-                href="/documents/cheat-sheet"
-                className={secondaryButtonClass}
-              >
-                Cheat Sheet
-              </Link>
-              <Link
-                href="/business-card"
-                className={secondaryButtonClass}
-              >
-                Business Card
-              </Link>
-              <Link
-                href="/vehicle-collage"
-                className={secondaryButtonClass}
-              >
-                Vehicle Collage
-              </Link>
-              <Link href="/messenger" className={`${secondaryButtonClass} relative`}>
-                NXTDox Messenger
-                {messengerUnread > 0 && <span className="absolute right-2 top-2 grid h-5 min-w-5 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{messengerUnread}</span>}
-              </Link>
+              <details className="group border border-white/15 bg-white/[.03]">
+                <summary className="relative flex min-h-12 cursor-pointer list-none items-center justify-center px-4 text-sm font-bold uppercase tracking-[0.08em] text-white [&::-webkit-details-marker]:hidden">
+                  Consultant Tools
+                  <span className="absolute right-4 text-xs text-white/45 transition group-open:rotate-180">▼</span>
+                  {messengerUnread > 0 && <span className="absolute right-9 top-2 grid h-5 min-w-5 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{messengerUnread}</span>}
+                </summary>
+                <div className="grid gap-2 border-t border-white/10 p-2">
+                  <Link href="/documents/cheat-sheet" className={secondaryButtonClass}>Cheat Sheet</Link>
+                  <Link href="/business-card" className={secondaryButtonClass}>Business Card</Link>
+                  <Link href="/vehicle-collage" className={secondaryButtonClass}>Vehicle Collage</Link>
+                  <Link href="/messenger" className={`${secondaryButtonClass} relative`}>
+                    NXTDox Messenger
+                    {messengerUnread > 0 && <span className="absolute right-2 top-2 grid h-5 min-w-5 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{messengerUnread}</span>}
+                  </Link>
+                </div>
+              </details>
               <button
                 type="button"
                 onClick={() => setSettingsOpen(true)}
