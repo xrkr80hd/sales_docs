@@ -601,17 +601,18 @@
 .vehicleMedia {
   display: block;
   width: 100%;
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   text-decoration: none;
   background: #000;
 }
 
 .vehicleMedia img {
+  display: block;
   width: 100%;
   height: 100%;
-  aspect-ratio: 3 / 2;
-  object-fit: cover;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
 }
 
 .vehiclePrice {
@@ -697,7 +698,8 @@
 
 /* Compact vehicle experience: information moves; contact controls stay put. */
 .vehicleRail {
-  grid-auto-columns: min(82vw, 360px);
+  grid-auto-columns: 100%;
+  width: 100%;
 }
 
 .vehicleCard {
@@ -800,7 +802,7 @@
 
 @media (min-width: 620px) {
   .vehicleRail {
-    grid-auto-columns: min(56%, 360px);
+    grid-auto-columns: min(72%, 620px);
   }
 }
 
