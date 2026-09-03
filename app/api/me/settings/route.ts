@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     dealer_info: data?.dealer_info ?? {},
     consultant_info: data?.consultant_info ?? {},
     updated_at: data?.updated_at ?? null,
-  });
+  }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
 }
 
 export async function PUT(request: Request) {
