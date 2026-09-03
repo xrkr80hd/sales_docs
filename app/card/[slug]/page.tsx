@@ -70,6 +70,7 @@ export default async function ConsultantCard({ params, searchParams }: CardPageP
       description: entry.description || null, vin: entry.secondaryUrl || null,
       stock: entry.meta?.match(/Stock\s+([^·]+)/i)?.[1]?.trim() || null,
       price: entry.meta?.split("·")[0]?.trim() || null,
+      features: [entry.builderData?.form.feature1, entry.builderData?.form.feature2, entry.builderData?.form.feature3].filter((feature): feature is string => Boolean(feature)),
     },
   }));
   const reviews = profile.reviews.map((entry) => ({
