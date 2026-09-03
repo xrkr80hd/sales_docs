@@ -18,6 +18,7 @@ import styles from "./page.module.css";
 type VehicleForm = {
   year: string; make: string; model: string; trim: string; vin: string;
   stock: string; mileage: string; price: string; walkerUrl: string; consultantUrl: string;
+  feature1: string; feature2: string; feature3: string;
 };
 
 type CropPhoto = { id: string; file?: File; url: string; zoom: number; x: number; y: number; ratio: number; };
@@ -35,6 +36,7 @@ const displayPrice = (value: string) => {
 const initialForm: VehicleForm = {
   year: "", make: "", model: "", trim: "", vin: "", stock: "", mileage: "", price: "", walkerUrl: "",
   consultantUrl: "https://walker-next-docs-git-feature-trav-dig-b5f2fe-xrkr80hds-projects.vercel.app/card/trav",
+  feature1: "", feature2: "", feature3: "",
 };
 
 const PHOTO_HEIGHT = 810;
@@ -160,6 +162,7 @@ const renderCollage = async (
   const dealership = [dealer.dealershipName, getDealerFullAddress(dealer)].filter(Boolean).join("  •  ");
   const contact = [consultant.name, consultant.phone].filter(Boolean).join("  •  ");
   const identifiers = [form.stock && `Stock # ${form.stock}`, form.vin && `VIN ${form.vin}`].filter(Boolean).join("   •   ");
+  const features = [form.feature1, form.feature2, form.feature3].filter(Boolean);
 
   context.fillStyle = "#111317";
   context.fillRect(0, PHOTO_HEIGHT, 1920, 270);
@@ -184,9 +187,13 @@ const renderCollage = async (
   context.font = `900 ${priceSize}px Arial, sans-serif`;
   context.fillStyle = "#fff";
   context.fillText(price, 1854, 918);
-  context.font = "700 25px Arial, sans-serif";
+  context.font = "700 23px Arial, sans-serif";
   context.fillStyle = "#ef6262";
-  context.fillText("SEE LISTING FOR CURRENT DETAILS", 1854, 970);
+  if (features.length) {
+    features.forEach((feature, index) => context.fillText(`• ${feature}`, 1854, 964 + (index * 34)));
+  } else {
+    context.fillText("SEE LISTING FOR CURRENT DETAILS", 1854, 970);
+  }
   context.textAlign = "left";
 };
 
@@ -239,6 +246,7 @@ VIN: ${form.vin || "[not entered]"}
 Stock number: ${form.stock || "[not entered]"}
 Mileage: ${form.mileage || "[not entered]"}
 Price: ${displayPrice(form.price) || "[not entered]"}
+Special highlights: ${[form.feature1, form.feature2, form.feature3].filter(Boolean).join("; ") || "[not entered]"}
 Official Walker listing: ${form.walkerUrl || "[not entered]"}
 Consultant page: ${form.consultantUrl}
 
@@ -620,6 +628,11 @@ INSTRUCTIONS
               <label>Stock number<input value={form.stock} onChange={update("stock")} /></label>
               <label>Mileage<input inputMode="numeric" value={form.mileage} onChange={update("mileage")} /></label>
               <label>Price<div className={styles.priceInput}><span>$</span><input type="number" min="0" step="1" inputMode="decimal" value={form.price} onChange={update("price")} placeholder="00,000" /></div></label>
+            </div>
+            <div className={styles.grid}>
+              <label>Special highlight 1<input value={form.feature1} onChange={update("feature1")} placeholder="e.g. Available rebate" maxLength={55} /></label>
+              <label>Special highlight 2<input value={form.feature2} onChange={update("feature2")} placeholder="e.g. Two free oil changes" maxLength={55} /></label>
+              <label>Special highlight 3<input value={form.feature3} onChange={update("feature3")} placeholder="e.g. One-owner vehicle" maxLength={55} /></label>
             </div>
             <label>Official Walker listing<input type="url" value={form.walkerUrl} onChange={update("walkerUrl")} /></label>
             <div className={styles.savedInfo}>
