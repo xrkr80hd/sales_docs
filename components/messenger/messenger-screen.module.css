@@ -430,3 +430,117 @@
   fill: currentColor;
   transform: translateX(1px);
 }
+
+
+.mobileBackButton {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .container {
+    height: calc(100dvh - 88px);
+    min-height: 460px;
+    border-radius: 0;
+  }
+
+  .topBar {
+    min-height: 62px;
+    padding: 10px 14px;
+  }
+
+  .title {
+    font-size: 1.05rem;
+  }
+
+  .statusIndicator span:last-child {
+    display: none;
+  }
+
+  .mainLayout.mobileConversationList .chatWindow {
+    display: none;
+  }
+
+  .mainLayout.mobileConversationOpen .sidebar {
+    display: none;
+  }
+
+  .sidebar,
+  .chatWindow {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .sidebar {
+    border-right: 0;
+  }
+
+  .sidebarHeader {
+    padding: 16px 16px 8px;
+  }
+
+  .convoList {
+    padding: 6px 10px 12px;
+  }
+
+  .convoCard {
+    min-height: 62px;
+    padding: 10px;
+  }
+
+  .dmAccordion {
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+  }
+
+  .chatHeader {
+    min-height: 58px;
+    padding: 8px 12px;
+  }
+
+  .mobileBackButton {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .chatHeaderSubtitle {
+    max-width: 58vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .messagesList {
+    padding: 14px 10px;
+    overscroll-behavior: contain;
+  }
+
+  .messageRow {
+    max-width: 88%;
+  }
+
+  .deleteBtn {
+    opacity: 1;
+  }
+
+  .inputForm {
+    gap: 8px;
+    padding: 9px 10px max(9px, env(safe-area-inset-bottom));
+  }
+
+  .inputField {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .sendBtn {
+    width: 44px;
+    height: 44px;
+  }
+}
