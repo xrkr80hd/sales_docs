@@ -48,6 +48,13 @@ const PHOTO_GUIDES: Record<number, PhotoGuide[]> = {
     { shape: "Wide landscape", view: "Straight front view", note: "Lower-left frame." },
     { shape: "Wide landscape", view: "Three-quarter rear view", note: "Lower-right frame." },
   ],
+  5: [
+    { shape: "Wide landscape", view: "Top-left image", note: "Suggested: full side or wide three-quarter view." },
+    { shape: "Wide landscape", view: "Top-right image", note: "Suggested: another wide vehicle view." },
+    { shape: "Flexible", view: "Bottom-left card", note: "Use a vehicle photo, calling card, emblem, or eye-catcher." },
+    { shape: "Flexible", view: "Bottom-center card", note: "Use a vehicle photo, calling card, emblem, or eye-catcher." },
+    { shape: "Flexible", view: "Bottom-right card", note: "Use a vehicle photo, calling card, emblem, or eye-catcher." },
+  ],
 };
 
 // Preview and download share these exact final frames.
@@ -57,7 +64,9 @@ const getSlots = (count: number): Slot[] => count === 1
     ? [{ x: 0, y: 0, w: 960, h: PHOTO_HEIGHT }, { x: 960, y: 0, w: 960, h: PHOTO_HEIGHT }]
     : count === 3
       ? [{ x: 0, y: 0, w: 960, h: 405 }, { x: 0, y: 405, w: 960, h: 405 }, { x: 960, y: 0, w: 960, h: PHOTO_HEIGHT }]
-      : [{ x: 0, y: 0, w: 960, h: 405 }, { x: 960, y: 0, w: 960, h: 405 }, { x: 0, y: 405, w: 960, h: 405 }, { x: 960, y: 405, w: 960, h: 405 }];
+      : count === 4
+        ? [{ x: 0, y: 0, w: 960, h: 405 }, { x: 960, y: 0, w: 960, h: 405 }, { x: 0, y: 405, w: 960, h: 405 }, { x: 960, y: 405, w: 960, h: 405 }]
+        : [{ x: 0, y: 0, w: 960, h: 405 }, { x: 960, y: 0, w: 960, h: 405 }, { x: 0, y: 405, w: 640, h: 405 }, { x: 640, y: 405, w: 640, h: 405 }, { x: 1280, y: 405, w: 640, h: 405 }];
 
 const drawCropped = (context: CanvasRenderingContext2D, image: HTMLImageElement, slot: Slot, photo: CropPhoto) => {
   const coverScale = Math.max(slot.w / image.width, slot.h / image.height);
@@ -470,7 +479,7 @@ INSTRUCTIONS
           <div className={styles.panelBody}>
             <p className={styles.helperText}>Choose a layout first. The builder will then tell you which vehicle views fit each space.</p>
             <div className={styles.layoutCatalog}>
-              {[1, 2, 3, 4].map((count) => (
+              {[1, 2, 3, 4, 5].map((count) => (
                 <button
                   key={count}
                   type="button"
