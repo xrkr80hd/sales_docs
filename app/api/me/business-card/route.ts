@@ -300,8 +300,8 @@ export async function PUT(request: NextRequest) {
     .maybeSingle();
 
   const { data: existingVehicles } = existingCard
-    ? await supabase.from("consultant_vehicles").select("image_url").eq("card_id", existingCard.id)
-    : { data: [] as { image_url: string | null }[] };
+    ? await supabase.from("consultant_vehicles").select("image_url, builder_data").eq("card_id", existingCard.id)
+    : { data: [] as { image_url: string | null; builder_data?: { photos?: Array<{ url?: string }> } | null }[] };
 
   const isPublished = isPublishAction ? true : isUnpublishAction ? false : (existingCard?.is_published ?? false);
   const publishedAt = isPublishAction ? now : isUnpublishAction ? null : existingCard?.published_at ?? null;
@@ -447,7 +447,7 @@ export async function PUT(request: NextRequest) {
     incomingDraft.identity.logoUrl,
   ].filter(Boolean));
   const removedObjects = (existingVehicles ?? [])
-    .map((vehicle) => vehicle.image_url || "")
+    .flatMap((vehicle) => [vehicle.image_url || "", ...(vehicle.builder_data?.photos?.map((photo) => photo.url || "") ?? [])])
     .filter((imageUrl) => imageUrl && !retainedImageUrls.has(imageUrl))
     .map((imageUrl) => ownedStorageObject(imageUrl, user.id))
     .filter((object): object is { bucket: string; path: string } => Boolean(object));
