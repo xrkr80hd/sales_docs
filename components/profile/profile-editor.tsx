@@ -492,23 +492,21 @@ export function ProfileEditor() {
         </button>
       </details>
 
-      {/* ── 4. Featured Vehicles Pool (Inventory Carousel - 3:2 Landscape) ── */}
+      {/* ── 4. Featured Vehicles Pool ── */}
       <details className={styles.panel} open>
         <summary>
-          <span>4. Featured Vehicles (Inventory Carousel Pool - 3:2 Landscape)</span>
+          <span>4. Vehicle Carousel</span>
           <div className={styles.summaryRight}>
             <small>{draft.vehicles.length} / 6</small>
             <span className={styles.chevronArrow}>▼</span>
           </div>
         </summary>
         <p className={styles.help}>
-          Featured inventory cards showcased in your swipeable vehicle carousel. Photos stay in their clean landscape 3:2 shape.
+          Build the vehicle once, download its finished collage, and add that same collage to your swipeable business-card carousel.
         </p>
+        <Link href="/vehicle-collage" className={styles.add}>Build a Vehicle Collage</Link>
         <div className={styles.collection}>
-          {draft.vehicles.map((v, index) => {
-            const stockMatch = v.meta?.match(/Stock\s+([^·]+)/i)?.[1]?.trim() || "";
-            const priceMatch = v.meta?.split("·")[0]?.trim() || "";
-            return (
+          {draft.vehicles.map((v, index) => (
               <article className={styles.item} key={v.id}>
                 <div className={styles.itemToolbar}>
                   <strong>{v.title || `Featured Vehicle #${index + 1}`}</strong>
@@ -526,90 +524,17 @@ export function ProfileEditor() {
                     ) : (
                       <div className={styles.vehicleThumbPlaceholder}>No photo uploaded</div>
                     )}
-                    <label className={styles.uploadVehicleBtn}>
-                      <span>🚗 Crop &amp; Upload (3:2)</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleFileSelectedWithCrop(e, "vehicles", "3:2", `Crop Vehicle #${index + 1} (3:2 Landscape)`, (url) => changeItem("vehicles", index, "imageUrl", url))}
-                      />
-                    </label>
                   </div>
                   <div className={styles.vehicleDetails}>
-                    <label className={styles.wide}>
-                      Walker vehicle listing
-                      <input
-                        type="url"
-                        placeholder="https://www.walkercdjr.net/inventory/..."
-                        value={v.url}
-                        onChange={(e) => changeItem("vehicles", index, "url", e.target.value)}
-                      />
-                    </label>
-                    <label className={styles.wide}>
-                      Vehicle Title (Year, Make, Model, Trim)
-                      <input
-                        placeholder="New 2026 RAM 2500 Laramie 4x4 Crew Cab"
-                        value={v.title}
-                        onChange={(e) => changeItem("vehicles", index, "title", e.target.value)}
-                      />
-                    </label>
-                    <div className={styles.threeCol}>
-                      <label>
-                        Price
-                        <input
-                          placeholder="$67,598"
-                          value={priceMatch}
-                          onChange={(e) => {
-                            const newPrice = e.target.value;
-                            const newMeta = [newPrice, stockMatch ? `Stock ${stockMatch}` : ""].filter(Boolean).join(" · ");
-                            changeItem("vehicles", index, "meta", newMeta);
-                          }}
-                        />
-                      </label>
-                      <label>
-                        Stock #
-                        <input
-                          placeholder="TJ26336"
-                          value={stockMatch}
-                          onChange={(e) => {
-                            const newStock = e.target.value;
-                            const newMeta = [priceMatch, newStock ? `Stock ${newStock}` : ""].filter(Boolean).join(" · ");
-                            changeItem("vehicles", index, "meta", newMeta);
-                          }}
-                        />
-                      </label>
-                      <label>
-                        VIN
-                        <input
-                          placeholder="3C6UR5FJ8TG367952"
-                          value={v.secondaryUrl ?? ""}
-                          onChange={(e) => changeItem("vehicles", index, "secondaryUrl", e.target.value)}
-                        />
-                      </label>
-                    </div>
-                    <label className={styles.wide}>
-                      Features &amp; Powertrain Description
-                      <textarea
-                        rows={2}
-                        placeholder="6.4L V8 · 4WD · 8-speed automatic · Black interior"
-                        value={v.description}
-                        onChange={(e) => changeItem("vehicles", index, "description", e.target.value)}
-                      />
-                    </label>
+                    <strong>{v.title}</strong>
+                    {v.meta && <p className={styles.help}>{v.meta}</p>}
+                    {v.secondaryUrl && <p className={styles.help}>VIN: {v.secondaryUrl}</p>}
+                    {v.url && <a href={v.url} target="_blank" rel="noreferrer">View Walker listing</a>}
                   </div>
                 </div>
               </article>
-            );
-          })}
+          ))}
         </div>
-        <button
-          type="button"
-          className={styles.add}
-          disabled={draft.vehicles.length >= 6}
-          onClick={() => addItem("vehicles")}
-        >
-          {draft.vehicles.length >= 6 ? "Vehicle Limit Reached (6/6)" : "+ Add Vehicle to Carousel"}
-        </button>
       </details>
 
       {/* ── 5. Walk-Around Videos Pool (Max 2) ── */}
