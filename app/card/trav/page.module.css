@@ -320,6 +320,44 @@
     #202329;
   color: #8f939a;
   text-align: center;
+  width: 100%;
+  border: 0;
+  cursor: zoom-in;
+  font: inherit;
+}
+
+.vehicleLightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 56px 12px 20px;
+  background: rgba(0, 0, 0, .94);
+}
+
+.vehicleLightbox img {
+  display: block;
+  width: min(100%, 1400px);
+  height: auto;
+  max-height: calc(100dvh - 76px);
+  object-fit: contain;
+}
+
+.vehicleLightboxClose {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: 14px;
+  z-index: 1001;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 50%;
+  background: #17191d;
+  color: #fff;
+  font-size: 1.7rem;
 }
 
 .vehicleMedia span {
