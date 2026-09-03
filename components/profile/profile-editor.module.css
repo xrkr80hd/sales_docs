@@ -786,6 +786,63 @@
   align-items: start;
 }
 
+.videoEditorItem {
+  overflow: hidden;
+  border: 1px solid #3a3d43;
+  border-radius: 14px;
+  background: #191b20;
+}
+
+.videoEditorItem > summary {
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  font-weight: 850;
+  list-style: none;
+}
+
+.videoEditorItem > summary::-webkit-details-marker { display: none; }
+.videoEditorItem > summary::after { content: "+"; color: #ef6262; font-size: 1.2rem; }
+.videoEditorItem[open] > summary::after { content: "−"; }
+.videoEditorItem > summary small { margin-left: auto; color: #9aa0a6; font-size: .72rem; }
+
+.videoEditorBody {
+  display: grid;
+  gap: 14px;
+  border-top: 1px solid #303339;
+  padding: 14px;
+}
+
+.videoPreview {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #000;
+}
+
+.videoPreview video {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+}
+
+.videoPreview span {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  border-radius: 999px;
+  background: rgba(20, 56, 32, .94);
+  color: #7ff0a5;
+  padding: 6px 10px;
+  font-size: .7rem;
+  font-weight: 900;
+}
+
 .threeCol {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
