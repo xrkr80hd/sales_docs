@@ -1,4 +1,4 @@
-import { ConsultantProfileContent, emptyConsultantContent, normalizeProfileContent } from "@/lib/consultant-profile";
+import { ConsultantProfileContent, normalizeProfileContent } from "@/lib/consultant-profile";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
 export async function getPublishedConsultantProfile(slug: string): Promise<ConsultantProfileContent | null> {
@@ -106,29 +106,8 @@ export async function getPublishedConsultantProfile(slug: string): Promise<Consu
       return normalizeProfileContent(legacyCard.published, isTrav);
     }
 
-    if (slug === "donald-goff" || slug === "donald") {
-      return emptyConsultantContent({
-        displayName: "Donald Goff",
-        jobTitle: "Sales Consultant",
-        dealership: "Walker Automotive",
-        location: "Alexandria, Louisiana",
-        phone: "318-445-6421",
-        email: "dgoff@walkerautomotive.com",
-      });
-    }
-
     return null;
   } catch {
-    if (slug === "donald-goff" || slug === "donald") {
-      return emptyConsultantContent({
-        displayName: "Donald Goff",
-        jobTitle: "Sales Consultant",
-        dealership: "Walker Automotive",
-        location: "Alexandria, Louisiana",
-        phone: "318-445-6421",
-        email: "dgoff@walkerautomotive.com",
-      });
-    }
     return null;
   }
 }
