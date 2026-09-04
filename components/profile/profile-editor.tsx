@@ -27,6 +27,8 @@ const limits: Record<CollectionKey, number | undefined> = {
   soldGallery: 12,
   socialLinks: 8,
 };
+const MAX_MEDIA_FILE_SIZE = 250 * 1024 * 1024;
+const isUploadedVideoUrl = (value: string) => /\.(mp4|webm|mov)(\?|$)/i.test(value);
 
 export function getSocialIcon(urlOrName: string) {
   const s = urlOrName.toLowerCase();
@@ -254,7 +256,34 @@ export function ProfileEditor() {
 
   // Upload data URL or File
   async function uploadBlobOrFile(fileOrBlob: Blob, filename: string, category: string, onComplete: (url: string) => void) {
-    setNotice(`Uploading ${filename} to ${category}…`);
+    if (fileOrBlob.size > MAX_MEDIA_FILE_SIZE) {
+      setNotice("That file is over the 250 MB limit. Please choose a smaller video.");
+      return;
+    }
+    if (process.env.NEXT_PUBLIC_DISABLE_AUTH !== "1" && isSupabaseConfigured()) {
+      setNotice(`Preparing ${filename}…`);
+      const signResponse = await authFetch("/api/me/business-card", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "create-upload", filename, category, contentType: fileOrBlob.type, size: fileOrBlob.size }),
+      });
+      const signed = await signResponse.json();
+      if (!signResponse.ok) {
+        setNotice(signed.error || "The upload could not be prepared.");
+        return;
+      }
+      setNotice(`Uploading ${filename} directly to your media library…`);
+      const { error } = await getSupabaseBrowserClient().storage.from(signed.bucket).uploadToSignedUrl(signed.path, signed.token, fileOrBlob, { contentType: fileOrBlob.type });
+      if (error) {
+        setNotice(error.message);
+        return;
+      }
+      onComplete(signed.url);
+      setNotice("Uploaded successfully. Press Save to place it on your card.");
+      return;
+    }
+
+    setNotice(`Uploading ${filename}…`);
     const body = new FormData();
     body.append("file", fileOrBlob, filename);
     body.append("category", category);
@@ -265,7 +294,7 @@ export function ProfileEditor() {
       return;
     }
     onComplete(result.url);
-    setNotice("Upload complete. Make sure to click Save Draft or Publish.");
+    setNotice("Uploaded successfully. Press Save to place it on your card.");
   }
 
   // File picker handler: opens crop modal if image
@@ -334,7 +363,7 @@ export function ProfileEditor() {
   }
 
   const hasChanges = JSON.stringify(draft) !== savedDraft;
-  const uploadedVideoCount = draft.videos.filter((video) => Boolean(video.imageUrl)).length;
+  const uploadedVideoCount = draft.videos.filter((video) => isUploadedVideoUrl(video.imageUrl)).length;
 
   return (
     <main className={styles.page}>
@@ -608,7 +637,7 @@ export function ProfileEditor() {
             <details className={styles.videoEditorItem} key={vid.id}>
               <summary>
                 <span>{vid.title || `Video #${index + 1}`}</span>
-                <small>{vid.imageUrl ? "Uploaded file" : vid.url ? "Linked video" : "Not added"}</small>
+                <small>{isUploadedVideoUrl(vid.imageUrl) ? "Uploaded file" : vid.url ? "Linked video" : "Not added"}</small>
               </summary>
               <div className={styles.videoEditorBody}>
               {vid.imageUrl && (
@@ -635,11 +664,11 @@ export function ProfileEditor() {
                   />
                 </label>
                 <label className={styles.wide}>
-                  Upload Video File (MP4, WebM, MOV) — {uploadedVideoCount}/2 used
+                  Upload Video File (MP4, WebM, MOV · 250 MB max) — {uploadedVideoCount}/2 used
                   <input
                     type="file"
                     accept="video/mp4,video/webm,video/quicktime"
-                    disabled={uploadedVideoCount >= 2 && !vid.imageUrl}
+                    disabled={uploadedVideoCount >= 2 && !isUploadedVideoUrl(vid.imageUrl)}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) uploadBlobOrFile(file, file.name, "videos", (url) => {
@@ -649,7 +678,7 @@ export function ProfileEditor() {
                     }}
                   />
                 </label>
-                {vid.imageUrl && <p className={styles.help}>Video uploaded successfully.</p>}
+                {isUploadedVideoUrl(vid.imageUrl) && <p className={styles.help}>Video uploaded successfully.</p>}
                 <label className={styles.wide}>
                   YouTube or TikTok Link
                   <input
@@ -679,6 +708,9 @@ export function ProfileEditor() {
           onClick={() => addItem("videos")}
         >
           + Add Video
+        </button>
+        <button type="button" className={styles.videoSaveButton} disabled={saving || !hasChanges} onClick={saveChanges}>
+          {saving ? "Saving Videos…" : "Save Videos"}
         </button>
       </details>
 

@@ -71,13 +71,17 @@ export async function getPublishedConsultantProfile(slug: string): Promise<Consu
           secondaryUrl: v.vin || undefined,
           meta: [v.price, v.stock ? `Stock ${v.stock}` : ""].filter(Boolean).join(" · "),
         })),
-        videos: (videos ?? []).map((v) => ({
-          id: v.id,
-          title: v.title || "",
-          description: v.description || "",
-          url: v.video_url || "",
-          imageUrl: v.video_url || "",
-        })),
+        videos: (videos ?? []).map((v) => {
+          const videoUrl = v.video_url || "";
+          const uploaded = /\.(mp4|webm|mov)(\?|$)/i.test(videoUrl);
+          return {
+            id: v.id,
+            title: v.title || "",
+            description: v.description || "",
+            url: uploaded ? "" : videoUrl,
+            imageUrl: uploaded ? videoUrl : "",
+          };
+        }),
         soldGallery: (soldGallery ?? []).map((s) => ({
           id: s.id,
           title: s.title || "",

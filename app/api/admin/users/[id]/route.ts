@@ -4,6 +4,10 @@ import { getSupabaseServiceClient } from "@/lib/supabase-server";
 const VALID_ROLES = ["admin", "user", "fni", "sales_manager"] as const;
 const OWNER_EMAIL = "xrkr80hd@gmail.com";
 
+function slugify(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "consultant";
+}
+
 async function isOwnerAccount(id: string) {
   const supabase = getSupabaseServiceClient();
   const { data, error } = await supabase.auth.admin.getUserById(id);
@@ -66,7 +70,33 @@ export async function PATCH(
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ ok: true, updates });
+    let card: { slug: string; is_published: boolean } | null = null;
+    if (body?.card_enabled === true) {
+      const { data: existingCard } = await supabase
+        .from("consultant_cards")
+        .select("slug, is_published")
+        .eq("user_id", id)
+        .maybeSingle();
+      if (existingCard) return Response.json({ ok: true, updates, card: existingCard });
+
+      const [{ data: profile }, { data: authUser, error: authUserError }] = await Promise.all([
+        supabase.from("profiles").select("display_name").eq("id", id).single(),
+        supabase.auth.admin.getUserById(id),
+      ]);
+      if (authUserError) return Response.json({ error: authUserError.message }, { status: 500 });
+      const email = authUser.user.email || "";
+      const displayName = profile?.display_name || email.split("@")[0] || "Consultant";
+      const slug = email.toLowerCase() === OWNER_EMAIL ? "trav" : `${slugify(displayName)}-${id.slice(0, 6)}`;
+      const { data: savedCard, error: cardError } = await supabase
+        .from("consultant_cards")
+        .insert({ user_id: id, slug, display_name: displayName, email, updated_at: new Date().toISOString() })
+        .select("slug, is_published")
+        .single();
+      if (cardError) return Response.json({ error: cardError.message }, { status: 500 });
+      card = savedCard;
+    }
+
+    return Response.json({ ok: true, updates, card });
   } catch {
     if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
       return Response.json({ ok: true, updates });

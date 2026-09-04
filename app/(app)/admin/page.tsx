@@ -13,6 +13,8 @@ type UserRow = {
   display_name: string | null;
   created_at: string;
   card_enabled?: boolean;
+  card_slug?: string | null;
+  card_is_published?: boolean;
 };
 
 type InviteRow = {
@@ -54,6 +56,7 @@ export default function AdminPage() {
   const [invites, setInvites] = useState<InviteRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [copiedCardId, setCopiedCardId] = useState("");
 
   // Invite form
   const [inviteEmail, setInviteEmail] = useState("");
@@ -83,6 +86,18 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : "Failed to load data.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function copyCardLink(user: UserRow) {
+    if (!user.card_slug) return;
+    const cardUrl = `${window.location.origin}/card/${user.card_slug}`;
+    try {
+      await navigator.clipboard.writeText(cardUrl);
+      setCopiedCardId(user.id);
+      window.setTimeout(() => setCopiedCardId(""), 2500);
+    } catch {
+      window.prompt("Copy this business-card link:", cardUrl);
     }
   }
 
@@ -143,6 +158,7 @@ export default function AdminPage() {
         method: "PATCH",
         body: JSON.stringify({ role: newRole }),
       });
+      await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update role.");
       loadData();
@@ -290,6 +306,16 @@ export default function AdminPage() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+                          <button
+                            type="button"
+                            onClick={() => void copyCardLink(u)}
+                            disabled={!u.card_slug}
+                            title={u.card_slug ? `Copy ${u.display_name || u.email}'s public business-card link` : "This consultant has not created a business card yet"}
+                            className="col-span-2 min-h-10 rounded-lg border border-[#f97316]/45 bg-[#f97316]/10 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-[#fb923c] transition hover:border-[#fb923c] hover:bg-[#f97316]/20 disabled:cursor-not-allowed disabled:border-neutral-800 disabled:bg-neutral-900 disabled:text-neutral-600 sm:col-span-1 sm:rounded-full"
+                          >
+                            {copiedCardId === u.id ? "✓ Link Copied" : u.card_slug ? "Copy Card Link" : "Card Not Created"}
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => handleToggleCard(u.id, Boolean(u.card_enabled || isOwner))}

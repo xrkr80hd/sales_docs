@@ -215,6 +215,7 @@ export default function VehiclePostBuilder() {
   const [savingCarousel, setSavingCarousel] = useState(false);
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
+  const [toast, setToast] = useState("");
   const [dealer, setDealer] = useState<DealerInfo>(createDefaultDealer);
   const [consultant, setConsultant] = useState<ConsultantInfo>(createDefaultConsultant);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -464,6 +465,33 @@ INSTRUCTIONS
     return fetch(url, { ...init, headers: { ...init?.headers, authorization: `Bearer ${session.access_token}` } });
   };
 
+  const uploadMedia = async (file: Blob, filename: string, category: string) => {
+    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
+      const body = new FormData();
+      body.append("file", file, filename);
+      body.append("category", category);
+      const response = await authFetch("/api/me/business-card", { method: "POST", body });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "The file could not be uploaded.");
+      return result.url as string;
+    }
+    const response = await authFetch("/api/me/business-card", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "create-upload", filename, category, contentType: file.type, size: file.size }),
+    });
+    const signed = await response.json();
+    if (!response.ok) throw new Error(signed.error || "The upload could not be prepared.");
+    const { error } = await getSupabaseBrowserClient().storage.from(signed.bucket).uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
+    if (error) throw error;
+    return signed.url as string;
+  };
+
+  const showToast = (message: string) => {
+    setToast(message);
+    window.setTimeout(() => setToast(""), 3000);
+  };
+
   useEffect(() => {
     const editId = new URLSearchParams(window.location.search).get("edit");
     if (!editId) return;
@@ -528,29 +556,19 @@ INSTRUCTIONS
 
       const sourcePhotos = await Promise.all(photos.map(async (photo, index) => {
         if (!photo.file) return { url: photo.url, zoom: photo.zoom, x: photo.x, y: photo.y, ratio: photo.ratio };
-        const sourceBody = new FormData();
-        sourceBody.append("file", photo.file, photo.file.name || `photo-${index + 1}.jpg`);
-        sourceBody.append("category", "vehicles");
-        const sourceResponse = await authFetch("/api/me/business-card", { method: "POST", body: sourceBody });
-        const sourceResult = await sourceResponse.json();
-        if (!sourceResponse.ok) throw new Error(sourceResult.error || `Photo ${index + 1} could not be saved.`);
-        return { url: sourceResult.url, zoom: photo.zoom, x: photo.x, y: photo.y, ratio: photo.ratio };
+        const url = await uploadMedia(photo.file, photo.file.name || `photo-${index + 1}.jpg`, "vehicles");
+        return { url, zoom: photo.zoom, x: photo.x, y: photo.y, ratio: photo.ratio };
       }));
 
       const blob = await buildCollageBlob();
-      const uploadBody = new FormData();
-      uploadBody.append("file", blob, `${[form.year, form.make, form.model].filter(Boolean).join("-") || "vehicle"}-collage.png`);
-      uploadBody.append("category", "vehicles");
-      const uploadResponse = await authFetch("/api/me/business-card", { method: "POST", body: uploadBody });
-      const uploadResult = await uploadResponse.json();
-      if (!uploadResponse.ok) throw new Error(uploadResult.error || "The collage could not be uploaded.");
+      const collageUrl = await uploadMedia(blob, `${[form.year, form.make, form.model].filter(Boolean).join("-") || "vehicle"}-collage.png`, "vehicles");
 
       const vehicle = {
         id: editingVehicleId || crypto.randomUUID(),
         title,
         description: form.mileage ? `${form.mileage} miles` : "",
         url: form.walkerUrl.trim(),
-        imageUrl: uploadResult.url,
+        imageUrl: collageUrl,
         secondaryUrl: form.vin.trim(),
         meta: [displayPrice(form.price), form.stock.trim() ? `Stock ${form.stock.trim()}` : ""].filter(Boolean).join(" · "),
         builderData: { photoCount, form: { ...form }, photos: sourcePhotos },
@@ -565,7 +583,9 @@ INSTRUCTIONS
       });
       const saveResult = await saveResponse.json();
       if (!saveResponse.ok) throw new Error(saveResult.error || "The carousel draft could not be saved.");
-      setNotice(editingIndex >= 0 ? "Collage updated in your card draft. Press Publish when you are ready." : "Added to your carousel draft. Open Business Card and press Publish when you are ready.");
+      const successMessage = editingIndex >= 0 ? "Carousel updated" : "Added to carousel";
+      setNotice(`${successMessage}. Open Business Card and press Save when you are ready.`);
+      showToast(successMessage);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "The collage could not be added to your carousel.");
     } finally {
@@ -771,6 +791,7 @@ INSTRUCTIONS
         <p className={styles.notice} aria-live="polite">{notice || "Enter verified information, then create the assets."}</p>
         <footer className={styles.disclaimer}>{disclaimer}</footer>
       </div>
+      {toast && <div className={styles.toast} role="status">✓ {toast}</div>}
 
       {editorOpen && active && editorSlot && (
         <div className={styles.editorBackdrop} role="dialog" aria-modal="true" aria-label={`Edit photo ${selectedPhoto + 1}`}>

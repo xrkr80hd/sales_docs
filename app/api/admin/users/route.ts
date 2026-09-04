@@ -31,9 +31,17 @@ export async function GET(request: Request) {
 
     const emailMap = new Map(users.map((u) => [u.id, u.email]));
 
+    const { data: cards, error: cardsError } = await supabase
+      .from("consultant_cards")
+      .select("user_id, slug, is_published");
+    if (cardsError) return Response.json({ error: cardsError.message }, { status: 500 });
+    const cardMap = new Map((cards ?? []).map((card) => [card.user_id, card]));
+
     const enriched = (profiles ?? []).map((p) => ({
       ...p,
       email: emailMap.get(p.id) ?? "unknown",
+      card_slug: cardMap.get(p.id)?.slug ?? null,
+      card_is_published: Boolean(cardMap.get(p.id)?.is_published),
     }));
 
     return Response.json({ users: enriched });
@@ -48,6 +56,8 @@ export async function GET(request: Request) {
             display_name: "Travis Wilkinson",
             created_at: new Date().toISOString(),
             card_enabled: true,
+            card_slug: "trav",
+            card_is_published: true,
           },
           {
             id: "donald-goff",
@@ -56,6 +66,8 @@ export async function GET(request: Request) {
             display_name: "Donald Goff",
             created_at: new Date().toISOString(),
             card_enabled: true,
+            card_slug: "donald-goff-donald",
+            card_is_published: true,
           },
           {
             id: "local-user-demo",
@@ -64,6 +76,8 @@ export async function GET(request: Request) {
             display_name: "Sales Consultant",
             created_at: new Date().toISOString(),
             card_enabled: false,
+            card_slug: null,
+            card_is_published: false,
           },
         ],
       });

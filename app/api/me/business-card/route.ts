@@ -16,7 +16,11 @@ function slugify(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "consultant";
 }
 
-function ownedStorageObject(publicUrl: string, userId: string) {
+const MAX_MEDIA_FILE_SIZE = 250 * 1024 * 1024;
+const CONSULTANT_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm", "video/quicktime"];
+const isUploadedVideoUrl = (value: string) => /\.(mp4|webm|mov)(\?|$)/i.test(value);
+
+function ownedStorageObject(publicUrl: string, userId: string, categories: string[]) {
   try {
     const url = new URL(publicUrl);
     const marker = "/storage/v1/object/public/";
@@ -27,11 +31,29 @@ function ownedStorageObject(publicUrl: string, userId: string) {
     const bucket = objectParts.shift();
     const path = objectParts.join("/");
     const expectedBucket = `consultant-media-${userId}`;
-    if (bucket !== expectedBucket || !path.startsWith(`${userId}/vehicles/`)) return null;
+    if (bucket !== expectedBucket || !categories.some((category) => path.startsWith(`${userId}/${category}/`))) return null;
     return { bucket, path };
   } catch {
     return null;
   }
+}
+
+async function ensureConsultantBucket(supabase: NonNullable<ReturnType<typeof getSupabaseServiceClient>>, bucket: string) {
+  const { error: bucketError } = await supabase.storage.getBucket(bucket);
+  if (!bucketError) {
+    const { error } = await supabase.storage.updateBucket(bucket, {
+      public: true,
+      fileSizeLimit: MAX_MEDIA_FILE_SIZE,
+      allowedMimeTypes: CONSULTANT_MEDIA_TYPES,
+    });
+    return error;
+  }
+  const { error } = await supabase.storage.createBucket(bucket, {
+    public: true,
+    fileSizeLimit: MAX_MEDIA_FILE_SIZE,
+    allowedMimeTypes: CONSULTANT_MEDIA_TYPES,
+  });
+  return error;
 }
 
 export async function GET(request: NextRequest) {
@@ -162,13 +184,16 @@ export async function GET(request: NextRequest) {
         meta: [v.price, v.stock ? `Stock ${v.stock}` : ""].filter(Boolean).join(" · "),
         builderData: v.builder_data ?? undefined,
       })),
-      videos: (videos ?? []).map((v) => ({
-        id: v.id,
-        title: v.title || "",
-        description: v.description || "",
-        url: v.video_url || "",
-        imageUrl: v.video_url || "",
-      })),
+      videos: (videos ?? []).map((v) => {
+        const videoUrl = v.video_url || "";
+        return {
+          id: v.id,
+          title: v.title || "",
+          description: v.description || "",
+          url: isUploadedVideoUrl(videoUrl) ? "" : videoUrl,
+          imageUrl: isUploadedVideoUrl(videoUrl) ? videoUrl : "",
+        };
+      }),
       soldGallery: (soldGallery ?? []).map((s) => ({
         id: s.id,
         title: s.title || "",
@@ -267,8 +292,13 @@ export async function PUT(request: NextRequest) {
   // Set limits
   // Reviews: max 10
   const limitedReviews = incomingDraft.reviews.slice(0, 10);
-  // Walk-around videos: max 2
-  const limitedVideos = incomingDraft.videos.slice(0, 2);
+  // Keep unlimited linked videos while limiting uploaded files to two.
+  let uploadedVideoCount = 0;
+  const limitedVideos = incomingDraft.videos.filter((video) => {
+    if (!video.imageUrl || !isUploadedVideoUrl(video.imageUrl)) return true;
+    uploadedVideoCount += 1;
+    return uploadedVideoCount <= 2;
+  });
   incomingDraft.reviews = limitedReviews;
   incomingDraft.videos = limitedVideos;
 
@@ -302,6 +332,9 @@ export async function PUT(request: NextRequest) {
   const { data: existingVehicles } = existingCard
     ? await supabase.from("consultant_vehicles").select("image_url, builder_data").eq("card_id", existingCard.id)
     : { data: [] as { image_url: string | null; builder_data?: { photos?: Array<{ url?: string }> } | null }[] };
+  const { data: existingVideos } = existingCard
+    ? await supabase.from("consultant_videos").select("video_url").eq("card_id", existingCard.id)
+    : { data: [] as { video_url: string | null }[] };
 
   const isPublished = isPublishAction ? true : isUnpublishAction ? false : (existingCard?.is_published ?? false);
   const publishedAt = isPublishAction ? now : isUnpublishAction ? null : existingCard?.published_at ?? null;
@@ -395,7 +428,7 @@ export async function PUT(request: NextRequest) {
           card_id: cardId,
           title: v.title,
           description: v.description,
-          video_url: v.url || v.imageUrl,
+          video_url: v.imageUrl || v.url,
           sort_order: i,
         }))
       )
@@ -449,11 +482,18 @@ export async function PUT(request: NextRequest) {
   const removedObjects = (existingVehicles ?? [])
     .flatMap((vehicle) => [vehicle.image_url || "", ...(vehicle.builder_data?.photos?.map((photo: { url?: string }) => photo.url || "") ?? [])])
     .filter((imageUrl) => imageUrl && !retainedImageUrls.has(imageUrl))
-    .map((imageUrl) => ownedStorageObject(imageUrl, user.id))
+    .map((imageUrl) => ownedStorageObject(imageUrl, user.id, ["vehicles"]))
+    .filter((object): object is { bucket: string; path: string } => Boolean(object));
+
+  const retainedVideoUrls = new Set(limitedVideos.map((video) => video.imageUrl).filter(Boolean));
+  const removedVideoObjects = (existingVideos ?? [])
+    .map((video) => video.video_url || "")
+    .filter((videoUrl) => videoUrl && !retainedVideoUrls.has(videoUrl))
+    .map((videoUrl) => ownedStorageObject(videoUrl, user.id, ["videos"]))
     .filter((object): object is { bucket: string; path: string } => Boolean(object));
 
   const removalsByBucket = new Map<string, string[]>();
-  for (const object of removedObjects) {
+  for (const object of [...removedObjects, ...removedVideoObjects]) {
     removalsByBucket.set(object.bucket, [...(removalsByBucket.get(object.bucket) ?? []), object.path]);
   }
   for (const [bucket, paths] of removalsByBucket) {
@@ -523,12 +563,31 @@ export async function POST(request: NextRequest) {
   const isPermitted = profile.role === "admin" || isTrav || Boolean(profile.card_enabled) || isDonaldGoff;
   if (!isPermitted) return NextResponse.json({ error: "Card permission required." }, { status: 403 });
 
+  if (request.headers.get("content-type")?.includes("application/json")) {
+    if (!supabase) return NextResponse.json({ error: "Direct uploads require Supabase." }, { status: 503 });
+    const body = await request.json() as { action?: string; filename?: string; category?: string; contentType?: string; size?: number };
+    if (body.action !== "create-upload") return NextResponse.json({ error: "Unsupported upload action." }, { status: 400 });
+    if (!body.filename || !body.contentType) return NextResponse.json({ error: "File information is missing." }, { status: 400 });
+    if ((body.size ?? 0) > MAX_MEDIA_FILE_SIZE) return NextResponse.json({ error: "Files must be 250 MB or smaller." }, { status: 400 });
+
+    const category = (body.category || "media").toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    const bucket = `consultant-media-${user.id}`;
+    const bucketError = await ensureConsultantBucket(supabase, bucket);
+    if (bucketError) return NextResponse.json({ error: bucketError.message }, { status: 500 });
+    const safeName = body.filename.toLowerCase().replace(/[^a-z0-9.]+/g, "-");
+    const path = `${user.id}/${category}/${crypto.randomUUID()}-${safeName}`;
+    const { data: signed, error: signedError } = await supabase.storage.from(bucket).createSignedUploadUrl(path);
+    if (signedError || !signed) return NextResponse.json({ error: signedError?.message || "Upload could not be prepared." }, { status: 500 });
+    const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(path);
+    return NextResponse.json({ bucket, path, token: signed.token, url: publicData.publicUrl });
+  }
+
   const form = await request.formData();
   const file = form.get("file");
   const category = (form.get("category")?.toString() || "media").toLowerCase().replace(/[^a-z0-9_-]/g, "");
 
   if (!(file instanceof File)) return NextResponse.json({ error: "Choose a file." }, { status: 400 });
-  if (file.size > 100 * 1024 * 1024) return NextResponse.json({ error: "Files must be 100 MB or smaller." }, { status: 400 });
+  if (file.size > MAX_MEDIA_FILE_SIZE) return NextResponse.json({ error: "Files must be 250 MB or smaller." }, { status: 400 });
 
   if (!supabase) {
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -540,23 +599,8 @@ export async function POST(request: NextRequest) {
   }
 
   const bucket = `consultant-media-${user.id}`;
-  const { error: bucketError } = await supabase.storage.getBucket(bucket);
-  if (bucketError) {
-    const { error: createError } = await supabase.storage.createBucket(bucket, {
-      public: true,
-      fileSizeLimit: 100 * 1024 * 1024,
-      allowedMimeTypes: [
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-        "image/gif",
-        "video/mp4",
-        "video/webm",
-        "video/quicktime",
-      ],
-    });
-    if (createError) return NextResponse.json({ error: createError.message }, { status: 500 });
-  }
+  const bucketError = await ensureConsultantBucket(supabase, bucket);
+  if (bucketError) return NextResponse.json({ error: bucketError.message }, { status: 500 });
 
   const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-");
   const path = `${user.id}/${category}/${crypto.randomUUID()}-${safeName}`;

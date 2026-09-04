@@ -16,6 +16,7 @@ export type PublicVideo = {
 export function VideoPlaylist({ videos, initialVideoId }: { videos: PublicVideo[]; initialVideoId?: string }) {
   const initialIndex = initialVideoId ? videos.findIndex((video) => video.id === initialVideoId) : -1;
   const [activeIndex, setActiveIndex] = useState<number | null>(initialIndex >= 0 ? initialIndex : null);
+  const [muted, setMuted] = useState(true);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
 
   useEffect(() => {
@@ -59,7 +60,7 @@ export function VideoPlaylist({ videos, initialVideoId }: { videos: PublicVideo[
                     ref={(node) => { videoRefs.current[index] = node; }}
                     src={entry.imageUrl}
                     controls
-                    muted
+                    muted={muted}
                     playsInline
                     preload="metadata"
                     onEnded={() => playNext(index)}
@@ -67,6 +68,11 @@ export function VideoPlaylist({ videos, initialVideoId }: { videos: PublicVideo[
                 ) : entry.embedUrl ? (
                   <iframe src={entry.embedUrl} title={entry.title || "Consultant video"} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
                 ) : entry.imageUrl ? <img src={entry.imageUrl} alt={entry.title} /> : null}
+                {isUploadedVideo && (
+                  <button type="button" className={styles.videoMuteButton} onClick={() => setMuted((current) => !current)}>
+                    {muted ? "🔇 Sound off" : "🔊 Sound on"}
+                  </button>
+                )}
                 {entry.description && <p>{entry.description}</p>}
                 <div className={styles.videoActions}>
                   {entry.url && <a href={entry.url} target="_blank" rel="noopener noreferrer">Open video</a>}
