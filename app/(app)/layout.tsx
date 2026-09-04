@@ -12,6 +12,7 @@ import {
 } from "@/components/workflow/document-drawer";
 import { SettingsDrawer } from "@/components/workflow/settings-drawer";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase-browser";
+import { fetchServerSettings, saveConsultant, saveDealer } from "@/lib/dealer-consultant";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -24,6 +25,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     const handler = () => setSettingsOpen(true);
     window.addEventListener("open-settings", handler);
     return () => window.removeEventListener("open-settings", handler);
+  }, []);
+
+  useEffect(() => {
+    void fetchServerSettings().then((settings) => {
+      if (!settings) return;
+      saveDealer(settings.dealer);
+      saveConsultant(settings.consultant);
+    });
   }, []);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect

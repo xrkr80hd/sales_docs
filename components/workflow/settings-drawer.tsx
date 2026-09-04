@@ -208,7 +208,7 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
               className="flex w-full items-center justify-between pb-3 text-left"
             >
               <div>
-                <h3 className="text-lg font-bold text-[#111113]">Salesperson</h3>
+                <h3 className="text-lg font-bold text-[#111113]">Consultant Information</h3>
                 <p className="text-sm text-neutral-600">{consultant.name || "Not set"}</p>
               </div>
               <span className={`text-lg text-neutral-600 transition-transform ${openSections.consultant ? "rotate-180" : ""}`}>▾</span>
@@ -216,7 +216,7 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
             {openSections.consultant && (
               <div className="border-t border-[var(--border)] pt-4">
                 <p className="mb-4 text-sm leading-6 text-neutral-600">
-                  Synced to your account. Populates salesperson fields on documents.
+                  Enter this once. It populates your business card, contact buttons, vehicle collages, and NXTDOCS forms on every device.
                 </p>
                 <div className="grid gap-4">
                   <label className="grid gap-2">
@@ -228,11 +228,11 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
                     <input type="text" value={consultant.salespersonNumber} onChange={(e) => updateConsultant("salespersonNumber", e.currentTarget.value)} className="min-h-12 border border-neutral-300 bg-white px-4 text-base !text-black caret-black [-webkit-text-fill-color:#000] [color-scheme:light] outline-none transition focus:border-[var(--accent)]" />
                   </label>
                   <label className="grid gap-2">
-                    <span className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">Phone Number</span>
+                    <span className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">Public Phone Number</span>
                     <input type="tel" value={consultant.phone} onChange={(e) => updateConsultant("phone", e.currentTarget.value)} className="min-h-12 border border-neutral-300 bg-white px-4 text-base !text-black caret-black [-webkit-text-fill-color:#000] [color-scheme:light] outline-none transition focus:border-[var(--accent)]" />
                   </label>
                   <label className="grid gap-2">
-                    <span className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">Email</span>
+                    <span className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">Public Contact Email</span>
                     <input type="email" value={consultant.email} onChange={(e) => updateConsultant("email", e.currentTarget.value)} className="min-h-12 border border-neutral-300 bg-white px-4 text-base !text-black caret-black [-webkit-text-fill-color:#000] [color-scheme:light] outline-none transition focus:border-[var(--accent)]" />
                   </label>
                 </div>

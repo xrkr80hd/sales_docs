@@ -229,6 +229,34 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Dashboard settings are the shared source for consultant contact and dealership details.
+  const { data: savedSettings } = await supabase
+    .from("user_settings")
+    .select("dealer_info, consultant_info")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const consultantSettings = savedSettings?.consultant_info && typeof savedSettings.consultant_info === "object"
+    ? savedSettings.consultant_info as Record<string, unknown>
+    : {};
+  const dealerSettings = savedSettings?.dealer_info && typeof savedSettings.dealer_info === "object"
+    ? savedSettings.dealer_info as Record<string, unknown>
+    : {};
+  const setting = (value: unknown) => typeof value === "string" ? value.trim() : "";
+  const settingsName = setting(consultantSettings.name);
+  const settingsPhone = setting(consultantSettings.phone);
+  const settingsEmail = setting(consultantSettings.email);
+  const settingsDealer = setting(dealerSettings.dealershipName);
+  const cityState = [setting(dealerSettings.city), setting(dealerSettings.state)].filter(Boolean).join(", ");
+  const settingsAddress = [setting(dealerSettings.street), cityState, setting(dealerSettings.zip)].filter(Boolean).join(", ");
+  draft.identity = {
+    ...draft.identity,
+    ...(settingsName ? { displayName: settingsName } : {}),
+    ...(settingsPhone ? { phone: settingsPhone } : {}),
+    ...(settingsEmail ? { email: settingsEmail } : {}),
+    ...(settingsDealer ? { dealership: settingsDealer } : {}),
+    ...(settingsAddress ? { location: settingsAddress } : {}),
+  };
+
   const card = {
     slug,
     draft,
