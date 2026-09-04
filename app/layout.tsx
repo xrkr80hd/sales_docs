@@ -15,8 +15,9 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Walker Docs",
-  description: "Tablet and phone-first dealership workflow and print application.",
+  metadataBase: new URL("https://nextdocs.xrkr80hd.studio"),
+  title: { default: "NXTDOCS", template: "%s | NXTDOCS" },
+  description: "NXTDOCS consultant profiles and dealership tools.",
   applicationName: "NXTDOCS",
   appleWebApp: {
     capable: true,

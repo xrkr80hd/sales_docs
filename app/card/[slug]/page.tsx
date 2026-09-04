@@ -5,10 +5,12 @@ import { ReviewCarousel } from "@/components/profile/review-carousel";
 import { VehicleCarousel } from "@/components/profile/vehicle-carousel";
 import { CopyCardLinkButton } from "@/components/profile/copy-card-link-button";
 import { VideoPlaylist } from "@/components/profile/video-playlist";
+import { SocialPlatformIcon } from "@/components/profile/social-platform-icon";
 import { getPublishedConsultantProfile } from "@/lib/public-consultant-profile";
 import styles from "../trav/page.module.css";
 
 export const dynamic = "force-dynamic";
+const SITE_URL = "https://nextdocs.xrkr80hd.studio";
 
 function getVideoEmbedUrl(rawUrl: string) {
   if (!rawUrl) return null;
@@ -47,13 +49,42 @@ export async function generateMetadata({ params, searchParams }: CardPageProps):
   const vehicle = profile.vehicles.find((entry) => entry.secondaryUrl === selected.vehicle || entry.id === selected.vehicle);
   const video = profile.videos.find((entry) => entry.id === selected.video);
   const sharedTitle = vehicle?.title || video?.title || `${profile.identity.displayName} | ${profile.identity.dealership}`;
-  const sharedDescription = vehicle?.description || video?.description || profile.content.salesQuote || `Contact ${profile.identity.displayName}.`;
-  const cardImage = profile.identity.callingCardImageUrl || profile.identity.profileImageUrl || profile.identity.logoUrl;
-  const imageUrl = cardImage ? new URL(cardImage, "https://nextdocs.xrkr80hd.studio").toString() : undefined;
+  const sharedDescription = vehicle?.description || video?.description || profile.content.bio || profile.content.salesQuote || `Contact ${profile.identity.displayName}, a sales consultant at ${profile.identity.dealership} in ${profile.identity.location}.`;
+  const cardImage = vehicle?.imageUrl || profile.identity.callingCardImageUrl || profile.identity.profileImageUrl || profile.identity.logoUrl;
+  const imageUrl = cardImage ? new URL(cardImage, SITE_URL).toString() : undefined;
+  const canonicalUrl = `${SITE_URL}/card/${slug}`;
+  const keywords = [
+    profile.identity.displayName,
+    profile.identity.dealership,
+    `${profile.identity.dealership} sales consultant`,
+    `car sales consultant ${profile.identity.location}`,
+    `new and used vehicles ${profile.identity.location}`,
+    "Walker Automotive",
+    "vehicle sales Alexandria Louisiana",
+  ];
   return {
     title: sharedTitle,
     description: sharedDescription,
-    openGraph: { title: sharedTitle, description: sharedDescription, type: "website", images: imageUrl ? [{ url: imageUrl }] : undefined },
+    keywords,
+    authors: [{ name: profile.identity.displayName, url: canonicalUrl }],
+    creator: profile.identity.displayName,
+    publisher: profile.identity.dealership,
+    category: "Automotive",
+    alternates: { canonical: canonicalUrl },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
+    },
+    openGraph: {
+      title: sharedTitle,
+      description: sharedDescription,
+      type: "profile",
+      url: canonicalUrl,
+      siteName: "NXTDOCS Consultant Profiles",
+      locale: "en_US",
+      images: imageUrl ? [{ url: imageUrl, alt: vehicle ? `${vehicle.title} vehicle collage` : `${profile.identity.displayName} business card` }] : undefined,
+    },
     twitter: { card: "summary_large_image", title: sharedTitle, description: sharedDescription, images: imageUrl ? [imageUrl] : undefined },
   };
 }
@@ -78,9 +109,64 @@ export default async function ConsultantCard({ params, searchParams }: CardPageP
     src: entry.imageUrl, alt: `Review from ${entry.title}`, isLong: entry.meta === "long",
   }));
   const videos = profile.videos.map((entry) => ({ ...entry, embedUrl: getVideoEmbedUrl(entry.url) }));
+  const canonicalUrl = `${SITE_URL}/card/${slug}`;
+  const vehicleListSchema = profile.vehicles.map((vehicleEntry, index) => {
+    const [priceLabel = "", stockLabel = ""] = (vehicleEntry.meta || "").split(" · ");
+    const price = priceLabel.replace(/[^0-9.]/g, "");
+    const stock = stockLabel.replace(/^Stock\s*/i, "").trim();
+    const shareUrl = `${canonicalUrl}?vehicle=${encodeURIComponent(vehicleEntry.secondaryUrl || vehicleEntry.id)}`;
+
+    return {
+      "@type": "ListItem",
+      position: index + 1,
+      url: shareUrl,
+      item: {
+        "@type": "Vehicle",
+        name: vehicleEntry.title,
+        description: vehicleEntry.description || undefined,
+        image: vehicleEntry.imageUrl ? new URL(vehicleEntry.imageUrl, SITE_URL).toString() : undefined,
+        vehicleIdentificationNumber: vehicleEntry.secondaryUrl || undefined,
+        sku: stock || undefined,
+        url: vehicleEntry.url || shareUrl,
+        offers: price ? { "@type": "Offer", price, priceCurrency: "USD", url: vehicleEntry.url || shareUrl } : undefined,
+      },
+    };
+  });
+  const personSchema = {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    name: `${profile.identity.displayName} — ${profile.identity.dealership}`,
+    url: canonicalUrl,
+    description: profile.content.bio || profile.content.salesQuote || `Automotive sales consultant at ${profile.identity.dealership}.`,
+    mainEntity: {
+      "@type": "Person",
+      name: profile.identity.displayName,
+      jobTitle: profile.identity.jobTitle,
+      image: profile.identity.profileImageUrl ? new URL(profile.identity.profileImageUrl, SITE_URL).toString() : undefined,
+      telephone: profile.identity.phone || undefined,
+      email: profile.identity.email || undefined,
+      url: canonicalUrl,
+      worksFor: {
+        "@type": "Organization",
+        name: profile.identity.dealership,
+        address: { "@type": "PostalAddress", streetAddress: profile.identity.location },
+      },
+      knowsAbout: ["New vehicles", "Used vehicles", "Automotive sales", "Vehicle trade-ins"],
+      sameAs: profile.socialLinks.map((entry) => entry.url).filter(Boolean),
+    },
+    hasPart: vehicles.length ? {
+      "@type": "ItemList",
+      name: `${profile.identity.displayName}'s featured vehicles`,
+      itemListElement: vehicleListSchema,
+    } : undefined,
+  };
 
   return (
     <main className={styles.page}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema).replace(/</g, "\\u003c") }}
+      />
       <div className={styles.shell}>
         <header className={styles.hero}>
           <div className={styles.brandRow}>
@@ -146,7 +232,7 @@ export default async function ConsultantCard({ params, searchParams }: CardPageP
         <div className={styles.sections}>
           <CopyCardLinkButton label="Copy profile link" className={styles.profileShareButton} />
           <a className={styles.inventoryButton} href={profile.content.inventoryUrl} target="_blank" rel="noopener noreferrer">{profile.content.inventoryButtonLabel}</a>
-          {!!profile.socialLinks.length && <nav className={styles.socialLinks} aria-label="Social profiles">{profile.socialLinks.map((entry) => <a key={entry.id} href={entry.url} target="_blank" rel="noopener noreferrer">{entry.title}</a>)}</nav>}
+          {!!profile.socialLinks.length && <nav className={styles.socialLinks} aria-label="Social profiles">{profile.socialLinks.map((entry) => <a key={entry.id} href={entry.url} target="_blank" rel="me noopener noreferrer" aria-label={`Visit ${profile.identity.displayName} on ${entry.title}`} title={entry.title}><SocialPlatformIcon platform={`${entry.title} ${entry.url}`} /></a>)}</nav>}
         </div>
       </div>
     </main>

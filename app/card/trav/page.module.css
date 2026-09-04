@@ -319,17 +319,24 @@
 .socialLinks {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
 }
 
 .socialLinks a {
-  padding: 10px 14px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  color: inherit;
-  font-weight: 800;
+  display: block;
+  width: 44px;
+  height: 44px;
+  padding: 2px;
+  border: 0;
+  border-radius: 12px;
   text-decoration: none;
+  transition: transform .16s ease, filter .16s ease;
 }
+
+.socialLinks a:hover,
+.socialLinks a:focus-visible { transform: translateY(-2px); filter: brightness(1.08); }
+.socialLinks img { display: block; width: 40px; height: 40px; border-radius: 10px; }
 
 .footer p {
   margin: 8px 0;
