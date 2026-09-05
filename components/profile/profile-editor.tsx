@@ -27,7 +27,7 @@ const limits: Record<CollectionKey, number | undefined> = {
   soldGallery: 12,
   socialLinks: 8,
 };
-const MAX_MEDIA_FILE_SIZE = 250 * 1024 * 1024;
+const MAX_MEDIA_FILE_SIZE = 100 * 1024 * 1024;
 const isUploadedVideoUrl = (value: string) => /\.(mp4|webm|mov)(\?|$)/i.test(value);
 
 export function getSocialIcon(urlOrName: string) {
@@ -257,7 +257,7 @@ export function ProfileEditor() {
   // Upload data URL or File
   async function uploadBlobOrFile(fileOrBlob: Blob, filename: string, category: string, onComplete: (url: string) => void) {
     if (fileOrBlob.size > MAX_MEDIA_FILE_SIZE) {
-      setNotice("That file is over the 250 MB limit. Please choose a smaller video.");
+      setNotice("That file is over the 100 MB upload limit. Please choose a smaller file.");
       return;
     }
     if (process.env.NEXT_PUBLIC_DISABLE_AUTH !== "1" && isSupabaseConfigured()) {
@@ -664,7 +664,7 @@ export function ProfileEditor() {
                   />
                 </label>
                 <label className={styles.wide}>
-                  Upload Video File (MP4, WebM, MOV · 250 MB max) — {uploadedVideoCount}/2 used
+                  Upload Video File (MP4, WebM, MOV · 100 MB max) — {uploadedVideoCount}/2 used
                   <input
                     type="file"
                     accept="video/mp4,video/webm,video/quicktime"

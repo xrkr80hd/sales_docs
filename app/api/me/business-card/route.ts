@@ -16,7 +16,10 @@ function slugify(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "consultant";
 }
 
-const MAX_MEDIA_FILE_SIZE = 250 * 1024 * 1024;
+// Match the consultant buckets already provisioned in this project. Attempting
+// to raise them to 250 MB on every upload made Storage reject the bucket update
+// before even a small, cropped calling-card image could be uploaded.
+const MAX_MEDIA_FILE_SIZE = 100 * 1024 * 1024;
 const CONSULTANT_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm", "video/quicktime"];
 const isUploadedVideoUrl = (value: string) => /\.(mp4|webm|mov)(\?|$)/i.test(value);
 
@@ -40,14 +43,9 @@ function ownedStorageObject(publicUrl: string, userId: string, categories: strin
 
 async function ensureConsultantBucket(supabase: NonNullable<ReturnType<typeof getSupabaseServiceClient>>, bucket: string) {
   const { error: bucketError } = await supabase.storage.getBucket(bucket);
-  if (!bucketError) {
-    const { error } = await supabase.storage.updateBucket(bucket, {
-      public: true,
-      fileSizeLimit: MAX_MEDIA_FILE_SIZE,
-      allowedMimeTypes: CONSULTANT_MEDIA_TYPES,
-    });
-    return error;
-  }
+  // Existing consultant buckets are already configured correctly. Do not
+  // rewrite their settings for every upload.
+  if (!bucketError) return null;
   const { error } = await supabase.storage.createBucket(bucket, {
     public: true,
     fileSizeLimit: MAX_MEDIA_FILE_SIZE,
@@ -596,7 +594,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as { action?: string; filename?: string; category?: string; contentType?: string; size?: number };
     if (body.action !== "create-upload") return NextResponse.json({ error: "Unsupported upload action." }, { status: 400 });
     if (!body.filename || !body.contentType) return NextResponse.json({ error: "File information is missing." }, { status: 400 });
-    if ((body.size ?? 0) > MAX_MEDIA_FILE_SIZE) return NextResponse.json({ error: "Files must be 250 MB or smaller." }, { status: 400 });
+    if ((body.size ?? 0) > MAX_MEDIA_FILE_SIZE) return NextResponse.json({ error: "Files must be 100 MB or smaller." }, { status: 400 });
 
     const category = (body.category || "media").toLowerCase().replace(/[^a-z0-9_-]/g, "");
     const bucket = `consultant-media-${user.id}`;
@@ -615,7 +613,7 @@ export async function POST(request: NextRequest) {
   const category = (form.get("category")?.toString() || "media").toLowerCase().replace(/[^a-z0-9_-]/g, "");
 
   if (!(file instanceof File)) return NextResponse.json({ error: "Choose a file." }, { status: 400 });
-  if (file.size > MAX_MEDIA_FILE_SIZE) return NextResponse.json({ error: "Files must be 250 MB or smaller." }, { status: 400 });
+  if (file.size > MAX_MEDIA_FILE_SIZE) return NextResponse.json({ error: "Files must be 100 MB or smaller." }, { status: 400 });
 
   if (!supabase) {
     const buffer = Buffer.from(await file.arrayBuffer());
