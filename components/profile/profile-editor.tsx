@@ -405,12 +405,12 @@ export function ProfileEditor() {
       </details>
 
       <h2 className={styles.sectionHeader}>Business Card Basics</h2>
-      <p className={styles.sectionIntro}>Headshot photo (1:1), Calling Card artwork (2:3), and contact details.</p>
+      <p className={styles.sectionIntro}>Headshot photo (1:1), Calling Card artwork (1:1), and contact details.</p>
 
       {/* ── Identity & Artwork ── */}
       <details className={styles.panel}>
         <summary>
-          <span>1. Profile Photo (1:1) &amp; Calling Card (2:3)</span>
+          <span>1. Profile Photo (1:1) &amp; Calling Card (1:1)</span>
           <div className={styles.summaryRight}>
             <span className={styles.chevronArrow}>▼</span>
           </div>
@@ -440,9 +440,9 @@ export function ProfileEditor() {
             </label>
           </div>
 
-          {/* 2:3 Calling Card Artwork */}
+          {/* 1:1 Calling Card Artwork */}
           <div className={styles.uploadBox}>
-            <label>Calling Card (2:3 Portrait)</label>
+            <label>Calling Card (1:1 Square)</label>
             <div className={styles.previewStage}>
               <div className={styles.callingCardPreviewThumb}>
                 {draft.identity.callingCardImageUrl ? (
@@ -458,7 +458,7 @@ export function ProfileEditor() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => handleFileSelectedWithCrop(e, "calling-card", "2:3", "Crop Calling Card (2:3)", (url) => updateIdentity("callingCardImageUrl", url))}
+                onChange={(e) => handleFileSelectedWithCrop(e, "calling-card", "1:1", "Crop Calling Card (1:1)", (url) => updateIdentity("callingCardImageUrl", url))}
               />
             </label>
           </div>
