@@ -219,7 +219,12 @@ export default async function ConsultantCard({ params, searchParams }: CardPageP
         </header>
 
         <div className={styles.profileGrid}>
-          {profile.identity.callingCardImageUrl && <section className={styles.brandCard}><Image src={profile.identity.callingCardImageUrl} alt={`${profile.identity.displayName} calling card`} fill sizes="300px" className={styles.brandCardImage} /></section>}
+          {profile.identity.callingCardImageUrl && (
+            <section className={styles.brandCard}>
+              <Image src={profile.identity.callingCardImageUrl} alt="" aria-hidden="true" fill sizes="(max-width: 760px) 100vw, 720px" className={styles.brandCardBackdrop} />
+              <Image src={profile.identity.callingCardImageUrl} alt={`${profile.identity.displayName} calling card`} fill sizes="(max-width: 760px) 100vw, 720px" className={styles.brandCardImage} />
+            </section>
+          )}
           {profile.content.bio && <section className={styles.emptyState}><div><h2>About {profile.identity.displayName}</h2><p>{profile.content.bio}</p></div></section>}
         </div>
 

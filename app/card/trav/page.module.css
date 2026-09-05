@@ -637,18 +637,35 @@
 
 .brandCard {
   position: relative;
-  width: min(52vw, 210px);
-  aspect-ratio: 3 / 4;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   min-height: 0;
-  justify-self: center;
   overflow: hidden;
   border: 1px solid #3a3d43;
   border-radius: 24px;
   background: #111;
+  isolation: isolate;
+}
+
+.brandCard::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 48%, rgba(0, 0, 0, .58) 100%);
+  content: "";
+  pointer-events: none;
+}
+
+.brandCardBackdrop {
+  z-index: 0;
+  transform: scale(1.08);
+  filter: blur(22px) brightness(.42);
+  object-fit: cover;
 }
 
 .brandCardImage {
-  object-fit: cover;
+  z-index: 2;
+  object-fit: contain;
   object-position: center;
 }
 
@@ -799,10 +816,6 @@
 }
 
 @media (min-width: 620px) {
-  .profileGrid {
-    grid-template-columns: minmax(240px, .72fr) 1.28fr;
-  }
-
   .vehicleRail {
     grid-auto-columns: min(76%, 620px);
   }
