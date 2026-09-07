@@ -26,7 +26,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("open-settings", handler);
   }, []);
 
-  useEffect(() => setNavigationOpen(false), [pathname]);
+
 
   useEffect(() => {
     if (!isSupabaseConfigured()) return;

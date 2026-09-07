@@ -20,9 +20,9 @@ export async function GET(request: Request) {
     db.from("organization_memberships").select("user_id,profiles(display_name)").eq("organization_id", membership.organization_id).eq("chat_enabled", true),
     db.from("messenger_conversations").select("id,kind,title,updated_at,messenger_participants(user_id,last_read_at)").eq("organization_id", membership.organization_id).order("updated_at", { ascending: false }),
   ]);
-  const ids = (conversations ?? []).filter((c: any) => c.kind === "organization" || c.messenger_participants?.some((p: any) => p.user_id === user.id)).map((c: any) => c.id);
+  const ids = (conversations ?? []).filter((c: Record<string, unknown>) => c.kind === "organization" || (c.messenger_participants as Array<Record<string, unknown>>)?.some((p: Record<string, unknown>) => p.user_id === user.id)).map((c: Record<string, unknown>) => c.id);
   const { data: messages } = ids.length ? await db.from("messenger_messages").select("id,conversation_id,sender_id,body,created_at,edited_at,profiles(display_name)").in("conversation_id", ids).is("deleted_at", null).order("created_at") : { data: [] };
-  return Response.json({ membership, people: people ?? [], conversations: (conversations ?? []).filter((c: any) => ids.includes(c.id)), messages: messages ?? [], me: user.id });
+  return Response.json({ membership, people: people ?? [], conversations: (conversations ?? []).filter((c: Record<string, unknown>) => ids.includes(c.id)), messages: messages ?? [], me: user.id });
 }
 
 export async function POST(request: Request) {

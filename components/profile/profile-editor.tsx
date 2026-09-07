@@ -64,7 +64,7 @@ export function ProfileEditor() {
     setLoading(false);
   }
 
-  useEffect(() => { void loadProfile(); }, []);
+
 
   async function signIn() {
     setLoading(true);
