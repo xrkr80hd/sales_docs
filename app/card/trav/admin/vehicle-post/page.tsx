@@ -35,9 +35,12 @@ const displayPrice = (value: string) => {
 
 const initialForm: VehicleForm = {
   year: "", make: "", model: "", trim: "", vin: "", stock: "", mileage: "", price: "", walkerUrl: "",
-  consultantUrl: "https://nextdocs.xrkr80hd.studio/card/trav",
+  consultantUrl: "",
   feature1: "", feature2: "", feature3: "",
 };
+
+const CARD_BASE_URL = "https://nextdocs.xrkr80hd.studio";
+const consultantCardUrl = (slug: string) => `${CARD_BASE_URL}/card/${encodeURIComponent(slug)}`;
 
 const PHOTO_HEIGHT = 810;
 
@@ -235,6 +238,15 @@ export default function VehiclePostBuilder() {
       setDealer(saved?.dealer ?? loadDealer());
       setConsultant(saved?.consultant ?? loadConsultant());
     });
+    void authFetch("/api/me/business-card")
+      .then(async (response) => {
+        const result = await response.json();
+        const slug = result.card?.slug;
+        if (response.ok && slug) {
+          setForm((current) => ({ ...current, consultantUrl: consultantCardUrl(slug) }));
+        }
+      })
+      .catch(() => undefined);
   }, []);
 
   const prompt = useMemo(() => {
@@ -252,10 +264,10 @@ Official Walker listing: ${form.walkerUrl || "[not entered]"}
 Consultant page: ${form.consultantUrl}
 
 CONSULTANT
-Travis Wilkinson
-Walker Automotive
-Call or text: 318-787-7887
-Email: twilkinson@walkerautomotive.com
+${consultant.name || "[consultant name not set]"}
+${dealer.dealershipName || "[dealership not set]"}
+Call or text: ${consultant.phone || "[phone not set]"}
+Email: ${consultant.email || "[email not set]"}
 
 INSTRUCTIONS
 1. Inspect the official Walker listing when browsing is available.
@@ -265,11 +277,11 @@ INSTRUCTIONS
 5. The finished design must fill a true 16:9 frame edge-to-edge. If background extension is required, extend only the surrounding background; never regenerate or modify the vehicle.
 6. Do not add text over the vehicle unless specifically requested.
 7. Write one concise, energetic Facebook caption with a strong opening and natural language.
-8. Tell the reader to use the consultant-page link to call or text Travis.
+8. Tell the reader to use the consultant-page link to call or text ${consultant.name || "the consultant"}.
 9. Include the consultant-page link exactly as supplied.
 10. If the official listing cannot be accessed, rely only on the verified information above.
 11. Return the Facebook caption separately from any image output.`;
-  }, [form]);
+  }, [form, consultant, dealer.dealershipName]);
 
   const captions = useMemo(() => {
     const vehicle = [form.year, form.make, form.model, form.trim].filter(Boolean).join(" ") || "this vehicle";
@@ -280,7 +292,7 @@ INSTRUCTIONS
       form.vin && `VIN: ${form.vin}`,
     ].filter(Boolean).join(" · ");
     const link = form.walkerUrl || form.consultantUrl;
-    const finish = `\n\nView the official Walker listing and contact Travis: ${link}\n\n${disclaimer}`;
+    const finish = `\n\nView the official Walker listing and contact ${consultant.name || "the consultant"}: ${link}\n\n${disclaimer}`;
 
     return [
       { title: "Just arrived", text: `Just arrived at Walker Automotive: ${vehicle}. ${details || "Message me for verified vehicle details."}${finish}` },
@@ -288,13 +300,13 @@ INSTRUCTIONS
       { title: "Weekend spotlight", text: `Weekend vehicle spotlight: ${vehicle}. ${details || "Check the official listing for complete details."}\n\nWould you put this one in your driveway?${finish}` },
       { title: "Feature-focused", text: `Take a closer look at this ${vehicle}. Browse the photos, review the verified equipment on the official Walker listing, and contact me when you are ready to see it in person. ${details}${finish}` },
       { title: "Question opener", text: `What is the first thing you would check out on this ${vehicle}? ${details || "The official listing has the current vehicle information."}\n\nSee the full listing and photos below.${finish}` },
-      { title: "Simple and clean", text: `${vehicle} available through Walker Automotive. ${details || "Current details are available on the official listing."}\n\nCall or text Travis with questions or to schedule a visit.${finish}` },
-      { title: "Photo carousel", text: `Swipe through for a complete look at this ${vehicle}. ${details || "Use the link for verified details and availability."}\n\nSee something you like? Reach out to Travis at Walker Automotive.${finish}` },
+      { title: "Simple and clean", text: `${vehicle} available through Walker Automotive. ${details || "Current details are available on the official listing."}\n\nCall or text ${consultant.name || "the consultant"} with questions or to schedule a visit.${finish}` },
+      { title: "Photo carousel", text: `Swipe through for a complete look at this ${vehicle}. ${details || "Use the link for verified details and availability."}\n\nSee something you like? Reach out to ${consultant.name || "the consultant"} at ${dealer.dealershipName || "the dealership"}.${finish}` },
       { title: "Value spotlight", text: `Looking for your next vehicle? Start with this ${vehicle}. ${details || "Review the official listing for current pricing and vehicle information."}\n\nI can help you confirm the details and arrange a visit at Walker Automotive.${finish}` },
-      { title: "Direct call to action", text: `Interested in this ${vehicle}? ${details || "Check the official Walker listing for current details."}\n\nOpen the listing, review the photos, then call or text Travis to take the next step.${finish}` },
+      { title: "Direct call to action", text: `Interested in this ${vehicle}? ${details || "Check the official Walker listing for current details."}\n\nOpen the listing, review the photos, then call or text ${consultant.name || "the consultant"} to take the next step.${finish}` },
       { title: "Conversation starter", text: `Could this ${vehicle} be the right fit for you? ${details || "All current information is available through Walker Automotive."}\n\nTake a look through the photos and tell me what you want to know.${finish}` },
     ];
-  }, [form]);
+  }, [form, consultant.name, dealer.dealershipName]);
 
   const update = (key: keyof VehicleForm) => (event: ChangeEvent<HTMLInputElement>) => {
     const value = key === "price" ? numericPrice(event.target.value) : event.target.value;
@@ -497,6 +509,7 @@ INSTRUCTIONS
     if (!editId) return;
     void authFetch("/api/me/business-card").then(async (response) => {
       const result = await response.json();
+      const cardUrl = result.card?.slug ? consultantCardUrl(result.card.slug) : form.consultantUrl;
       const draft = normalizeProfileContent(result.card?.draft, Boolean(result.isAdmin));
       const vehicle = draft.vehicles.find((item) => item.id === editId);
       if (!vehicle) throw new Error("That vehicle could not be found in your card.");
@@ -515,6 +528,7 @@ INSTRUCTIONS
           stock,
           price: numericPrice(price),
           walkerUrl: vehicle.url,
+          consultantUrl: cardUrl,
         }));
         setNotice("Vehicle information loaded. Choose a photo layout and add the source photos to rebuild this older collage.");
         return;
@@ -522,7 +536,7 @@ INSTRUCTIONS
       const project = vehicle.builderData;
       setEditingVehicleId(editId);
       setPhotoCount(project.photoCount);
-      setForm((current) => ({ ...current, ...project.form, price: numericPrice(project.form.price || "") }));
+      setForm((current) => ({ ...current, ...project.form, consultantUrl: cardUrl, price: numericPrice(project.form.price || "") }));
       setPhotos(project.photos.map((photo) => ({ id: crypto.randomUUID(), ...photo })));
       setNotice("Editable collage loaded. Update it, then save it back to your carousel draft.");
     }).catch((error) => setNotice(error instanceof Error ? error.message : "The collage could not be loaded."));
