@@ -35,7 +35,7 @@ const displayPrice = (value: string) => {
 
 const initialForm: VehicleForm = {
   year: "", make: "", model: "", trim: "", vin: "", stock: "", mileage: "", price: "", walkerUrl: "",
-  consultantUrl: "https://walker-next-docs-git-feature-trav-dig-b5f2fe-xrkr80hds-projects.vercel.app/card/trav",
+  consultantUrl: "https://nextdocs.xrkr80hd.studio/card/trav",
   feature1: "", feature2: "", feature3: "",
 };
 
