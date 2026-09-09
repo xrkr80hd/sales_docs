@@ -13,73 +13,104 @@ export type PublicVideo = {
   embedUrl: string | null;
 };
 
-export function VideoPlaylist({ videos, initialVideoId }: { videos: PublicVideo[]; initialVideoId?: string }) {
+async function recordVideoView(slug: string, videoId: string) {
+  const key = `nxtdocs.video-view.${slug}.${videoId}`;
+  if (window.sessionStorage.getItem(key)) return;
+  window.sessionStorage.setItem(key, "1");
+  await fetch("/api/analytics", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ slug, eventType: "video_view", itemId: videoId }),
+    keepalive: true,
+  }).catch(() => undefined);
+}
+
+export function VideoPlaylist({
+  videos,
+  initialVideoId,
+  consultantSlug,
+}: {
+  videos: PublicVideo[];
+  initialVideoId?: string;
+  consultantSlug: string;
+}) {
   const initialIndex = initialVideoId ? videos.findIndex((video) => video.id === initialVideoId) : -1;
-  const [activeIndex, setActiveIndex] = useState<number | null>(initialIndex >= 0 ? initialIndex : null);
   const [muted, setMuted] = useState(true);
-  const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
+  const railRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<Array<HTMLElement | null>>([]);
 
   useEffect(() => {
-    videoRefs.current.forEach((video, index) => {
-      if (!video) return;
-      if (index === activeIndex) void video.play().catch(() => undefined);
-      else video.pause();
+    if (initialIndex < 0) return;
+    window.requestAnimationFrame(() => {
+      cardRefs.current[initialIndex]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     });
-  }, [activeIndex]);
+  }, [initialIndex]);
 
-  function playNext(currentIndex: number) {
-    if (videos.length < 2) return;
-    setActiveIndex((currentIndex + 1) % videos.length);
-  }
+  useEffect(() => {
+    const root = railRef.current;
+    if (!root) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting || entry.intersectionRatio < 0.6) continue;
+          const videoId = (entry.target as HTMLElement).dataset.videoId;
+          if (videoId) void recordVideoView(consultantSlug, videoId);
+        }
+      },
+      { root, threshold: [0.6] },
+    );
+    cardRefs.current.forEach((card) => card && observer.observe(card));
+    return () => observer.disconnect();
+  }, [consultantSlug, videos]);
 
   return (
     <details className={styles.videoSection} open={initialIndex >= 0 ? true : undefined}>
       <summary><span>Videos</span><small>{videos.length}</small></summary>
-      <div className={styles.videoList}>
+      <div ref={railRef} className={styles.videoRail} aria-label="Consultant videos">
         {videos.map((entry, index) => {
           const isUploadedVideo = Boolean(entry.imageUrl && /\.(mp4|webm|mov)(\?|$)/i.test(entry.imageUrl));
           return (
-            <details
-              className={styles.videoItem}
+            <article
+              className={styles.videoCard}
               key={entry.id}
               id={`video-${entry.id}`}
-              open={activeIndex === index}
-              onToggle={(event) => {
-                if (event.currentTarget.open) setActiveIndex(index);
-                else if (activeIndex === index) setActiveIndex(null);
-              }}
+              data-video-id={entry.id}
+              ref={(node) => { cardRefs.current[index] = node; }}
             >
-              <summary>
-                {isUploadedVideo && <video className={styles.videoSnapshot} src={entry.imageUrl} muted playsInline preload="metadata" aria-hidden="true" />}
-                <span>{entry.title || `Video ${index + 1}`}</span>
-                <small>{isUploadedVideo ? "Uploaded" : "Linked"}</small>
-              </summary>
-              <div className={styles.videoBody}>
+              <div className={styles.videoFrame}>
                 {isUploadedVideo ? (
                   <video
-                    ref={(node) => { videoRefs.current[index] = node; }}
                     src={entry.imageUrl}
                     controls
                     muted={muted}
                     playsInline
                     preload="metadata"
-                    onEnded={() => playNext(index)}
+                    onPlay={() => void recordVideoView(consultantSlug, entry.id)}
                   />
                 ) : entry.embedUrl ? (
-                  <iframe src={entry.embedUrl} title={entry.title || "Consultant video"} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                  <iframe
+                    src={entry.embedUrl}
+                    title={entry.title || "Consultant video"}
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
                 ) : entry.imageUrl ? <img src={entry.imageUrl} alt={entry.title} /> : null}
                 {isUploadedVideo && (
                   <button type="button" className={styles.videoMuteButton} onClick={() => setMuted((current) => !current)}>
-                    {muted ? "🔇 Sound off" : "🔊 Sound on"}
+                    {muted ? "🔇" : "🔊"} <span>{muted ? "Sound off" : "Sound on"}</span>
                   </button>
                 )}
+              </div>
+              <div className={styles.videoCardBody}>
+                <strong>{entry.title || `Video ${index + 1}`}</strong>
                 {entry.description && <p>{entry.description}</p>}
                 <div className={styles.videoActions}>
                   {entry.url && <a href={entry.url} target="_blank" rel="noopener noreferrer">Open video</a>}
                   <CopyCardLinkButton query={{ video: entry.id }} hash={`video-${entry.id}`} label="Copy video link" />
                 </div>
               </div>
-            </details>
+            </article>
           );
         })}
       </div>
