@@ -64,8 +64,14 @@ export function VideoPlaylist({
   }, [consultantSlug, videos]);
 
   return (
-    <details className={styles.videoSection} open={initialIndex >= 0 ? true : undefined}>
-      <summary><span>Videos</span><small>{videos.length}</small></summary>
+    <section className={styles.videoSection} aria-labelledby="consultant-videos-heading">
+      <div className={styles.videoHeading}>
+        <div>
+          <p>Watch</p>
+          <h2 id="consultant-videos-heading">Videos</h2>
+        </div>
+        <span>{videos.length}</span>
+      </div>
       <div ref={railRef} className={styles.videoRail} aria-label="Consultant videos">
         {videos.map((entry, index) => {
           const isUploadedVideo = Boolean(entry.imageUrl && /\.(mp4|webm|mov)(\?|$)/i.test(entry.imageUrl));
@@ -114,6 +120,6 @@ export function VideoPlaylist({
           );
         })}
       </div>
-    </details>
+    </section>
   );
 }
