@@ -6,6 +6,7 @@ import { VehicleCarousel } from "@/components/profile/vehicle-carousel";
 import { CopyCardLinkButton } from "@/components/profile/copy-card-link-button";
 import { VideoPlaylist } from "@/components/profile/video-playlist";
 import { SocialPlatformIcon } from "@/components/profile/social-platform-icon";
+import { PublicCardAnalytics } from "@/components/profile/public-card-analytics";
 import { getPublishedConsultantProfile } from "@/lib/public-consultant-profile";
 import styles from "../trav/page.module.css";
 
@@ -50,9 +51,19 @@ export async function generateMetadata({ params, searchParams }: CardPageProps):
   const video = profile.videos.find((entry) => entry.id === selected.video);
   const sharedTitle = vehicle?.title || video?.title || `${profile.identity.displayName} | ${profile.identity.dealership}`;
   const sharedDescription = vehicle?.description || video?.description || profile.content.bio || profile.content.salesQuote || `Contact ${profile.identity.displayName}, a sales consultant at ${profile.identity.dealership} in ${profile.identity.location}.`;
-  const cardImage = vehicle?.imageUrl || profile.identity.callingCardImageUrl || profile.identity.profileImageUrl || profile.identity.logoUrl;
-  const imageUrl = cardImage ? new URL(cardImage, SITE_URL).toString() : undefined;
   const canonicalUrl = `${SITE_URL}/card/${slug}`;
+  const sharedUrl = vehicle
+    ? `${canonicalUrl}?vehicle=${encodeURIComponent(vehicle.secondaryUrl || vehicle.id)}`
+    : video
+      ? `${canonicalUrl}?video=${encodeURIComponent(video.id)}`
+      : canonicalUrl;
+  const uploadedVideoUrl = video?.imageUrl && /\\.(mp4|webm|mov)(\\?|$)/i.test(video.imageUrl)
+    ? new URL(video.imageUrl, SITE_URL).toString()
+    : undefined;
+  const embeddedVideoUrl = video?.url ? getVideoEmbedUrl(video.url) : null;
+  const sharedVideoUrl = uploadedVideoUrl || embeddedVideoUrl || undefined;
+  const cardImage = vehicle?.imageUrl || (!video ? (profile.identity.callingCardImageUrl || profile.identity.profileImageUrl || profile.identity.logoUrl) : "");
+  const imageUrl = cardImage ? new URL(cardImage, SITE_URL).toString() : undefined;
   const keywords = [
     profile.identity.displayName,
     profile.identity.dealership,
@@ -70,7 +81,7 @@ export async function generateMetadata({ params, searchParams }: CardPageProps):
     creator: profile.identity.displayName,
     publisher: profile.identity.dealership,
     category: "Automotive",
-    alternates: { canonical: canonicalUrl },
+    alternates: { canonical: sharedUrl },
     robots: {
       index: true,
       follow: true,
@@ -79,11 +90,18 @@ export async function generateMetadata({ params, searchParams }: CardPageProps):
     openGraph: {
       title: sharedTitle,
       description: sharedDescription,
-      type: "profile",
-      url: canonicalUrl,
+      type: video ? "video.other" : "profile",
+      url: sharedUrl,
       siteName: "NXTDOCS Consultant Profiles",
       locale: "en_US",
       images: imageUrl ? [{ url: imageUrl, alt: vehicle ? `${vehicle.title} vehicle collage` : `${profile.identity.displayName} business card` }] : undefined,
+      videos: sharedVideoUrl ? [{
+        url: sharedVideoUrl,
+        secureUrl: sharedVideoUrl,
+        type: uploadedVideoUrl?.toLowerCase().includes(".webm") ? "video/webm" : uploadedVideoUrl ? "video/mp4" : "text/html",
+        width: 1280,
+        height: 720,
+      }] : undefined,
     },
     twitter: { card: "summary_large_image", title: sharedTitle, description: sharedDescription, images: imageUrl ? [imageUrl] : undefined },
   };
@@ -163,6 +181,7 @@ export default async function ConsultantCard({ params, searchParams }: CardPageP
 
   return (
     <main className={styles.page}>
+      <PublicCardAnalytics slug={slug} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema).replace(/</g, "\\u003c") }}
@@ -232,7 +251,7 @@ export default async function ConsultantCard({ params, searchParams }: CardPageP
         {!!reviews.length && <ReviewCarousel reviews={reviews} />}
 
         {!!profile.soldGallery.length && <section className={styles.mediaSection}><h2>Sold gallery</h2><div className={styles.mediaRail}>{profile.soldGallery.map((entry) => <article key={entry.id}><img src={entry.imageUrl} alt={entry.title} /><strong>{entry.title}</strong><p>{entry.description}</p></article>)}</div></section>}
-        {!!videos.length && <VideoPlaylist videos={videos} initialVideoId={selected.video} />}
+        {!!videos.length && <VideoPlaylist videos={videos} initialVideoId={selected.video} consultantSlug={slug} />}
 
         <div className={styles.sections}>
           <CopyCardLinkButton label="Copy profile link" className={styles.profileShareButton} />
