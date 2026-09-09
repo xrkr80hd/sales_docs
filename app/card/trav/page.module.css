@@ -540,22 +540,6 @@
   font-size: 1.7rem;
 }
 
-.vehicleMedia span {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  display: inline-grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border-radius: 9px;
-  background: #be1717;
-  color: #fff;
-  font-family: var(--font-plex-mono), monospace;
-  font-size: .72rem;
-  font-weight: 700;
-}
-
 .vehicleMedia p {
   margin: 0;
 }
@@ -868,23 +852,10 @@
 .vehicleImportState {
   display: grid;
   min-height: 180px;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 1fr;
   gap: 14px;
   align-items: center;
   padding: 20px;
-}
-
-.vehicleImportState span {
-  display: inline-grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border-radius: 9px;
-  background: #be1717;
-  color: #fff;
-  font-family: var(--font-plex-mono), monospace;
-  font-size: .72rem;
-  font-weight: 700;
 }
 
 .vehicleImportState p {
