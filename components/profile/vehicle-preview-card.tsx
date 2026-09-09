@@ -63,7 +63,6 @@ export function VehiclePreviewCard({ listingUrl, verifiedFallback }: VehiclePrev
     return (
       <article className={styles.vehicleCard}>
         <div className={styles.vehicleImportState}>
-          <span>07</span>
           <div><strong>Vehicle preview unavailable</strong><p>{error}</p></div>
         </div>
         <a className={styles.listingFallback} href={listingUrl} target="_blank" rel="noopener noreferrer">
@@ -77,7 +76,6 @@ export function VehiclePreviewCard({ listingUrl, verifiedFallback }: VehiclePrev
     return (
       <article className={styles.vehicleCard} aria-busy="true">
         <div className={styles.vehicleImportState}>
-          <span>07</span>
           <div><strong>Importing Walker listing</strong><p>Reading the real vehicle information…</p></div>
         </div>
       </article>
@@ -87,7 +85,6 @@ export function VehiclePreviewCard({ listingUrl, verifiedFallback }: VehiclePrev
   return (
     <article className={styles.vehicleCard}>
       <button className={styles.vehicleMedia} type="button" onClick={() => vehicle.imageUrl && setExpanded(true)} aria-label={`Open full collage for ${vehicle.title}`}>
-        <span>07</span>
         {vehicle.imageUrl ? (
           <img src={vehicle.imageUrl} alt={vehicle.title} />
         ) : (
