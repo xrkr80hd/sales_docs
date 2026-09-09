@@ -48,7 +48,9 @@ export async function generateMetadata({ params, searchParams }: CardPageProps):
   const profile = await getPublishedConsultantProfile(slug);
   if (!profile) return { title: "Consultant profile unavailable" };
   const vehicle = profile.vehicles.find((entry) => entry.secondaryUrl === selected.vehicle || entry.id === selected.vehicle);
-  const video = profile.videos.find((entry) => entry.id === selected.video);
+  const video = profile.videos.find(
+    (entry) => entry.id === selected.video && Boolean(entry.imageUrl || entry.url),
+  );
   const sharedTitle = vehicle?.title || video?.title || `${profile.identity.displayName} | ${profile.identity.dealership}`;
   const sharedDescription = vehicle?.description || video?.description || profile.content.bio || profile.content.salesQuote || `Contact ${profile.identity.displayName}, a sales consultant at ${profile.identity.dealership} in ${profile.identity.location}.`;
   const canonicalUrl = `${SITE_URL}/card/${slug}`;
@@ -57,7 +59,7 @@ export async function generateMetadata({ params, searchParams }: CardPageProps):
     : video
       ? `${canonicalUrl}?video=${encodeURIComponent(video.id)}`
       : canonicalUrl;
-  const uploadedVideoUrl = video?.imageUrl && /\\.(mp4|webm|mov)(\\?|$)/i.test(video.imageUrl)
+  const uploadedVideoUrl = video?.imageUrl && /\.(mp4|webm|mov)(\?|$)/i.test(video.imageUrl)
     ? new URL(video.imageUrl, SITE_URL).toString()
     : undefined;
   const embeddedVideoUrl = video?.url ? getVideoEmbedUrl(video.url) : null;
@@ -126,7 +128,9 @@ export default async function ConsultantCard({ params, searchParams }: CardPageP
   const reviews = profile.reviews.map((entry) => ({
     src: entry.imageUrl, alt: `Review from ${entry.title}`, isLong: entry.meta === "long",
   }));
-  const videos = profile.videos.map((entry) => ({ ...entry, embedUrl: getVideoEmbedUrl(entry.url) }));
+  const videos = profile.videos
+    .filter((entry) => Boolean(entry.imageUrl || entry.url))
+    .map((entry) => ({ ...entry, embedUrl: getVideoEmbedUrl(entry.url) }));
   const canonicalUrl = `${SITE_URL}/card/${slug}`;
   const vehicleListSchema = profile.vehicles.map((vehicleEntry, index) => {
     const [priceLabel = "", stockLabel = ""] = (vehicleEntry.meta || "").split(" · ");
