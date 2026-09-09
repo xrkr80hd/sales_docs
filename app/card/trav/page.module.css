@@ -264,30 +264,33 @@
   background: var(--surface);
 }
 
-.videoSection > summary,
-.videoItem > summary {
+.videoHeading {
   display: flex;
-  cursor: pointer;
-  align-items: center;
+  align-items: end;
   justify-content: space-between;
-  gap: 12px;
-  list-style: none;
+  gap: 16px;
+  padding: 16px 18px 12px;
 }
 
-.videoSection > summary {
-  min-height: 58px;
-  padding: 0 18px;
-  font-size: 1.05rem;
-  font-weight: 900;
+.videoHeading p {
+  margin: 0;
+  color: #ef6262;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
 }
 
-.videoSection > summary::-webkit-details-marker,
-.videoItem > summary::-webkit-details-marker { display: none; }
-.videoSection > summary::after,
-.videoItem > summary::after { content: "+"; color: #ef6262; font-size: 1.2rem; }
-.videoSection[open] > summary::after,
-.videoItem[open] > summary::after { content: "−"; }
-.videoSection summary small { margin-left: auto; color: #8f939a; font-size: .7rem; }
+.videoHeading h2 {
+  margin: 2px 0 0;
+  font-size: 1.35rem;
+}
+
+.videoHeading > span {
+  color: #8f939a;
+  font-size: .75rem;
+  font-weight: 800;
+}
 
 .videoRail {
   display: grid;
