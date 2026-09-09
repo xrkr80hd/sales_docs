@@ -289,32 +289,115 @@
 .videoItem[open] > summary::after { content: "−"; }
 .videoSection summary small { margin-left: auto; color: #8f939a; font-size: .7rem; }
 
-.videoList {
+.videoRail {
   display: grid;
-  gap: 9px;
+  grid-auto-columns: min(86vw, 560px);
+  grid-auto-flow: column;
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
   border-top: 1px solid #303339;
-  padding: 10px;
+  padding: 12px;
+  scroll-snap-type: inline mandatory;
+  scrollbar-width: thin;
 }
 
-.videoItem {
+.videoCard {
+  min-width: 0;
   overflow: hidden;
   border: 1px solid #34373d;
-  border-radius: 13px;
-  background: #202329;
+  border-radius: 16px;
+  background: #17191d;
+  scroll-snap-align: start;
 }
 
-.videoItem > summary { min-height: 50px; padding: 0 13px; font-weight: 800; }
-.videoSnapshot { width: 58px; height: 42px; flex: 0 0 58px; border-radius: 7px; background: #000; object-fit: cover; pointer-events: none; }
-.videoBody { border-top: 1px solid #34373d; padding-bottom: 12px; }
-.videoBody { position: relative; }
-.videoBody video,
-.videoBody iframe,
-.videoBody img { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: #000; object-fit: contain; }
-.videoBody p { margin: 12px; color: #a7aab0; line-height: 1.45; }
-.videoActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 0 12px; }
+.videoFrame {
+  position: relative;
+  display: grid;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  place-items: center;
+  overflow: hidden;
+  background: #000;
+}
+
+.videoFrame video,
+.videoFrame iframe,
+.videoFrame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #000;
+  object-fit: contain;
+}
+
+.videoCardBody {
+  padding: 12px;
+}
+
+.videoCardBody strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: .95rem;
+}
+
+.videoCardBody p {
+  margin: 7px 0 0;
+  color: #a7aab0;
+  font-size: .82rem;
+  line-height: 1.4;
+}
+
+.videoActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .videoActions a,
-.videoActions button { display: flex; min-height: 44px; align-items: center; justify-content: center; border: 1px solid #3a3d43; border-radius: 11px; background: #17191d; color: #fff; padding: 9px; font: inherit; font-size: .78rem; font-weight: 800; text-align: center; text-decoration: none; }
-.videoMuteButton { position: absolute; top: 10px; right: 10px; z-index: 2; min-height: 36px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; background: rgba(8,9,11,.82); color: #fff; padding: 7px 11px; font: inherit; font-size: .72rem; font-weight: 850; }
+.videoActions button {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #3a3d43;
+  border-radius: 11px;
+  background: #202329;
+  color: #fff;
+  padding: 8px;
+  font: inherit;
+  font-size: .76rem;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+}
+
+.videoMuteButton {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  z-index: 2;
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 999px;
+  background: rgba(8,9,11,.84);
+  color: #fff;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: .7rem;
+  font-weight: 850;
+}
+
+@media (min-width: 620px) {
+  .videoRail {
+    grid-auto-columns: min(76%, 560px);
+  }
+}
 
 .socialLinks {
   display: flex;
