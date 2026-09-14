@@ -240,14 +240,44 @@
   scroll-snap-align: start;
 }
 
-.mediaRail img,
+.mediaImageFrame {
+  position: relative;
+  display: grid;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  place-items: center;
+  overflow: hidden;
+  background: #0a0b0d;
+  isolation: isolate;
+}
+
+.mediaImageBackdrop {
+  position: absolute;
+  z-index: 0;
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  object-fit: cover;
+  filter: blur(22px) brightness(.48);
+  transform: scale(1.06);
+}
+
+.mediaImage {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
 .mediaRail video,
 .mediaRail iframe {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  object-position: center;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
   border: 0;
   background: #0a0b0d;
 }
