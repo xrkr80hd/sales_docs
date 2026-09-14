@@ -189,28 +189,54 @@
 }
 
 .mediaSection {
+  overflow: hidden;
   margin-top: 22px;
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface);
+  border: 1px solid #303339;
+  border-radius: 22px;
+  background: linear-gradient(155deg, #202329, #14161a 72%);
+  padding: 18px 0 16px;
+}
+
+.mediaSection > h2 {
+  margin: 0;
+  padding: 0 18px 14px;
+  color: #fff;
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.mediaSection > h2::before {
+  display: block;
+  margin-bottom: 5px;
+  color: #ef6262;
+  content: "Happy customers";
+  font-size: .7rem;
+  font-weight: 850;
+  letter-spacing: .11em;
+  text-transform: uppercase;
 }
 
 .mediaRail {
   display: grid;
-  grid-auto-columns: minmax(240px, 74%);
+  grid-auto-columns: min(86vw, 520px);
   grid-auto-flow: column;
   gap: 12px;
+  align-items: start;
   overflow-x: auto;
-  scroll-snap-type: x mandatory;
+  overscroll-behavior-inline: contain;
+  padding: 0 18px 4px;
+  scroll-padding-inline: 18px;
+  scroll-snap-type: inline mandatory;
+  scrollbar-width: thin;
 }
 
 .mediaRail article {
+  min-width: 0;
   overflow: hidden;
-  padding-bottom: 12px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: #fff;
+  border: 1px solid #35383e;
+  border-radius: 18px;
+  background: #17191d;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .24);
   scroll-snap-align: start;
 }
 
@@ -219,17 +245,49 @@
 .mediaRail iframe {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
+  object-position: center;
   border: 0;
-  background: #000;
+  background: #0a0b0d;
 }
 
-.mediaRail strong,
-.mediaRail p,
+.mediaRail strong {
+  display: block;
+  margin: 0;
+  padding: 13px 14px 4px;
+  overflow-wrap: anywhere;
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.mediaRail p {
+  display: -webkit-box;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  padding: 0 14px 14px;
+  color: #aeb1b7;
+  font-size: .82rem;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.mediaRail p:empty {
+  display: none;
+}
+
 .mediaRail a {
   display: block;
-  margin: 10px 12px 0;
+  margin: 10px 14px 14px;
+}
+
+@media (min-width: 620px) {
+  .mediaRail {
+    grid-auto-columns: min(78%, 520px);
+  }
 }
 
 .mediaCopyButton,
