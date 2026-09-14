@@ -737,7 +737,7 @@ export function ProfileEditor() {
                 <label>Customer Name / Caption<input placeholder="e.g. Congratulations to the Miller family!" value={sold.title} onChange={(e) => changeItem("soldGallery", index, "title", e.target.value)} /></label>
                 <label>
                   Upload Delivery Photo
-                  <input type="file" accept="image/*" onChange={(e) => handleFileSelectedWithCrop(e, "sold", "free", "Crop Delivery Photo", (url) => changeItem("soldGallery", index, "imageUrl", url))} />
+                  <input type="file" accept="image/*" onChange={(e) => handleFileSelectedWithCrop(e, "sold", "16:9", "Crop Delivery Photo", (url) => changeItem("soldGallery", index, "imageUrl", url))} />
                 </label>
               </div>
             </article>
