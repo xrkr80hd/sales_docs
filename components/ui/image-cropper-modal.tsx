@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState, type PointerEvent, type TouchEvent } from "react";
 
-export type AspectRatioType = "1:1" | "2:3" | "3:2" | "free";
+export type AspectRatioType = "1:1" | "2:3" | "3:2" | "16:9" | "free";
+
+const MIN_SCALE = 0.1;
+const MAX_SCALE = 3;
 
 export type ImageCropperModalProps = {
   imageUrl: string;
@@ -47,6 +50,7 @@ export function ImageCropperModal({
     if (aspectRatio === "1:1") return 1;
     if (aspectRatio === "2:3") return 2 / 3;
     if (aspectRatio === "3:2") return 3 / 2;
+    if (aspectRatio === "16:9") return 16 / 9;
     return 1; // Default
   };
 
@@ -67,7 +71,22 @@ export function ImageCropperModal({
     ctx.fillStyle = "#0c0d0f";
     ctx.fillRect(0, 0, width, height);
 
-    // Save context
+    // Draw a soft extension behind the photo so zooming out never creates harsh gaps.
+    const backgroundAspect = img.width / img.height;
+    let backgroundW = width;
+    let backgroundH = width / backgroundAspect;
+    if (backgroundH < height) {
+      backgroundH = height;
+      backgroundW = height * backgroundAspect;
+    }
+    ctx.save();
+    ctx.filter = "blur(22px) brightness(0.5)";
+    ctx.translate(width / 2, height / 2);
+    ctx.scale(1.1, 1.1);
+    ctx.drawImage(img, -backgroundW / 2, -backgroundH / 2, backgroundW, backgroundH);
+    ctx.restore();
+
+    // Draw the adjustable foreground image.
     ctx.save();
 
     // Center and scale
@@ -190,7 +209,7 @@ export function ImageCropperModal({
         e.touches[0].clientY - e.touches[1].clientY,
       );
       const ratio = dist / pinchStartDistRef.current;
-      const nextScale = Math.min(4, Math.max(0.5, initialScaleRef.current * ratio));
+      const nextScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, initialScaleRef.current * ratio));
       setScale(nextScale);
     }
   };
@@ -208,34 +227,48 @@ export function ImageCropperModal({
     if (!img || !canvas) return;
 
     const cropBox = getCropBox(canvas.width, canvas.height);
-
-    // Target export size
     const outW = Math.round(cropBox.w * 2);
     const outH = Math.round(cropBox.h * 2);
-
     const outCanvas = document.createElement("canvas");
     outCanvas.width = outW;
     outCanvas.height = outH;
     const outCtx = outCanvas.getContext("2d");
     if (!outCtx) return;
 
-    // Draw from current visual transform
-    outCtx.translate(outW / 2, outH / 2);
-    outCtx.scale(scale * 2, scale * 2);
-    outCtx.translate(offset.x, offset.y);
-
+    // Blurred edge extension prevents empty bars when the foreground is zoomed out.
     const imgAspect = img.width / img.height;
+    let backgroundW = outW;
+    let backgroundH = outW / imgAspect;
+    if (backgroundH < outH) {
+      backgroundH = outH;
+      backgroundW = outH * imgAspect;
+    }
+    outCtx.save();
+    outCtx.filter = "blur(36px) brightness(0.5)";
+    outCtx.translate(outW / 2, outH / 2);
+    outCtx.scale(1.1, 1.1);
+    outCtx.drawImage(img, -backgroundW / 2, -backgroundH / 2, backgroundW, backgroundH);
+    outCtx.restore();
+
+    // Map the exact visible crop rectangle into the export canvas.
     let drawW = canvas.width;
     let drawH = canvas.width / imgAspect;
     if (drawH < canvas.height) {
       drawH = canvas.height;
       drawW = canvas.height * imgAspect;
     }
+    const outputScale = outW / cropBox.w;
+    const previewX = canvas.width / 2 + offset.x - (drawW * scale) / 2;
+    const previewY = canvas.height / 2 + offset.y - (drawH * scale) / 2;
+    outCtx.drawImage(
+      img,
+      (previewX - cropBox.x) * outputScale,
+      (previewY - cropBox.y) * outputScale,
+      drawW * scale * outputScale,
+      drawH * scale * outputScale,
+    );
 
-    outCtx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
-
-    const cropped = outCanvas.toDataURL("image/jpeg", 0.92);
-    onCrop(cropped);
+    onCrop(outCanvas.toDataURL("image/jpeg", 0.92));
   };
 
   return (
@@ -329,11 +362,11 @@ export function ImageCropperModal({
 
         <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: "12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ fontSize: "0.8rem", color: "#888" }}>Zoom</span>
+            <span style={{ minWidth: "70px", fontSize: "0.8rem", color: "#aaa" }}>Zoom {Math.round(((scale - MIN_SCALE) / (MAX_SCALE - MIN_SCALE)) * 100)}%</span>
             <input
               type="range"
-              min="0.5"
-              max="3"
+              min={MIN_SCALE}
+              max={MAX_SCALE}
               step="0.02"
               value={scale}
               onChange={(e) => setScale(parseFloat(e.target.value))}
