@@ -254,7 +254,14 @@ export default async function ConsultantCard({ params, searchParams }: CardPageP
         {!!vehicles.length && <VehicleCarousel vehicles={vehicles} initialVehicleVin={selected.vehicle} consultantName={profile.identity.displayName} phone={profile.identity.phone} />}
         {!!reviews.length && <ReviewCarousel reviews={reviews} />}
 
-        {!!profile.soldGallery.length && <section className={styles.mediaSection}><h2>Sold gallery</h2><div className={styles.mediaRail}>{profile.soldGallery.map((entry) => <article key={entry.id}><img src={entry.imageUrl} alt={entry.title} /><strong>{entry.title}</strong><p>{entry.description}</p></article>)}</div></section>}
+        {!!profile.soldGallery.length && <section className={styles.mediaSection}><h2>Sold gallery</h2><div className={styles.mediaRail}>{profile.soldGallery.map((entry) => <article key={entry.id}>
+  <div className={styles.mediaImageFrame}>
+    <img className={styles.mediaImageBackdrop} src={entry.imageUrl} alt="" aria-hidden="true" />
+    <img className={styles.mediaImage} src={entry.imageUrl} alt={entry.title} />
+  </div>
+  <strong>{entry.title}</strong>
+  {entry.description && <p>{entry.description}</p>}
+</article>)}</div></section>}
         {!!videos.length && <VideoPlaylist videos={videos} initialVideoId={selected.video} consultantSlug={slug} />}
 
         <div className={styles.sections}>
