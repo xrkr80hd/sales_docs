@@ -78,6 +78,12 @@ export async function generateMetadata({ params, searchParams }: CardPageProps):
   return {
     title: sharedTitle,
     description: sharedDescription,
+    manifest: `/card/${encodeURIComponent(slug)}/manifest.webmanifest`,
+    appleWebApp: {
+      capable: true,
+      title: `${profile.identity.displayName} Card`,
+      statusBarStyle: "black-translucent",
+    },
     keywords,
     authors: [{ name: profile.identity.displayName, url: canonicalUrl }],
     creator: profile.identity.displayName,
