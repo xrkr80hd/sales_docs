@@ -1038,3 +1038,154 @@
     gap: 8px;
   }
 }
+
+
+/* The editor always shows what the public consultant card will look like. */
+.editorLayout {
+  display: block;
+}
+
+.editorColumn {
+  min-width: 0;
+}
+
+.mobilePreviewButton {
+  display: flex;
+  width: 100%;
+  min-height: 58px !important;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0;
+  border: 1px solid #be1717 !important;
+  border-radius: 14px !important;
+  background: linear-gradient(135deg, #be1717, #8f1014);
+  color: #fff;
+  padding: 10px 14px !important;
+  text-align: left;
+}
+
+.mobilePreviewButton span {
+  font-size: .95rem;
+  font-weight: 900;
+}
+
+.mobilePreviewButton small {
+  color: rgba(255, 255, 255, .78);
+  font-size: .68rem;
+}
+
+.previewDesktop {
+  display: none;
+}
+
+.previewHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px 10px;
+}
+
+.previewHeading div,
+.previewModal header div {
+  display: grid;
+  gap: 2px;
+}
+
+.previewHeading strong,
+.previewModal header strong {
+  font-size: .9rem;
+}
+
+.previewHeading small,
+.previewModal header small {
+  color: #9aa0a6;
+  font-size: .7rem;
+}
+
+.previewHeading a {
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.phoneFrame {
+  height: min(780px, calc(100vh - 112px));
+  overflow: auto;
+  border: 8px solid #272a30;
+  border-radius: 34px;
+  background: #0d0e10;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .48);
+  scrollbar-width: thin;
+}
+
+.previewModal {
+  position: fixed;
+  z-index: 500;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: #0d0e10;
+}
+
+.previewModal > header {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #2e3035;
+  background: #17191d;
+  padding: max(10px, env(safe-area-inset-top)) 14px 10px;
+}
+
+.previewModal > header button {
+  display: grid;
+  width: 42px;
+  min-height: 42px;
+  place-items: center;
+  border: 1px solid #3a3d43;
+  border-radius: 50%;
+  background: #22252a;
+  color: #fff;
+  padding: 0;
+  font-size: 1.55rem;
+}
+
+.previewModalBody {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 1180px) {
+  .page {
+    max-width: 1320px;
+  }
+
+  .mobilePreviewButton {
+    display: none;
+  }
+
+  .editorLayout {
+    display: grid;
+    grid-template-columns: minmax(0, 820px) minmax(340px, 420px);
+    gap: 28px;
+    align-items: start;
+  }
+
+  .previewDesktop {
+    position: sticky;
+    top: 14px;
+    display: block;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .mobilePreviewButton {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
