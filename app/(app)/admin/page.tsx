@@ -174,6 +174,7 @@ export default function AdminPage() {
         method: "PATCH",
         body: JSON.stringify({ card_enabled: nextStatus }),
       });
+      await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to toggle card permission.");
       loadData();
@@ -310,10 +311,10 @@ export default function AdminPage() {
                             type="button"
                             onClick={() => void copyCardLink(u)}
                             disabled={!u.card_slug}
-                            title={u.card_slug ? `Copy ${u.display_name || u.email}'s public business-card link` : "This consultant has not created a business card yet"}
+                            title={u.card_slug ? `Copy ${u.display_name || u.email}'s bracelet and public-card link` : "Enable this consultant’s card to create their bracelet link"}
                             className="col-span-2 min-h-10 rounded-lg border border-[#f97316]/45 bg-[#f97316]/10 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-[#fb923c] transition hover:border-[#fb923c] hover:bg-[#f97316]/20 disabled:cursor-not-allowed disabled:border-neutral-800 disabled:bg-neutral-900 disabled:text-neutral-600 sm:col-span-1 sm:rounded-full"
                           >
-                            {copiedCardId === u.id ? "✓ Link Copied" : u.card_slug ? "Copy Card Link" : "Card Not Created"}
+                            {copiedCardId === u.id ? "✓ Bracelet Link Copied" : u.card_slug ? "Copy Bracelet Link" : "Card Not Created"}
                           </button>
 
                           <button
