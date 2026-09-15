@@ -68,6 +68,7 @@ export function ConsultantCardPreview({ profile, slug }: Props) {
   const videos = profile.videos
     .filter((entry) => Boolean(entry.imageUrl || entry.url))
     .map((entry) => ({ ...entry, embedUrl: getVideoEmbedUrl(entry.url) }));
+  const soldGallery = profile.soldGallery.filter((entry) => Boolean(entry.imageUrl));
 
   return (
     <div className={`${cardStyles.page} ${styles.page}`}>
@@ -138,15 +139,15 @@ export function ConsultantCardPreview({ profile, slug }: Props) {
         {!!vehicles.length && <VehicleCarousel vehicles={vehicles} consultantName={profile.identity.displayName} phone={profile.identity.phone} />}
         {!!reviews.length && <ReviewCarousel reviews={reviews} />}
 
-        {!!profile.soldGallery.filter((entry) => entry.imageUrl).length && (
+        {!!soldGallery.length && (
           <section className={cardStyles.mediaSection}>
             <h2>Sold gallery</h2>
             <div className={cardStyles.mediaRail}>
-              {profile.soldGallery.filter((entry) => entry.imageUrl).map((entry) => (
+              {soldGallery.map((entry) => (
                 <article key={entry.id}>
                   <div className={cardStyles.mediaImageFrame}>
-                    <img className={cardStyles.mediaImageBackdrop} src={entry.imageUrl} alt="" aria-hidden="true" />
-                    <img className={cardStyles.mediaImage} src={entry.imageUrl} alt={entry.title} />
+                    <Image unoptimized fill className={cardStyles.mediaImageBackdrop} src={entry.imageUrl} alt="" aria-hidden="true" sizes="390px" />
+                    <Image unoptimized fill className={cardStyles.mediaImage} src={entry.imageUrl} alt={entry.title} sizes="390px" />
                   </div>
                   <strong>{entry.title}</strong>
                   {entry.description && <p>{entry.description}</p>}
