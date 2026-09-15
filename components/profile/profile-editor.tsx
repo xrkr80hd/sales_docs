@@ -13,6 +13,7 @@ import {
 import styles from "./profile-editor.module.css";
 
 import { ImageCropperModal, type AspectRatioType } from "@/components/ui/image-cropper-modal";
+import { ConsultantCardPreview } from "@/components/profile/consultant-card-preview";
 
 type CollectionKey = "vehicles" | "reviews" | "soldGallery" | "videos" | "socialLinks";
 type ProfileRow = {
@@ -95,6 +96,7 @@ export function ProfileEditor() {
   const [postedDialog, setPostedDialog] = useState(false);
   const [nfcLinkCopied, setNfcLinkCopied] = useState(false);
   const [cardOrigin, setCardOrigin] = useState("");
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   // Active Cropper Modal State
   const [cropTarget, setCropTarget] = useState<{
@@ -376,6 +378,13 @@ export function ProfileEditor() {
         {profile.is_published && <a className={styles.viewCard} href={`/card/${profile.consultant_slug}`} target="_blank" rel="noopener noreferrer">View card</a>}
       </header>
 
+      <button type="button" className={styles.mobilePreviewButton} onClick={() => setPreviewOpen(true)}>
+        <span>Preview Card</span>
+        <small>{hasChanges ? "Unsaved changes included" : "Current saved card"}</small>
+      </button>
+
+      <div className={styles.editorLayout}>
+        <div className={styles.editorColumn}>
       <section className={styles.statusBar}>
         <span className={profile.is_published ? styles.live : styles.draft}>{profile.is_published ? "Live" : "Not live"}</span>
         <div>
@@ -777,6 +786,39 @@ export function ProfileEditor() {
         </div>
         <button type="button" className={styles.add} onClick={() => addItem("socialLinks")}>+ Add Social Link</button>
       </details>
+
+        </div>
+
+        <aside className={styles.previewDesktop} aria-label="Live business card preview">
+          <div className={styles.previewHeading}>
+            <div>
+              <strong>Live Preview</strong>
+              <small>{hasChanges ? "Showing unsaved changes" : "Matches your saved card"}</small>
+            </div>
+            {profile.is_published && (
+              <a href={`/card/${profile.consultant_slug}`} target="_blank" rel="noopener noreferrer">Open public card</a>
+            )}
+          </div>
+          <div className={styles.phoneFrame}>
+            <ConsultantCardPreview profile={draft} slug={profile.consultant_slug} />
+          </div>
+        </aside>
+      </div>
+
+      {previewOpen && (
+        <div className={styles.previewModal} role="dialog" aria-modal="true" aria-label="Business card preview">
+          <header>
+            <div>
+              <strong>Card Preview</strong>
+              <small>{hasChanges ? "Unsaved changes included" : "Current saved card"}</small>
+            </div>
+            <button type="button" onClick={() => setPreviewOpen(false)} aria-label="Close preview">×</button>
+          </header>
+          <div className={styles.previewModalBody}>
+            <ConsultantCardPreview profile={draft} slug={profile.consultant_slug} />
+          </div>
+        </div>
+      )}
 
       {/* Cropper Modal Overlay */}
       {cropTarget && (
