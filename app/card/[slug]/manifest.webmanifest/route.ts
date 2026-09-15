@@ -25,7 +25,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
         profile.content.salesQuote ||
         `Contact ${profile.identity.displayName} at ${profile.identity.dealership}.`,
       start_url: cardPath,
-      scope: `${cardPath}/`,
+      scope: "/card/",
       display: "standalone",
       orientation: "any",
       theme_color: "#1c1c1e",
