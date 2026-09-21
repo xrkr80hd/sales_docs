@@ -83,14 +83,14 @@ export function AllPrintScreen() {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border border-black/10 bg-white/90 px-4 py-3 shadow-[0_14px_40px_rgba(0,0,0,0.08)] print:hidden">
           <Link
             href={workflow.dealType === "new" ? "/deal-sheet/new" : "/deal-sheet"}
-            className="inline-flex min-h-10 items-center justify-center border border-[var(--foreground)] bg-white px-4 text-sm font-bold text-[var(--foreground)]"
+            className="inline-flex min-h-10 items-center justify-center border border-black bg-black px-4 text-sm font-bold text-white transition hover:bg-neutral-800"
           >
             Back to Deal Sheet
           </Link>
           <button
             type="button"
             onClick={handleAction}
-            className="inline-flex min-h-10 items-center justify-center border border-[var(--foreground)] bg-[var(--foreground)] px-4 text-sm font-bold text-white"
+            className="inline-flex min-h-10 items-center justify-center border border-black bg-black px-4 text-sm font-bold text-white transition hover:bg-neutral-800"
           >
             {"Print All Forms"}
           </button>
