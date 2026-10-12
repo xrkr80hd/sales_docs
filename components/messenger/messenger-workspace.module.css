@@ -128,3 +128,31 @@
   .mobilePeopleDrawer > button { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; border: 0; border-bottom: 1px solid #272a30; background: transparent; color: #fff; text-align: left; }
   .drawerIdentity { margin-left: auto; color: #8b909a; font-size: .68rem; }
 }
+
+/* Shared dark/red workspace treatment; message actions and delivery stay intact. */
+.workspace { border-radius: 8px; border-color: #303c44; background: #0c1418; height: calc(100dvh - 146px); min-height: 520px; }
+.workspaceHeader { background: #131c21; padding: 18px 22px; }
+.workspaceHeader h1 { font-size: 1.7rem; font-weight: 800; }
+.workspaceBody { grid-template-columns: 280px minmax(0,1fr); }
+.peoplePanel { background: #10191f; border-color: #303c44; }
+.panelHeading { min-height: 58px; }
+.panelHeading p { font-size: .85rem; letter-spacing: .08em; }
+.person { min-height: 62px; padding: 10px; border-radius: 4px; }
+.person > span:nth-child(2) { font-size: .95rem; }
+.avatar { width: 36px; height: 36px; border-radius: 4px; background: #25343d; }
+.roomHeader { background: #121d23; min-height: 74px; }
+.roomHeader h2 { font-size: 1.1rem; }
+.roomHeader p { font-size: .8rem; color: #abb7c1; }
+.teamMessages, .dmMessages { background: #0b1318; gap: 20px; }
+.bubble, .mine .bubble { border-radius: 5px; line-height: 1.55; padding: 12px 16px; font-size: .98rem; }
+.bubble { background: #24333d; }
+.mine .bubble { background: #a9091b; }
+.sender, .time { color: #a8b4bf; }
+.messageActions button { padding: 6px; color: #bbc5ce; }
+.composer, .dmComposer { background: #131e25; padding: 16px; }
+.composer input, .dmComposer input { height: 48px; font-size: 1rem; border-radius: 4px; background: #0b141a; }
+.composer button, .dmComposer button { width: 48px; height: 48px; border-radius: 4px; }
+.empty { color: #adb9c3; font-size: .95rem; }
+.nicknameButton, .soundUpload, .clearButton { min-height: 36px; font-size: .72rem; }
+@media (max-width: 900px) { .workspaceBody { grid-template-columns: 210px minmax(0,1fr); } .headerTools { flex-wrap: wrap; justify-content: flex-end; } }
+@media (max-width: 680px) { .workspace { height: calc(100dvh - 116px); min-height: 450px; } .workspaceHeader { padding: 12px; align-items: flex-start; gap: 10px; } .workspaceHeader h1 { font-size: 1.25rem; } .workspaceBody { grid-template-columns: minmax(0,1fr); } .headerTools { gap: 5px; max-width: 160px; } .soundUpload { max-width: 145px; } .teamMessages { padding: 12px; } .message { max-width: 90%; } .composer { padding: 12px; } }
