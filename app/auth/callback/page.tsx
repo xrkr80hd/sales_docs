@@ -8,9 +8,9 @@ import { Suspense, useEffect, useState } from "react";
 export default function AuthCallbackPage() {
   return (
     <Suspense fallback={
-      <div className="mx-auto flex min-h-screen w-full max-w-xl items-center px-4 py-10 sm:px-6">
-        <div className="w-full overflow-hidden border border-black/10 shadow-[0_24px_60px_rgba(35,23,12,0.12)]">
-          <div className="bg-[var(--accent)] bg-[url('/bg-hero-16x9.jpg')] bg-cover bg-center px-5 py-8 text-center sm:px-6">
+      <div className="nxt-ui nxt-auth-screen">
+        <div className="nxt-auth-panel">
+          <div className="nxt-auth-header">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-white drop-shadow-sm">Walker Docs</p>
             <h2 className="mt-1 text-2xl font-extrabold text-white drop-shadow-sm sm:text-3xl">Processing…</h2>
           </div>
@@ -104,17 +104,17 @@ function AuthCallbackInner() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-xl items-center px-4 py-10 sm:px-6">
-      <div className="w-full overflow-hidden border border-black/10 shadow-[0_24px_60px_rgba(35,23,12,0.12)]">
-        <div className="bg-[var(--accent)] bg-[url('/bg-hero-16x9.jpg')] bg-cover bg-center px-5 py-8 text-center sm:px-6">
-          <Image src="/walker-red-graphic-v2.png" alt="Walker Automotive" width={320} height={116} priority className="mx-auto h-auto w-full max-w-[200px]" />
+    <div className="nxt-ui nxt-auth-screen">
+      <div className="nxt-auth-panel">
+        <div className="nxt-auth-header">
+          <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} priority className="nxt-auth-dealer" />
           <p className="mt-4 text-xs font-bold uppercase tracking-[0.24em] text-white drop-shadow-sm">Walker Docs</p>
           <h2 className="mt-1 text-2xl font-extrabold text-white drop-shadow-sm sm:text-3xl">
             {isRecovery ? "Reset Password" : "Welcome"}
           </h2>
         </div>
 
-        <div className="border-t border-white/10 bg-[#2a2a2e] px-5 py-6 sm:px-6">
+        <div className="nxt-auth-form">
           {isRecovery && !done ? (
             <form className="grid gap-4" onSubmit={handleSetPassword}>
               <label className="grid gap-2">

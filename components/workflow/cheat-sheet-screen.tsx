@@ -365,7 +365,7 @@ export function CheatSheetScreen() {
         </Link>
       </div>
 
-      <section className="overflow-hidden border border-white/10 bg-[var(--panel)] bg-[url('/bg-hero-16x9.jpg')] bg-cover bg-center shadow-[0_0_40px_rgba(190,23,23,0.15),0_24px_60px_rgba(0,0,0,0.3)]">
+      <section className="overflow-hidden border border-white/10 bg-[var(--panel)]  bg-cover bg-center shadow-[0_0_40px_rgba(190,23,23,0.15),0_24px_60px_rgba(0,0,0,0.3)]">
         <div className="px-5 py-5 text-center sm:px-6">
           <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
             CDJR Sales Cheat Sheet
@@ -397,7 +397,7 @@ export function CheatSheetScreen() {
                   el?.scrollIntoView({ behavior: "smooth", block: "start" });
                 });
               }}
-              className="flex w-full items-center justify-between bg-[var(--accent)] bg-[url('/bg-card-3x2.jpg')] bg-cover bg-center px-5 py-4 text-left transition sm:px-6"
+              className="flex w-full items-center justify-between bg-[var(--accent)]  bg-cover bg-center px-5 py-4 text-left transition sm:px-6"
             >
               <h2 className="text-base font-bold text-white sm:text-lg">{section.title}</h2>
               <span className="ml-3 shrink-0 text-xl text-white/70" aria-hidden="true">
@@ -407,7 +407,7 @@ export function CheatSheetScreen() {
             <div
               className={`overflow-hidden transition-all duration-200 ${isOpen ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}
             >
-              <div className="border-t border-white/10 bg-[#2a2a2e] px-5 py-4 sm:px-6 sm:py-5">
+              <div className="border-t border-white/10 bg-[var(--panel)] px-5 py-4 sm:px-6 sm:py-5">
                 {section.content}
               </div>
             </div>

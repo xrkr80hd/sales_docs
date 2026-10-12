@@ -58,7 +58,7 @@ export function useVinConfirmation() {
 
   const dialog = request ? (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4 sm:items-center">
-      <div className="w-full max-w-md border border-white/10 bg-[#141414] p-4 text-white shadow-[0_20px_44px_rgba(0,0,0,0.28)]">
+      <div className="w-full max-w-md border border-white/10 bg-[var(--panel)] p-4 text-white shadow-[0_20px_44px_rgba(0,0,0,0.28)]">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/70">
           {request.vin ? "Verify VIN" : "No VIN"}
         </p>

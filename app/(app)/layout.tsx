@@ -46,7 +46,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <SupabaseSessionGate surface="app" renderBar={false}>
       <DisclosureGate>
-        <WorkspaceProvider>
+        <div className="nxt-ui"><WorkspaceProvider>
           <WorkspaceShell onSettings={() => setSettingsOpen(true)} onDocuments={() => setDrawerOpen(true)}>
             {children}
           </WorkspaceShell>
@@ -54,7 +54,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <DocumentDrawer dealType={drawerDealType} open={drawerOpen} onClose={() => setDrawerOpen(false)} />
           )}
           {settingsOpen && <SettingsDrawer onClose={() => setSettingsOpen(false)} />}
-        </WorkspaceProvider>
+        </WorkspaceProvider></div>
       </DisclosureGate>
       <NotificationPrompt />
     </SupabaseSessionGate>

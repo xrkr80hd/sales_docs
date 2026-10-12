@@ -1,264 +1,108 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import Image from "next/image";
 import Link from "next/link";
-
-import {
-  createDefaultConsultant,
-  createDefaultDealer,
-  fetchServerSettings,
-  loadConsultant,
-  loadDealer,
-  saveConsultant,
-  saveDealer,
-  saveServerSettings,
-  type ConsultantInfo,
-  type DealerInfo,
-} from "@/lib/dealer-consultant";
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase-browser";
+import { Camera, ChevronDown, UserRound, X } from "lucide-react";
+import { fetchServerSettings, loadConsultant, loadDealer, saveConsultant, saveDealer, saveServerSettings, type ConsultantInfo, type DealerInfo } from "@/lib/dealer-consultant";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+import { useWorkspaceIdentity } from "@/components/command-center/workspace-context";
+import { LinksEditor } from "@/components/consultant-links/links-editor";
+import styles from "./consultant-setup.module.css";
 
 export function SettingsDrawer({ onClose }: { onClose: () => void }) {
+  const identity = useWorkspaceIdentity();
   const [dealer, setDealer] = useState<DealerInfo>(() => loadDealer());
   const [consultant, setConsultant] = useState<ConsultantInfo>(() => loadConsultant());
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ dealer: false, consultant: false });
+  const [photo, setPhoto] = useState(identity?.profileImageUrl || "");
   const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-
-  // Load settings from server on mount (server is source of truth)
+  const [loading, setLoading] = useState(true);
+  const dialogRef = useRef<HTMLElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    fetchServerSettings().then((server) => {
+    let active = true;
+    void fetchServerSettings().then((server) => {
+      if (!active) return;
       if (server) {
-        setDealer(server.dealer);
+        setDealer({ ...server.dealer, dealershipName: server.dealer.dealershipName || identity?.dealership || "" });
         setConsultant(server.consultant);
-        // Update local cache
         saveDealer(server.dealer);
         saveConsultant(server.consultant);
-      }
+      } else if (identity?.dealership) setDealer(current => ({ ...current, dealershipName: current.dealershipName || identity.dealership || "" }));
+      setLoading(false);
     });
+    closeRef.current?.focus();
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+      if (event.key !== "Tab") return;
+      const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), a[href], summary') || []).filter(element => element.getClientRects().length > 0);
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => { active = false; document.removeEventListener("keydown", handleKey); };
+  // Opening the drawer loads the current account settings once.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Admin state
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-    const supabase = getSupabaseBrowserClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) return;
-      supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", data.user.id)
-        .single()
-        .then(({ data: profile }) => {
-          if (profile?.role === "admin" || data.user.email?.toLowerCase() === "xrkr80hd@gmail.com") {
-            setIsAdmin(true);
-          }
-        });
-    });
-  }, []);
-
-  function toggleSection(key: string) {
-    setOpenSections((current) => ({ ...current, [key]: !current[key] }));
+  async function save() {
+    setSaving(true); setError(""); setStatus("");
+    const ok = await saveServerSettings(dealer, consultant);
+    if (ok) {
+      saveDealer(dealer); saveConsultant(consultant);
+      window.dispatchEvent(new Event("consultant-profile-updated"));
+      setStatus("Consultant setup saved. Your documents will use these details.");
+    } else if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
+      saveDealer(dealer); saveConsultant(consultant);
+      setStatus("Saved for local verification only. No live account was changed.");
+    } else setError("Could not save to your account. Your changes are still here; please try again.");
+    setSaving(false);
   }
-
-  function updateDealer(field: keyof DealerInfo, value: string) {
-    setDealer((current) => ({ ...current, [field]: value }));
+  async function uploadPhoto(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]; event.target.value = "";
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 3 * 1024 * 1024) { setError("Choose a JPG, PNG, or WebP photo up to 3 MB."); return; }
+    setSaving(true); setError(""); setStatus("");
+    try {
+      const { data } = await getSupabaseBrowserClient().auth.getSession();
+      if (!data.session) throw new Error("Sign in to save your profile photo.");
+      const form = new FormData(); form.set("file", file);
+      const response = await fetch("/api/me/photo", { method: "POST", headers: { Authorization: `Bearer ${data.session.access_token}` }, body: form });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not save your photo.");
+      setPhoto(result.profileImageUrl);
+      window.dispatchEvent(new Event("consultant-profile-updated"));
+      setStatus("Profile photo saved.");
+    } catch (failure) { setError(failure instanceof Error ? failure.message : "Could not save your photo."); }
+    finally { setSaving(false); }
   }
-
-  function updateConsultant(field: keyof ConsultantInfo, value: string) {
-    setConsultant((current) => ({ ...current, [field]: value }));
-  }
-
-  function saveDealerNow() {
-    saveDealer(dealer);
-    setSaving(true);
-    saveServerSettings(dealer, consultant).then((ok) => {
-      setSaving(false);
-      setStatus(ok ? "Dealership saved to your account." : "Saved locally (server sync failed).");
-    });
-  }
-
-  function clearDealerNow() {
-    const blank = createDefaultDealer();
-    setDealer(blank);
-    saveDealer(blank);
-    setStatus("Dealership cleared.");
-  }
-
-  function deleteDealerNow() {
-    const blank = createDefaultDealer();
-    setDealer(blank);
-    if (typeof window !== "undefined") localStorage.removeItem("walker.dealer.v1");
-    setStatus("Dealership deleted.");
-  }
-
-  function saveConsultantNow() {
-    saveConsultant(consultant);
-    setSaving(true);
-    saveServerSettings(dealer, consultant).then((ok) => {
-      setSaving(false);
-      setStatus(ok ? "Salesperson saved to your account." : "Saved locally (server sync failed).");
-    });
-  }
-
-  function clearConsultantNow() {
-    const blank = createDefaultConsultant();
-    setConsultant(blank);
-    saveConsultant(blank);
-    setStatus("Salesperson cleared.");
-  }
-
-  function deleteConsultantNow() {
-    const blank = createDefaultConsultant();
-    setConsultant(blank);
-    if (typeof window !== "undefined") localStorage.removeItem("walker.consultant.v1");
-    setStatus("Salesperson deleted.");
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={onClose}
-        onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
-        role="button"
-        tabIndex={-1}
-        aria-label="Close settings"
-      />
-      <aside className="relative z-10 flex h-full w-full max-w-md flex-col overflow-y-auto bg-white text-[#111113] shadow-2xl sm:max-w-lg">
-        <div className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--accent)] bg-[url('/bg-drawer-9x16.jpg')] bg-cover bg-top px-5 py-4 print:bg-none">
-          <h2 className="text-xl font-bold text-white">Settings</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-8 w-8 items-center justify-center text-white/80 transition hover:text-white"
-            aria-label="Close settings"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
-              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-            </svg>
-          </button>
-        </div>
-
-        {status && (
-          <div className="border-b border-[var(--border)] bg-green-50 px-5 py-2 text-sm font-bold text-green-800">
-            ✓ {status}
-          </div>
-        )}
-
-        <div className="grid gap-6 p-5 text-[#111113] sm:p-6">
-          {/* ── Dealership ── */}
-          <section>
-            <button
-              type="button"
-              onClick={() => toggleSection("dealer")}
-              className="flex w-full items-center justify-between pb-3 text-left"
-            >
-              <div>
-                <h3 className="text-lg font-bold text-[#111113]">Dealership</h3>
-                <p className="text-sm text-neutral-600">{dealer.dealershipName || "Not set"}</p>
-              </div>
-              <span className={`text-lg text-neutral-600 transition-transform ${openSections.dealer ? "rotate-180" : ""}`}>▾</span>
-            </button>
-            {openSections.dealer && (
-              <div className="border-t border-[var(--border)] pt-4">
-                <p className="mb-4 text-sm leading-6 text-neutral-600">
-                  Synced to your account. Available on any device.
-                </p>
-                <div className="grid gap-4">
-                  <label className="grid gap-2">
-                    <span className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">Dealership Name</span>
-                    <input type="text" value={dealer.dealershipName} onChange={(e) => updateDealer("dealershipName", e.currentTarget.value)} className="min-h-12 border border-neutral-300 bg-white px-4 text-base !text-black caret-black [-webkit-text-fill-color:#000] [color-scheme:light] outline-none transition focus:border-[var(--accent)]" />
-                  </label>
-                  <label className="grid gap-2">
-                    <span className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">Street Address</span>
-                    <input type="text" value={dealer.street} onChange={(e) => updateDealer("street", e.currentTarget.value)} className="min-h-12 border border-neutral-300 bg-white px-4 text-base !text-black caret-black [-webkit-text-fill-color:#000] [color-scheme:light] outline-none transition focus:border-[var(--accent)]" />
-                  </label>
-                  <div className="grid grid-cols-3 gap-4">
-                    <label className="grid gap-2">
-                      <span className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">City</span>
-                      <input type="text" value={dealer.city} onChange={(e) => updateDealer("city", e.currentTarget.value)} className="min-h-12 border border-neutral-300 bg-white px-4 text-base !text-black caret-black [-webkit-text-fill-color:#000] [color-scheme:light] outline-none transition focus:border-[var(--accent)]" />
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">State</span>
-                      <input type="text" value={dealer.state} onChange={(e) => updateDealer("state", e.currentTarget.value)} className="min-h-12 border border-neutral-300 bg-white px-4 text-base !text-black caret-black [-webkit-text-fill-color:#000] [color-scheme:light] outline-none transition focus:border-[var(--accent)]" />
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">ZIP</span>
-                      <input type="text" value={dealer.zip} onChange={(e) => updateDealer("zip", e.currentTarget.value)} className="min-h-12 border border-neutral-300 bg-white px-4 text-base !text-black caret-black [-webkit-text-fill-color:#000] [color-scheme:light] outline-none transition focus:border-[var(--accent)]" />
-                    </label>
-                  </div>
-                </div>
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <button type="button" onClick={saveDealerNow} disabled={saving} className="inline-flex min-h-10 items-center justify-center border border-[var(--accent)] bg-[var(--accent)] px-4 text-xs font-bold uppercase tracking-[0.08em] text-white disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
-                  <button type="button" onClick={clearDealerNow} className="inline-flex min-h-10 items-center justify-center border border-[#111113] bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] text-[#111113]">Clear</button>
-                  <button type="button" onClick={deleteDealerNow} className="inline-flex min-h-10 items-center justify-center border border-[var(--accent)] bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] text-[var(--accent)]">Delete</button>
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* ── Salesperson ── */}
-          <section>
-            <button
-              type="button"
-              onClick={() => toggleSection("consultant")}
-              className="flex w-full items-center justify-between pb-3 text-left"
-            >
-              <div>
-                <h3 className="text-lg font-bold text-[#111113]">Consultant Information</h3>
-                <p className="text-sm text-neutral-600">{consultant.name || "Not set"}</p>
-              </div>
-              <span className={`text-lg text-neutral-600 transition-transform ${openSections.consultant ? "rotate-180" : ""}`}>▾</span>
-            </button>
-            {openSections.consultant && (
-              <div className="border-t border-[var(--border)] pt-4">
-                <p className="mb-4 text-sm leading-6 text-neutral-600">
-                  Enter this once. It populates your business card, contact buttons, vehicle collages, and NXTDOCS forms on every device.
-                </p>
-                <div className="grid gap-4">
-                  <label className="grid gap-2">
-                    <span className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">Name</span>
-                    <input type="text" value={consultant.name} onChange={(e) => updateConsultant("name", e.currentTarget.value)} className="min-h-12 border border-neutral-300 bg-white px-4 text-base !text-black caret-black [-webkit-text-fill-color:#000] [color-scheme:light] outline-none transition focus:border-[var(--accent)]" />
-                  </label>
-                  <label className="grid gap-2">
-                    <span className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">Salesperson #</span>
-                    <input type="text" value={consultant.salespersonNumber} onChange={(e) => updateConsultant("salespersonNumber", e.currentTarget.value)} className="min-h-12 border border-neutral-300 bg-white px-4 text-base !text-black caret-black [-webkit-text-fill-color:#000] [color-scheme:light] outline-none transition focus:border-[var(--accent)]" />
-                  </label>
-                  <label className="grid gap-2">
-                    <span className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">Public Phone Number</span>
-                    <input type="tel" value={consultant.phone} onChange={(e) => updateConsultant("phone", e.currentTarget.value)} className="min-h-12 border border-neutral-300 bg-white px-4 text-base !text-black caret-black [-webkit-text-fill-color:#000] [color-scheme:light] outline-none transition focus:border-[var(--accent)]" />
-                  </label>
-                  <label className="grid gap-2">
-                    <span className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-700">Public Contact Email</span>
-                    <input type="email" value={consultant.email} onChange={(e) => updateConsultant("email", e.currentTarget.value)} className="min-h-12 border border-neutral-300 bg-white px-4 text-base !text-black caret-black [-webkit-text-fill-color:#000] [color-scheme:light] outline-none transition focus:border-[var(--accent)]" />
-                  </label>
-                </div>
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <button type="button" onClick={saveConsultantNow} disabled={saving} className="inline-flex min-h-10 items-center justify-center border border-[var(--accent)] bg-[var(--accent)] px-4 text-xs font-bold uppercase tracking-[0.08em] text-white disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
-                  <button type="button" onClick={clearConsultantNow} className="inline-flex min-h-10 items-center justify-center border border-[#111113] bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] text-[#111113]">Clear</button>
-                  <button type="button" onClick={deleteConsultantNow} className="inline-flex min-h-10 items-center justify-center border border-[var(--accent)] bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] text-[var(--accent)]">Delete</button>
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* ── Team Management (Admin Only) ── */}
-          {isAdmin && (
-            <section>
-              <Link
-                href="/admin"
-                onClick={onClose}
-                className="flex w-full items-center justify-center gap-2 border border-[var(--accent)] bg-[var(--accent)] px-4 py-3 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:opacity-90"
-              >
-                Go To Team Management
-              </Link>
-            </section>
-          )}
-        </div>
-      </aside>
-    </div>
-  );
+  return <div className={styles.overlay}>
+    <button className={styles.backdrop} onClick={onClose} aria-label="Close consultant setup" tabIndex={-1} />
+    <aside ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="setup-title" className={styles.drawer}>
+      <header className={styles.header}><div><p>YOUR WORKSPACE</p><h2 id="setup-title">Consultant Setup</h2></div><button ref={closeRef} onClick={onClose} aria-label="Close consultant setup"><X /></button></header>
+      <div className={styles.content}>
+        <section className={styles.photoSection}>
+          <div className={styles.photo}>{photo ? <Image src={photo} alt="Your profile photo" width={84} height={84} unoptimized /> : <UserRound size={36} />}</div>
+          <div><h3>Profile picture</h3><p>Shown at the top of your dashboard.</p><label className={styles.upload}><Camera size={16} />Upload photo<input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload profile picture" onChange={uploadPhoto} disabled={saving || loading} /></label><small>JPG, PNG or WebP · up to 3 MB</small></div>
+        </section>
+        {status && <p className={styles.status} role="status">{status}</p>}{error && <p className={styles.error} role="alert">{error}</p>}
+        <LinksEditor />
+        <form onSubmit={event => { event.preventDefault(); void save(); }}>
+          <fieldset disabled={saving || loading}>
+            <details className={styles.section} open><summary><div><h3>Consultant information</h3><p>Your contact details for documents and tools</p></div><ChevronDown size={18} /></summary><div className={styles.fields}>
+              {([["name", "Name", "text"], ["phone", "Phone number", "tel"], ["email", "Email address", "email"], ["salespersonNumber", "Salesperson #", "text"]] as const).map(([field,label,type]) => <label key={field}>{label}<input type={type} value={consultant[field]} onChange={event => setConsultant(current => ({ ...current, [field]: event.target.value }))} autoComplete={field === "name" ? "name" : field === "phone" ? "tel" : field === "email" ? "email" : "off"} /></label>)}
+            </div></details>
+            <details className={styles.section}><summary><div><h3>Dealership</h3><p>{identity?.dealership ? `Organization: ${identity.dealership}` : "Your dealership information"}</p></div><ChevronDown size={18} /></summary><div className={styles.fields}>
+              {([["dealershipName", "Dealership name"], ["street", "Street address"], ["city", "City"], ["state", "State"], ["zip", "ZIP"]] as const).map(([field,label]) => <label key={field}>{label}<input value={dealer[field]} onChange={event => setDealer(current => ({ ...current, [field]: event.target.value }))} /></label>)}
+            </div></details>
+            <p className={styles.help}>Save once. These details populate your documents, business card, and vehicle tools.</p>
+            <button type="submit" className={styles.save}>{loading ? "Loading account…" : saving ? "Saving…" : "Save consultant setup"}</button>
+          </fieldset>
+        </form>
+        {(identity?.role === "admin" || identity?.email === "xrkr80hd@gmail.com") && <Link href="/admin" onClick={onClose} className={styles.adminLink}>Team Management</Link>}
+      </div>
+    </aside>
+  </div>;
 }

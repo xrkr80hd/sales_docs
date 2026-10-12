@@ -117,3 +117,60 @@ select.bg-white option {
     transform: translateY(0);
   }
 }
+
+/* Shared app chrome. Printed/exported document paper is intentionally outside this skin. */
+:root {
+  --background: #090f12;
+  --foreground: #f5f7f8;
+  --panel: #131b1f;
+  --panel-strong: #1c272d;
+  --border: #303c44;
+  --muted: #aebbc4;
+  --accent: #c41024;
+  --accent-strong: #f32135;
+}
+html, body { background: var(--background); }
+@media screen {
+  .nxt-ui { color: var(--foreground); color-scheme: dark; }
+  .nxt-ui :is(button, a, input, select, textarea, summary):focus-visible { outline: 2px solid #ff5060; outline-offset: 3px; }
+  .nxt-ui :is(button, a, summary) { transition: background-color 150ms, border-color 150ms, color 150ms; }
+  .nxt-ui button:disabled { cursor: not-allowed; }
+  .nxt-ui :is(.rounded-full, .rounded-3xl, .rounded-2xl, .rounded-xl, .rounded-lg):not([class*="sheet_"] *) { border-radius: 5px; }
+  .nxt-ui .card-panel { border-radius: 6px; border-color: var(--border); background: var(--panel); box-shadow: none; }
+  .nxt-ui :is(.border-black\/10, .border-neutral-300):not([class*="sheet_"] *) { border-color: var(--border); }
+  .nxt-ui :is(input, select, textarea).bg-white:not([class*="sheet_"] *) {
+    background: #0e161a; color: #f5f7f8 !important; -webkit-text-fill-color: #f5f7f8 !important;
+    caret-color: #fff !important; color-scheme: dark; border-color: #46555e; border-radius: 4px;
+  }
+  .nxt-ui :is(input,textarea).bg-white::placeholder { color: #899ca9 !important; -webkit-text-fill-color: #899ca9 !important; }
+  .nxt-ui :is(input,select,textarea).bg-white:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #0e161a inset !important; box-shadow: 0 0 0 1000px #0e161a inset !important; }
+  .nxt-ui select.bg-white option { background: #0e161a; color: #f5f7f8; }
+  .nxt-auth-screen { width: 100%; min-height: 100dvh; display: grid; place-items: center; padding: 32px 20px; }
+  .nxt-auth-panel { width: min(100%,460px); overflow: hidden; border: 1px solid #35424a; border-top: 3px solid var(--accent-strong); border-radius: 8px; background: var(--panel); box-shadow: 0 24px 70px #0006; }
+  .nxt-auth-header { padding: 34px 32px 24px; text-align: left; border-bottom: 1px solid var(--border); background: #10171a; }
+  .nxt-auth-wordmark { color: #fff; font-size: 46px; line-height: 1; font-weight: 800; letter-spacing: -2px; }
+  .nxt-auth-wordmark span { color: var(--accent-strong); }
+  .nxt-auth-dealer { width: min(100%,280px); height: 76px; object-fit: cover; object-position: center; margin: 16px 0 0; }
+  .nxt-auth-header h2 { font-size: 30px; margin-top: 16px; }
+  .nxt-auth-header p { color: var(--muted); font-size: 10px; letter-spacing: .18em; }
+  .nxt-auth-form { padding: 28px 32px; }
+  .nxt-auth-form form > button[type="submit"] { border-radius: 5px; font-size: 16px; text-transform: none; letter-spacing: 0; }
+  .nxt-auth-form input { min-width: 0; }
+  .nxt-auth-form button.bg-white { background: #1c272d; color: #c3ced5 !important; -webkit-text-fill-color: #c3ced5 !important; }
+  .nxt-auth-form .text-\[var\(--accent\)\] { color: #ff6473; }
+  @media (max-width: 480px) { .nxt-auth-screen { padding: 20px 16px; } .nxt-auth-header, .nxt-auth-form { padding: 24px; } }
+}
+@media (prefers-reduced-motion: reduce) { .nxt-ui *, .nxt-ui *::before, .nxt-ui *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; scroll-behavior: auto !important; } }
+.nxt-chat {
+  display: flex; flex: 1; flex-direction: column; min-height: 0; overflow: hidden;
+  --chat-bg-sidebar: #18232a; --chat-bg-main: #0d1519; --chat-bg-composer: #131d23;
+  --chat-bubble-outgoing: #ac1426; --chat-bubble-outgoing-text: #fff; --chat-bubble-incoming: #202e36; --chat-bubble-incoming-text: #edf2f5;
+  --chat-accent: #f32135; --chat-accent-soft: #5b1726; --chat-text-primary: #f5f7f8; --chat-text-secondary: #b1c0cb; --chat-text-tertiary: #91a4b2;
+  --chat-border: #2a3943; --chat-border-strong: #43535f; --chat-bg-content-card: #18232a; --chat-bg-code: #18232a; --chat-red: #ff7180;
+  --chat-shadow-toolbar: 0 8px 20px #0006; --chat-shadow-md: 0 6px 16px #0004; --chat-bubble-radius: 7px; --chat-bubble-radius-grouped: 3px;
+  --chat-spacing-messages: 12px; --chat-spacing-grouped: 3px;
+}
+.nxt-chat .chat-message-actions, .nxt-chat [aria-label="More actions"] { opacity: 1; }
+.nxt-chat .chat-composer > div > div > div > div { border-radius: 6px; }
+.nxt-chat .chat-toolbar-enter { opacity: 1; }
+.nxt-chat .chat-message:focus-within .chat-toolbar-enter { opacity: 1; }

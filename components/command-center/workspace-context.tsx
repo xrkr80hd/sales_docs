@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase-browser";
 
-export type WorkspaceIdentity = { id: string; displayName: string; role: string; email: string };
+export type WorkspaceIdentity = { id: string; displayName: string; role: string; email: string; profileImageUrl?: string; dealership?: string; workspaceRole?: string };
 const WorkspaceContext = createContext<WorkspaceIdentity | null>(null);
 export function useWorkspaceIdentity() { return useContext(WorkspaceContext); }
 
@@ -24,8 +24,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       } catch { /* The existing session gate owns authentication errors. */ }
     }
     void load();
+    const refresh = () => { void load(); };
+    window.addEventListener("consultant-profile-updated", refresh);
     const { data: listener } = client.auth.onAuthStateChange(() => { window.setTimeout(() => void load(), 0); });
-    return () => { active = false; listener.subscription.unsubscribe(); };
+    return () => { active = false; window.removeEventListener("consultant-profile-updated", refresh); listener.subscription.unsubscribe(); };
   }, []);
   return <WorkspaceContext.Provider value={identity}>{children}</WorkspaceContext.Provider>;
 }

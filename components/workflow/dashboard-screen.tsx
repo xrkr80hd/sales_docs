@@ -149,7 +149,7 @@ export function DashboardScreen() {
               <details open><summary className={`${styles.panelHeader} cursor-pointer list-none`}><h2>Consultant Tools</h2><ChevronRight size={18} /></summary>
                 <div className={styles.tools}>
                   {[
-                    { label: "Cheat Sheet", href: "/documents/cheat-sheet", icon: FileText },
+                    { label: "Training", href: "/training", icon: FileText },
                     { label: "Business Card", href: "/business-card", icon: ContactRound },
                     { label: "Vehicle Collage", href: "/vehicle-collage", icon: Images },
                     { label: "Messenger", href: "/messenger", icon: MessageCircle },

@@ -4,6 +4,9 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
+import { ChatProvider, ChatMessages, ChatComposer } from "./chatcn/chat";
+import type { ChatMessageData } from "./chatcn/types";
+
 import styles from "./messenger-workspace.module.css";
 
 let audioContext: AudioContext | null = null;
@@ -107,8 +110,6 @@ function formatTime(value: string) {
 export function MessengerWorkspace() {
   const [data, setData] = useState<MessengerPayload | null>(null);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
-  const [teamDraft, setTeamDraft] = useState("");
-  const [dmDrafts, setDmDrafts] = useState<Record<string, string>>({});
   const [openDmIds, setOpenDmIds] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem("nxtdox.open-dms") || "[]"); } catch { return []; }
   });
@@ -129,7 +130,6 @@ export function MessengerWorkspace() {
   });
   const [sendingId, setSendingId] = useState("");
   const [error, setError] = useState("");
-  const teamEndRef = useRef<HTMLDivElement>(null);
   const knownMessageIdsRef = useRef<Set<string>>(new Set());
   const loadedOnceRef = useRef(false);
   const lastPersonActivationRef = useRef<{ userId: string; at: number } | null>(null);
@@ -200,19 +200,30 @@ export function MessengerWorkspace() {
     };
   }, [data?.me, data?.membership?.organization_id]);
 
+  const conversationKey = (data?.conversations || []).map(item => item.id).sort().join(",");
+  useEffect(() => {
+    if (!conversationKey) return;
+    let client;
+    try { client = getSupabaseBrowserClient(); } catch { return; }
+    let refreshTimer: number | undefined;
+    const channel = client.channel(`messenger-messages:${data?.me}`);
+    for (const id of conversationKey.split(",")) channel.on("postgres_changes", { event: "*", schema: "public", table: "messenger_messages", filter: `conversation_id=eq.${id}` }, () => {
+      window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => void load(), 150);
+    });
+    channel.subscribe();
+    return () => { window.clearTimeout(refreshTimer); void client.removeChannel(channel); };
+  }, [conversationKey, data?.me, load]);
+
   const teamConversation = data?.conversations?.find((conversation) => conversation.kind === "organization");
   const teamMessages = (data?.messages ?? []).filter((message) => message.conversation_id === teamConversation?.id && !message.deleted_at);
   const dmConversations = (data?.conversations ?? []).filter((conversation) => conversation.kind === "dm");
   const currentUserId = data?.me;
   const teamConversationId = teamConversation?.id;
   const teamMessageCount = teamMessages.length;
-  const onlinePeople = (data?.people ?? []).filter((person) =>
-    person.user_id !== currentUserId && onlineUserIds.has(person.user_id)
-  );
+  const allPeople = (data?.people ?? []).filter(person => person.user_id !== currentUserId).sort((a, b) => Number(onlineUserIds.has(b.user_id)) - Number(onlineUserIds.has(a.user_id)) || personName(a.user_id).localeCompare(personName(b.user_id)));
+  const onlinePeople = allPeople.filter(person => onlineUserIds.has(person.user_id));
 
-  useEffect(() => {
-    teamEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [teamMessageCount]);
 
   useEffect(() => {
     if (!teamConversationId) return;
@@ -271,7 +282,7 @@ export function MessengerWorkspace() {
 
   async function send(conversationId: string, body: string, clear: () => void) {
     const message = body.trim();
-    if (!message || sendingId) return;
+    if (!message || sendingId) return false;
     audioContext ??= new AudioContext();
     if (audioContext.state === "suspended") void audioContext.resume();
     setSendingId(conversationId);
@@ -283,8 +294,10 @@ export function MessengerWorkspace() {
       playSentSound();
       clear();
       await load();
+      return true;
     } catch (sendError) {
       setError(sendError instanceof Error ? sendError.message : "Could not send message.");
+      return false;
     } finally {
       setSendingId("");
     }
@@ -437,30 +450,17 @@ export function MessengerWorkspace() {
     reader.readAsDataURL(file);
   }
 
-  function renderMessages(messages: Message[], compact = false) {
-    if (messages.length === 0) return <p className={styles.empty}>No messages yet.</p>;
-    return messages.map((message) => {
-      const mine = message.sender_id === data?.me;
-      return (
-        <article key={message.id} className={`${styles.message} ${mine ? styles.mine : ""}`}>
-          {!mine && <div className={styles.sender}>{renderIdentityControl(message.sender_id)}</div>}
-          <div className={styles.messageLine}>
-            {editingMessageId === message.id ? (
-              <form className={styles.editForm} onSubmit={(event) => { event.preventDefault(); void editMessage(message.id); }}>
-                <input value={editDraft} onChange={(event) => setEditDraft(event.target.value)} maxLength={4000} autoFocus />
-                <button type="submit">Save</button>
-                <button type="button" onClick={() => setEditingMessageId(null)}>Cancel</button>
-              </form>
-            ) : <p className={`${styles.bubble} ${compact ? styles.compactBubble : ""}`}>{message.body}</p>}
-            {mine && editingMessageId !== message.id && <div className={styles.messageActions}>
-              <button type="button" onClick={() => { setEditingMessageId(message.id); setEditDraft(message.body); }}>Edit</button>
-              <button type="button" onClick={() => void deleteMessage(message.id)} aria-label="Delete message">Delete</button>
-            </div>}
-          </div>
-          <time className={styles.time}>{formatTime(message.created_at)}{message.edited_at ? " · Edited" : ""}</time>
-        </article>
-      );
-    });
+  function chatMessages(messages: Message[]): ChatMessageData[] {
+    return messages.map(message => ({ id: String(message.id), senderId: message.sender_id, senderName: message.profiles?.nickname || message.profiles?.display_name || personName(message.sender_id), senderAvatar: message.profiles?.profile_image_url, text: message.body, timestamp: new Date(message.created_at), isEdited: Boolean(message.edited_at) }));
+  }
+  function renderRoom(messages: Message[], conversationId: string | undefined, placeholder: string, allowed: boolean) {
+    const edited = messages.find(message => String(message.id) === String(editingMessageId));
+    return <ChatProvider currentUser={{ id: data?.me || "", name: personName(data?.me || "") }} theme="midnight" className="nxt-chat" onEdit={message => { setEditingMessageId(message.id); setEditDraft(message.text || ""); }} onDelete={id => void deleteMessage(id)}>
+      {messages.length === 0 && <p className={styles.empty}>No messages yet. Start the conversation.</p>}
+      <ChatMessages messages={chatMessages(messages)} />
+      {edited && <form className={styles.editForm} onSubmit={event => { event.preventDefault(); void editMessage(edited.id); }}><input aria-label="Edit message" value={editDraft} onChange={event => setEditDraft(event.target.value)} maxLength={4000} autoFocus /><button type="submit">Save</button><button type="button" onClick={() => setEditingMessageId(null)}>Cancel</button></form>}
+      <ChatComposer key={conversationId} placeholder={placeholder} disabled={!conversationId || !allowed || Boolean(sendingId)} onSend={body => conversationId ? send(conversationId, body, () => {}) : false} />
+    </ChatProvider>;
   }
 
   if (!data) return <div className={styles.loading}>{error || "Loading NXTDox Messenger..."}</div>;
@@ -484,7 +484,7 @@ export function MessengerWorkspace() {
             <input type="file" accept="audio/*" onChange={(event) => uploadSound(event.target.files?.[0])} />
             Sound{customSoundName ? `: ${customSoundName}` : ""}
           </label>
-          <span className={styles.online}>Online</span>
+          <span className={styles.online}>{onlineUserIds.has(data.me || "") ? "Online" : "Connecting"}</span>
         </div>
       </header>
 
@@ -503,11 +503,11 @@ export function MessengerWorkspace() {
             <span>{onlinePeople.length} online</span>
           </div>
           <div className={styles.peopleList}>
-            {onlinePeople.map((person) => (
-              <button key={person.user_id} type="button" className={styles.person} onClick={() => activatePerson(person.user_id)} disabled={!data.membership?.can_dm}>
+            {allPeople.map((person) => (
+              <button key={person.user_id} type="button" className={styles.person} onClick={() => openPersonDm(person.user_id)} disabled={!data.membership?.can_dm}>
                 <span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span>
                 <span>{personName(person.user_id)}</span>
-                <span className={styles.openDm}>Tap twice</span>
+                <span className={`${styles.openDm} ${onlineUserIds.has(person.user_id) ? styles.onlineText : ""}`}>{onlineUserIds.has(person.user_id) ? "Online" : "Offline"}</span>
                 {identityUserId === person.user_id && <span className={styles.peopleIdentity}><span className={styles.identityPhoto}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><strong>@{person.profiles?.username || "member"}</strong></span>}
               </button>
             ))}
@@ -520,11 +520,7 @@ export function MessengerWorkspace() {
             <div><h2>{teamConversation?.title || "Team Chat"}</h2><p>Everyone at {organizationName}</p></div>
             <button type="button" className={styles.clearButton} disabled={!teamConversation} onClick={() => teamConversation && void clearMyMessages(teamConversation.id)}>Clear mine</button>
           </header>
-          <div className={styles.teamMessages}>{renderMessages(teamMessages)}<div ref={teamEndRef} /></div>
-          <form className={styles.composer} onSubmit={(event: FormEvent) => { event.preventDefault(); if (teamConversation) void send(teamConversation.id, teamDraft, () => setTeamDraft("")); }}>
-            <input value={teamDraft} onChange={(event) => setTeamDraft(event.target.value)} placeholder="Message the team..." maxLength={4000} disabled={!teamConversation || !data.membership?.can_org_chat} />
-            <button type="submit" disabled={!teamConversation || !teamDraft.trim() || sendingId === teamConversation.id} aria-label="Send team message">➤</button>
-          </form>
+          {renderRoom(teamMessages, teamConversation?.id, "Message the team…", Boolean(data.membership?.can_org_chat))}
         </section>
       </div>
 
@@ -533,7 +529,7 @@ export function MessengerWorkspace() {
           const conversation = dmConversations.find((item) => item.id === conversationId);
           if (!conversation) return null;
           const otherUserId = conversation.messenger_participants?.find((participant) => participant.user_id !== data.me)?.user_id;
-          if (!otherUserId || !onlineUserIds.has(otherUserId)) return null;
+          if (!otherUserId) return null;
           const collapsed = collapsedDmIds.includes(conversationId);
           const messages = (data.messages ?? []).filter((message) => message.conversation_id === conversationId && !message.deleted_at);
           const name = dmName(conversation);
@@ -544,19 +540,13 @@ export function MessengerWorkspace() {
                   setCollapsedDmIds((current) => current.includes(conversationId) ? current.filter((id) => id !== conversationId) : [...current, conversationId]);
                   if (collapsed) markRead(conversationId);
                 }} aria-expanded={!collapsed}>
-                  <span className={styles.dmStatus} /><span>{name}</span>
+                  <span className={`${styles.dmStatus} ${onlineUserIds.has(otherUserId || "") ? "" : styles.offline}`}  /><span>{name}</span>
                 </button>
                 <button type="button" className={styles.dmClose} onClick={() => setOpenDmIds((current) => current.filter((id) => id !== conversationId))} aria-label={`Close chat with ${name}`}>×</button>
               </header>
               {!collapsed && <>
-                <div className={styles.dmMessages}>
-                  <button type="button" className={styles.dmClear} onClick={() => void clearMyMessages(conversationId)}>Clear my messages</button>
-                  {renderMessages(messages, true)}
-                </div>
-                <form className={styles.dmComposer} onSubmit={(event) => { event.preventDefault(); void send(conversationId, dmDrafts[conversationId] || "", () => setDmDrafts((current) => ({ ...current, [conversationId]: "" }))); }}>
-                  <input value={dmDrafts[conversationId] || ""} onChange={(event) => setDmDrafts((current) => ({ ...current, [conversationId]: event.target.value }))} placeholder={`Message ${name}...`} maxLength={4000} />
-                  <button type="submit" disabled={!dmDrafts[conversationId]?.trim() || sendingId === conversationId} aria-label={`Send message to ${name}`}>➤</button>
-                </form>
+                <button type="button" className={styles.dmClear} onClick={() => void clearMyMessages(conversationId)}>Clear my messages</button>
+                {renderRoom(messages, conversationId, `Message ${name}…`, Boolean(data.membership?.can_dm))}
               </>}
             </section>
           );
@@ -564,7 +554,7 @@ export function MessengerWorkspace() {
       </div>
 
       {data.membership.can_dm && <nav className={styles.dmTray} aria-label="Personal direct messages">
-        {onlinePeople.map((person) => {
+        {allPeople.map((person) => {
           const conversation = dmForPerson(person.user_id);
           const unread = unreadCount(conversation);
           const name = personName(person.user_id);
@@ -577,7 +567,7 @@ export function MessengerWorkspace() {
               onClick={() => openPersonDm(person.user_id)}
               aria-label={`${name}${unread ? `, ${unread} unread messages` : ""}`}
             >
-              <span className={styles.dmStatus} />
+              <span className={`${styles.dmStatus} ${onlineUserIds.has(person.user_id) ? "" : styles.offline}`} />
               <span className={styles.dmTabName}>{name}</span>
               {unread > 0 && <span className={styles.unreadCount}>{unread}</span>}
             </button>
@@ -585,14 +575,14 @@ export function MessengerWorkspace() {
         })}
       </nav>}
 
-      <button type="button" className={styles.peopleTab} onClick={() => setPeopleOpen(true)} aria-label={`Show online members, ${onlinePeople.length} online`}>
-        People {onlinePeople.length}{totalUnread > 0 ? ` · ${totalUnread}` : ""}
+      <button type="button" className={styles.peopleTab} onClick={() => setPeopleOpen(true)} aria-label={`Show registered members, ${allPeople.length} people`}>
+        People {allPeople.length}{totalUnread > 0 ? ` · ${totalUnread}` : ""}
       </button>
       {peopleOpen && <div className={styles.mobilePeopleOverlay}>
-        <button type="button" className={styles.mobilePeopleBackdrop} onClick={() => setPeopleOpen(false)} aria-label="Close online members" />
+        <button type="button" className={styles.mobilePeopleBackdrop} onClick={() => setPeopleOpen(false)} aria-label="Close members" />
         <aside className={styles.mobilePeopleDrawer}>
-          <header><div><strong>Online now</strong><span>{onlinePeople.length} members</span></div><button type="button" onClick={() => setPeopleOpen(false)}>×</button></header>
-          {onlinePeople.map((person) => <button key={person.user_id} type="button" onClick={() => activatePerson(person.user_id)}><span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><span>{personName(person.user_id)}</span>{identityUserId === person.user_id && <span className={styles.drawerIdentity}>@{person.profiles?.username || "member"}</span>}</button>)}
+          <header><div><strong>Registered members</strong><span>{allPeople.length} members</span></div><button type="button" onClick={() => setPeopleOpen(false)}>×</button></header>
+          {allPeople.map((person) => <button key={person.user_id} type="button" onClick={() => openPersonDm(person.user_id)}><span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><span>{personName(person.user_id)} · {onlineUserIds.has(person.user_id) ? "Online" : "Offline"}</span>{identityUserId === person.user_id && <span className={styles.drawerIdentity}>@{person.profiles?.username || "member"}</span>}</button>)}
         </aside>
       </div>}
     </div>

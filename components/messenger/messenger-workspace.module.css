@@ -156,3 +156,14 @@
 .nicknameButton, .soundUpload, .clearButton { min-height: 36px; font-size: .72rem; }
 @media (max-width: 900px) { .workspaceBody { grid-template-columns: 210px minmax(0,1fr); } .headerTools { flex-wrap: wrap; justify-content: flex-end; } }
 @media (max-width: 680px) { .workspace { height: calc(100dvh - 116px); min-height: 450px; } .workspaceHeader { padding: 12px; align-items: flex-start; gap: 10px; } .workspaceHeader h1 { font-size: 1.25rem; } .workspaceBody { grid-template-columns: minmax(0,1fr); } .headerTools { gap: 5px; max-width: 160px; } .soundUpload { max-width: 145px; } .teamMessages { padding: 12px; } .message { max-width: 90%; } .composer { padding: 12px; } }
+.workspace { height: calc(100dvh - 160px); min-height: 480px; border-radius: 6px; background: #0d1519; }
+.workspaceHeader { min-height: 64px; padding: 12px 18px; background: #131b1f; }
+.workspaceBody { grid-template-columns: 210px minmax(0,1fr); }
+.peoplePanel { background: #10191e; }
+.person { min-height: 50px; }
+.person .avatar { border-radius: 50%; }
+.offline { background: #6c7881 !important; box-shadow: none !important; }
+.onlineText { color: #64d3a0; }
+.roomHeader { min-height: 62px; background: #131b1f; }
+.dmWindow { background: #0d1519; border-radius: 6px; }
+@media (max-width: 900px) { .workspace { height: calc(100dvh - 120px); min-height: 430px; } .workspaceBody { grid-template-columns: minmax(0,1fr); } }

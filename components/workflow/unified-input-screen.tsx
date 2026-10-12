@@ -55,7 +55,7 @@ function Section({
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between bg-[var(--accent)] bg-[url('/bg-card-3x2.jpg')] bg-cover bg-center px-5 py-4 text-left"
+        className="flex w-full items-center justify-between bg-[var(--accent)]  bg-cover bg-center px-5 py-4 text-left"
       >
         <span className="flex items-center gap-2">
           {complete && (
@@ -73,7 +73,7 @@ function Section({
         </span>
       </button>
       {open && (
-        <div className="border-t border-white/10 bg-[#2a2a2e] px-5 pb-6 pt-5">
+        <div className="border-t border-white/10 bg-[var(--panel)] px-5 pb-6 pt-5">
           {children}
           {onToggleComplete && (
             <button
@@ -412,11 +412,11 @@ export function UnifiedInputScreen({
     <>
       <div className="grid gap-4">
         {/* ── Hero ── */}
-        <section className="overflow-hidden border border-white/10 bg-[var(--panel)] bg-[url('/bg-hero-16x9.jpg')] bg-cover bg-center shadow-[0_0_40px_rgba(190,23,23,0.15),0_24px_60px_rgba(0,0,0,0.3)]">
+        <section className="overflow-hidden border border-white/10 bg-[var(--panel)]  bg-cover bg-center shadow-[0_0_40px_rgba(190,23,23,0.15),0_24px_60px_rgba(0,0,0,0.3)]">
           <div className="grid gap-5 px-5 py-5 sm:px-6">
             <div className="text-center">
               <Image
-                src="/walker-red-graphic-v2.png"
+                src="/branding/walker-automotive.png"
                 alt="Walker Automotive graphic"
                 width={320}
                 height={116}
@@ -1446,7 +1446,7 @@ export function UnifiedInputScreen({
         </Section>
 
         {/* ── Bottom Action Bar ──────────────────────────────── */}
-        <div className="border border-white/10 bg-[#2a2a2e] p-5 shadow-[0_0_30px_rgba(190,23,23,0.12),0_14px_40px_rgba(0,0,0,0.2)]">
+        <div className="border border-white/10 bg-[var(--panel)] p-5 shadow-[0_0_30px_rgba(190,23,23,0.12),0_14px_40px_rgba(0,0,0,0.2)]">
           <div className="grid gap-3 sm:grid-cols-2">
             <button
               type="button"
@@ -1490,7 +1490,7 @@ export function UnifiedInputScreen({
       {/* ── Deal picker overlay ── */}
       {showDealPicker && openDeals && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md border border-white/10 bg-[#141414] p-5 shadow-[0_20px_44px_rgba(0,0,0,0.28)]">
+          <div className="w-full max-w-md border border-white/10 bg-[var(--panel)] p-5 shadow-[0_20px_44px_rgba(0,0,0,0.28)]">
             <h3 className="text-lg font-bold text-white">
               You have open deals
             </h3>
@@ -1537,7 +1537,7 @@ export function UnifiedInputScreen({
       {/* ── VIN double-check dialog (print) ── */}
       {vinCheckOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md border border-white/10 bg-[#141414] p-6 text-white shadow-[0_20px_44px_rgba(0,0,0,0.4)]">
+          <div className="w-full max-w-md border border-white/10 bg-[var(--panel)] p-6 text-white shadow-[0_20px_44px_rgba(0,0,0,0.4)]">
             <h2 className="text-center text-lg font-bold uppercase tracking-[0.08em]">
               Please Double Check Your VIN Numbers
             </h2>

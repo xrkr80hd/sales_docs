@@ -227,13 +227,14 @@ export function SupabaseSessionGate({
 
   if (!isSupabaseConfigured()) {
     return (
-      <div className="mx-auto flex min-h-screen w-full max-w-xl items-center px-4 py-10 sm:px-6">
-        <div className="w-full overflow-hidden border border-black/10 shadow-[0_24px_60px_rgba(35,23,12,0.12)]">
-          <div className="bg-[var(--accent)] bg-[url('/bg-hero-16x9.jpg')] bg-cover bg-center px-5 py-6 text-center sm:px-6">
-            <Image src="/walker-red-graphic-v2.png" alt="Walker Automotive" width={320} height={116} priority className="mx-auto h-auto w-full max-w-[200px]" />
-            <p className="mt-3 text-xs font-bold uppercase tracking-[0.24em] text-white/80 drop-shadow-sm">Walker Docs</p>
+      <div className="nxt-ui nxt-auth-screen">
+        <div className="nxt-auth-panel">
+          <div className="nxt-auth-header">
+            <div className="nxt-auth-wordmark" aria-label="NXTDox"><span>N</span>XTD<span>o</span>x</div>
+            <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} priority className="nxt-auth-dealer" />
+            <p className="mt-3 text-xs font-bold uppercase tracking-[0.24em] text-white/80 drop-shadow-sm">WALKER AUTOMOTIVE WORKSPACE</p>
           </div>
-          <div className="bg-[#2a2a2e] px-5 py-6 sm:px-6">
+          <div className="bg-[var(--panel)] px-5 py-6 sm:px-6">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--accent)]">Setup Needed</p>
             <h1 className="mt-2 text-2xl font-extrabold text-white">Auth gate is waiting on environment config.</h1>
             <p className="mt-3 text-sm leading-7 text-white/60">
@@ -247,13 +248,14 @@ export function SupabaseSessionGate({
 
   if (checking) {
     return (
-      <div className="mx-auto flex min-h-screen w-full max-w-xl items-center px-4 py-10 sm:px-6">
-        <div className="w-full overflow-hidden border border-black/10 shadow-[0_24px_60px_rgba(35,23,12,0.12)]">
-          <div className="bg-[var(--accent)] bg-[url('/bg-hero-16x9.jpg')] bg-cover bg-center px-5 py-6 text-center sm:px-6">
-            <Image src="/walker-red-graphic-v2.png" alt="Walker Automotive" width={320} height={116} priority className="mx-auto h-auto w-full max-w-[200px]" />
-            <p className="mt-3 text-xs font-bold uppercase tracking-[0.24em] text-white/80 drop-shadow-sm">Walker Docs</p>
+      <div className="nxt-ui nxt-auth-screen">
+        <div className="nxt-auth-panel">
+          <div className="nxt-auth-header">
+            <div className="nxt-auth-wordmark" aria-label="NXTDox"><span>N</span>XTD<span>o</span>x</div>
+            <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} priority className="nxt-auth-dealer" />
+            <p className="mt-3 text-xs font-bold uppercase tracking-[0.24em] text-white/80 drop-shadow-sm">WALKER AUTOMOTIVE WORKSPACE</p>
           </div>
-          <div className="bg-[#2a2a2e] px-5 py-6 sm:px-6">
+          <div className="bg-[var(--panel)] px-5 py-6 sm:px-6">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--accent)]">Authorizing</p>
             <h1 className="mt-2 text-2xl font-extrabold text-white">Checking access…</h1>
           </div>
@@ -264,19 +266,20 @@ export function SupabaseSessionGate({
 
   if (!session) {
     return (
-      <div className="mx-auto flex min-h-screen w-full max-w-xl items-center px-4 py-10 sm:px-6">
-        <div className="w-full overflow-hidden border border-black/10 shadow-[0_24px_60px_rgba(35,23,12,0.12)]">
+      <div className="nxt-ui nxt-auth-screen">
+        <div className="nxt-auth-panel">
           {/* Hero header with graphic */}
-          <div className="bg-[var(--accent)] bg-[url('/bg-hero-16x9.jpg')] bg-cover bg-center px-5 py-8 text-center sm:px-6">
-            <Image src="/walker-red-graphic-v2.png" alt="Walker Automotive" width={320} height={116} priority className="mx-auto h-auto w-full max-w-[200px]" />
-            <p className="mt-4 text-xs font-bold uppercase tracking-[0.24em] text-white drop-shadow-sm">Walker Docs</p>
+          <div className="nxt-auth-header">
+            <div className="nxt-auth-wordmark" aria-label="NXTDox"><span>N</span>XTD<span>o</span>x</div>
+            <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} priority className="nxt-auth-dealer" />
+            <p className="mt-4 text-xs font-bold uppercase tracking-[0.24em] text-white drop-shadow-sm">WALKER AUTOMOTIVE WORKSPACE</p>
             <h2 className="mt-1 text-2xl font-extrabold text-white drop-shadow-sm sm:text-3xl">
               {mode === "signup" ? "Create Account" : mode === "reset" ? "Reset Password" : "Sign In"}
             </h2>
           </div>
 
           {/* Form body */}
-          <div className="border-t border-white/10 bg-[#2a2a2e] px-5 py-6 sm:px-6">
+          <div className="nxt-auth-form">
             <form className="grid gap-4" onSubmit={handleAuthSubmit}>
               <label className="grid gap-2">
                 <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/60">Email</span>
@@ -286,7 +289,7 @@ export function SupabaseSessionGate({
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="name@company.com"
                   className="min-h-12 border border-white/10 bg-white px-4 text-base !text-[#171719] caret-[#171719] [-webkit-text-fill-color:#171719] [color-scheme:light] outline-none transition placeholder:!text-neutral-500 focus:border-[var(--accent)]"
-                  style={{ color: "#171719", WebkitTextFillColor: "#171719", caretColor: "#171719", colorScheme: "light" }}
+
                   autoComplete="email"
                 />
               </label>
@@ -296,19 +299,20 @@ export function SupabaseSessionGate({
                   <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/60">Password</span>
                   <div className="flex">
                     <input
+                      aria-label="Password"
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       placeholder="••••••••"
                       className="min-h-12 flex-1 border border-white/10 bg-white px-4 text-base !text-[#171719] caret-[#171719] [-webkit-text-fill-color:#171719] [color-scheme:light] outline-none transition placeholder:!text-neutral-500 focus:border-[var(--accent)]"
-                      style={{ color: "#171719", WebkitTextFillColor: "#171719", caretColor: "#171719", colorScheme: "light" }}
+
                       autoComplete={mode === "signup" ? "new-password" : "current-password"}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((s) => !s)}
                       className="min-h-12 border border-l-0 border-white/10 bg-white px-3 text-xs font-bold uppercase tracking-wider !text-[#34343a] transition hover:!text-[#171719]"
-                      style={{ color: "#34343a", WebkitTextFillColor: "#34343a", colorScheme: "light" }}
+
                     >
                       {showPassword ? "Hide" : "Show"}
                     </button>
@@ -406,7 +410,7 @@ export function SupabaseSessionGate({
     <SessionContext.Provider value={sessionCtx}>
       {renderBar && (
         <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center justify-between gap-3 border border-white/10 bg-[#2a2a2e] px-4 py-3 shadow-[0_18px_44px_rgba(0,0,0,0.2)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border border-white/10 bg-[var(--panel)] px-4 py-3 shadow-[0_18px_44px_rgba(0,0,0,0.2)]">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/50">
                 Authorized Session
