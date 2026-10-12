@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { Home, FilePlus2, Files, Wrench, MessageCircle, Settings, Table2, Monitor, CalendarDays, Menu, X, ChevronDown, Shield } from "lucide-react";
+import { Home, FilePlus2, Files, Wrench, MessageCircle, Settings, Table2, Monitor, CalendarDays, Menu, X, ChevronDown, Shield, LogOut } from "lucide-react";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { useWorkspaceIdentity } from "./workspace-context";
 import styles from "./workspace.module.css";
@@ -57,6 +57,7 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
             {pathname.startsWith("/deal-sheet") && <button onClick={() => { close(); onDocuments(); }} className={styles.navButton}><FilePlus2 />Deal Documents</button>}
             {manager && <Link href="/manager-board#team-schedule" onClick={close} className={styles.navLink}><CalendarDays />Team Schedule</Link>}
             <button onClick={() => { close(); onSettings(); }} className={styles.navButton}><Settings />Settings</button>
+            <button onClick={() => { close(); session.signOut(); }} className={styles.navButton}><LogOut />Sign Out</button>
             {admin && <details><summary><Shield />Administration</summary><div className={styles.subnav}><Link href="/admin" onClick={close}>Users &amp; Roles</Link><Link href="/admin/messenger" onClick={close}>Messenger Permissions</Link></div></details>}
           </nav>
         </aside>

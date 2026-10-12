@@ -1,35 +1,19 @@
-# NXTDOCS reference interface — verification checkpoint
+# NXTDOCS interface verification
 
-final result: blocked
+## Verified for this test deployment
+- Production build, TypeScript, and whitespace checks pass.
+- Production-mode browser preview mounts the dashboard correctly. The earlier custom development server hydration problem is resolved.
+- New Vehicle and Used Vehicle open their existing deal forms. A local-only form entry survives navigation and resumes from the dashboard.
+- Messenger renders and local-only message composition/send works. Live delivery between accounts has not been tested.
+- Messenger database failures now return an error in normal operation rather than fabricated Donald/Travis conversations. Local verification mode is explicitly labeled and starts with no messages.
+- Sign Out is accessible from the sidebar, including the mobile menu.
+- Existing deal forms, document components, authentication components, libraries, and database migrations remain unchanged.
 
-Source visual truth: the supplied Dealership KPI Consultant Display.png, Dealership KPI Manager Display Board.png, and Dealership KPI Office Display Board - pop out.png (1672 × 941 pixels).
+## Still incomplete
+- Manager board is presentation only: shared saving, monthly projections, weekly publication, schedules, pace calculations, and cross-login updates are not implemented.
+- Chatcn integration, offline-user listing, and Training navigation are not included in this checkpoint.
+- Mobile browser interaction verification and exact visual comparison remain pending.
+- Existing Walker logo has internal padding; reference hero photography is absent.
+- Production authentication and live messenger delivery require testing with authorized real accounts. No messages were sent to colleagues during verification.
 
-Implementation: cloud browser at terminal.local:4173, approximately 1365 × 938 CSS pixels. Manager route rendered; dashboard client content did not mount reliably. A matching viewport and complete combined visual comparison were not available, so this is not a passing fidelity review.
-
-## Findings
-- P0: Consultant dashboard client rendering is unresolved in the temporary custom-server preview. Build and TypeScript pass, but this does not verify interaction behavior.
-- P1: Shared board storage is not implemented. Manager editing, monthly consultant projection submission, weekly updates, schedule entries, pace calculations, and cross-login synchronization must not be represented as complete.
-- P2: Existing Walker logo asset has significant internal spacing compared with the supplied reference. Header logo fidelity needs a properly licensed matching brand asset.
-- P2: Reference vehicle hero photography has not been added. The existing production asset is a texture, not the photographed vehicles shown in the design.
-
-## Required surfaces
-- Typography: Barlow retained from the existing app; approximate heading sizes and hierarchy implemented. Exact comparison pending.
-- Spacing: left sidebar, two-column dashboard, large vehicle actions, five KPI cards, table, and lower totals/schedule panels implemented. Empty data states intentionally differ from the sample-filled design. Mobile CSS included, browser verification pending.
-- Colors: dark charcoal panels, red actions, pale body text, and thin panel borders implemented. Pixel comparison pending.
-- Assets: existing Walker logo retained; Lucide icons added. Vehicle hero and exact header asset remain unresolved.
-- Copy/content: no sample consultants, numbers, sales, or gross values were imported. Board states explicitly identify missing shared publication.
-
-## Validation
-- Production build: passed before the last context-only preview adjustment; final build required before publishing.
-- TypeScript: passed after the final production layout restoration.
-- git diff --check: passed.
-- Database migrations, API handlers, lib modules, authentication components, document components, and deal workflow forms: unchanged.
-- Browser console: only browser-extension metadata errors observed; no useful application error explaining hydration failure.
-- Primary interactions: manager navigation rendered; consultant button handlers and account settings not verified in the preview.
-- Production deployment: not performed.
-
-## Resume
-1. Resolve preview client hydration and compare all three views at matching viewport dimensions, including mobile.
-2. Clarify whether the database restriction prohibits schema changes only or also new goal records. Use an approved shared persistence path before enabling board editing.
-3. Implement server-enforced manager writes, consultant monthly submissions, gross visibility restrictions, and independently refreshing office display.
-4. Complete screenshots and fidelity review before merging or publishing.
+This checkpoint is published for the owner's real-time testing, not as a claim that the remaining requested upgrades are complete.
