@@ -27,11 +27,11 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
     void fetchServerSettings().then((server) => {
       if (!active) return;
       if (server) {
-        setDealer({ ...server.dealer, dealershipName: server.dealer.dealershipName || identity?.dealership || "" });
+        setDealer(server.dealer);
         setConsultant(server.consultant);
         saveDealer(server.dealer);
         saveConsultant(server.consultant);
-      } else if (identity?.dealership) setDealer(current => ({ ...current, dealershipName: current.dealershipName || identity.dealership || "" }));
+      } else if (identity?.dealership) setDealer(current => ({ ...current, dealershipName: identity.dealership || "" }));
       setLoading(false);
     });
     closeRef.current?.focus();
@@ -97,7 +97,8 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
               {([["name", "Name", "text"], ["phone", "Phone number", "tel"], ["email", "Email address", "email"], ["salespersonNumber", "Salesperson #", "text"]] as const).map(([field,label,type]) => <label key={field}>{label}<input type={type} value={consultant[field]} onChange={event => setConsultant(current => ({ ...current, [field]: event.target.value }))} autoComplete={field === "name" ? "name" : field === "phone" ? "tel" : field === "email" ? "email" : "off"} /></label>)}
             </div></details>
             <details className={styles.section}><summary><div><h3>Dealership</h3><p>{identity?.dealership ? `Organization: ${identity.dealership}` : "Your dealership information"}</p></div><ChevronDown size={18} /></summary><div className={styles.fields}>
-              {([["dealershipName", "Dealership name"], ["street", "Street address"], ["city", "City"], ["state", "State"], ["zip", "ZIP"]] as const).map(([field,label]) => <label key={field}>{label}<input value={dealer[field]} onChange={event => setDealer(current => ({ ...current, [field]: event.target.value }))} /></label>)}
+              {([["dealershipName", "Dealership name"], ["street", "Street address"], ["city", "City"], ["state", "State"], ["zip", "ZIP"]] as const).map(([field,label]) => <label key={field}>{label}<input value={dealer[field]} readOnly={Boolean(identity?.organizationId)} onChange={event => setDealer(current => ({ ...current, [field]: event.target.value }))} /></label>)}
+              {identity?.organizationId && <p className={styles.help}>This address is managed in Organization settings and automatically used on warranty forms.</p>}
             </div></details>
             <p className={styles.help}>These internal details populate your documents and vehicle tools. Your public business card has its own name, photo, and contact details.</p>
             <button type="submit" className={styles.save}>{loading ? "Loading account…" : saving ? "Saving…" : "Save consultant setup"}</button>
