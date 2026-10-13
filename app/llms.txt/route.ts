@@ -25,9 +25,9 @@ export async function GET() {
   }
 
   const body = [
-    "# NDOX Consultant Profiles",
+    "# NXTDOX Consultant Profiles",
     "",
-    "NDOX hosts public automotive consultant business cards with verified contact information, featured vehicles, reviews, videos, and links to official dealership inventory.",
+    "NXTDOX hosts public automotive consultant business cards with verified contact information, featured vehicles, reviews, videos, and links to official dealership inventory.",
     "",
     "## Public consultant profiles",
     ...profileLines,

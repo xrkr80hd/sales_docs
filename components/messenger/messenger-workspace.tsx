@@ -463,7 +463,7 @@ export function MessengerWorkspace() {
     </ChatProvider>;
   }
 
-  if (!data) return <div className={styles.loading}>{error || "Loading NDOX Messenger..."}</div>;
+  if (!data) return <div className={styles.loading}>{error || "Loading NXTDOX Messenger..."}</div>;
   if (!data.membership?.chat_enabled) return <div className={styles.loading}>Messenger access is not enabled for this account.</div>;
 
   const organizationName = data.membership.organizations?.name || "Walker Automotive";

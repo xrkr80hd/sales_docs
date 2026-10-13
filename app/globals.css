@@ -174,3 +174,6 @@ html, body { background: var(--background); }
 .nxt-chat .chat-composer > div > div > div > div { border-radius: 6px; }
 .nxt-chat .chat-toolbar-enter { opacity: 1; }
 .nxt-chat .chat-message:focus-within .chat-toolbar-enter { opacity: 1; }
+
+/* Compact software branding; Walker remains the dealership identity. */
+.nxt-auth-wordmark { display: flex; justify-content: center; }

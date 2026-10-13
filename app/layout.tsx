@@ -16,12 +16,12 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://nextdocs.xrkr80hd.studio"),
-  title: { default: "NDOX", template: "%s | NDOX" },
-  description: "NDOX consultant profiles and dealership tools.",
-  applicationName: "NDOX",
+  title: { default: "NXTDOX", template: "%s | NXTDOX" },
+  description: "NXTDOX consultant profiles and dealership tools.",
+  applicationName: "NXTDOX",
   appleWebApp: {
     capable: true,
-    title: "NDOX",
+    title: "NXTDOX",
     statusBarStyle: "black-translucent",
   },
   icons: {

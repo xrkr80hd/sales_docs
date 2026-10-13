@@ -1,5 +1,6 @@
 "use client";
 
+import { SoftwareLogo } from "@/components/branding/software-logo";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -60,7 +61,7 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
   return <div className={`nxt-ui ${styles.shell}`}>
     <header className={styles.header}>
       <div className={styles.brands}>
-        <Link href="/dashboard" className={styles.wordmark} aria-label="NDOX home"><span>N</span>D<span>O</span>X</Link>
+        <Link href="/dashboard" className={styles.wordmark} aria-label="NXTDOX home"><SoftwareLogo /></Link>
         <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} className={styles.dealerLogo} priority />
       </div>
       {display ? <div className={styles.displayLabel}><Monitor /><div>Office Display Board<small>Read only · Live updates</small></div></div> : <>
