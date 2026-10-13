@@ -1,0 +1,51 @@
+"use client";
+import {useMemo,useState} from "react";
+type RoutineItem={id:string;time:string;name:string;done?:boolean};
+type PlanDay={kind:"short"|"long"|"friday"|"off";items:RoutineItem[]};
+type Kind=PlanDay["kind"];
+type Props={schedule:Record<string,PlanDay>;disabled:boolean;onSave:(next:Record<string,PlanDay>)=>void};
+const field={background:"#0d1724",border:"1px solid #405064",color:"#fff",padding:"9px",borderRadius:5} as const;
+const styles={panel:{padding:16,background:"#121a25",border:"1px solid #344152",borderRadius:8,marginTop:12},button:{background:"#223247",border:"1px solid #405064",color:"#fff",padding:"8px 12px",borderRadius:5,cursor:"pointer"}} as const;
+const templates:{id:string;label:string;kind:Kind;items:[string,string][]}[]=[
+{id:"short",label:"5-hour sales sprint",kind:"short",items:[["09:00","Plan the day and review hot prospects"],["09:20","Walk inventory and choose three vehicles"],["09:45","First calls: unsold and internet leads"],["10:45","Customer appointments and test drives"],["11:45","Follow-up texts and videos"],["12:15","Second calls and appointment requests"],["13:15","Confirm appointments, update CRM"],["13:45","Close open tasks and hand off customers"]]},
+{id:"long",label:"7-hour balanced day",kind:"long",items:[["09:00","Review appointments and customer pipeline"],["09:20","Walk inventory and learn three vehicles"],["09:45","First outbound calling block"],["10:45","Appointments and showroom floor"],["11:45","Follow-up and customer videos"],["12:15","Lunch or coverage break"],["12:45","Second calls and appointment setting"],["13:45","Customer test drives and demonstrations"],["14:45","Service, owner, and unsold follow-ups"],["15:30","Confirm appointments and finalize CRM"]]},
+{id:"friday",label:"Friday noon finish",kind:"friday",items:[["08:00","Review hot deals and weekend handoffs"],["08:20","Inventory walk and identify priority units"],["08:45","Call and confirm weekend appointments"],["09:45","Customers and active deals"],["10:45","Follow-up, CRM, and manager handoffs"],["11:30","Finish outstanding tasks before noon"]]},
+{id:"customer",label:"Customer-first flexible day",kind:"long",items:[["09:00","Review scheduled customers and priorities"],["09:20","Walk inventory for today's appointments"],["09:45","Confirm appointments and prepare vehicles"],["10:15","Showroom appointments and test drives"],["11:45","Respond to leads and customer follow-up"],["12:30","Lunch or coverage break"],["13:00","Prospecting and outbound calls"],["14:00","More appointments, demos, and deliveries"],["15:00","Unfinished calls and appointment setting"],["15:40","Update CRM and plan next shift"]]}
+];
+const pad=(n:number)=>String(n).padStart(2,"0");
+function key(d:Date){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
+function parse(value:string){return new Date(value+"T12:00:00");}
+function startWeek(date:Date){const d=new Date(date);d.setDate(d.getDate()-(d.getDay()+6)%7);return d;}
+function nth(y:number,m:number,day:number,n:number){const f=new Date(y,m,1).getDay();return 1+(day-f+7)%7+7*(n-1);}
+function last(y:number,m:number,day:number){const e=new Date(y,m+1,0);return e.getDate()-(e.getDay()-day+7)%7;}
+function observed(y:number,m:number,day:number,date:Date){const v=new Date(y,m,day);v.setDate(v.getDate()+(v.getDay()===6?-1:v.getDay()===0?1:0));return key(v)===key(date);}
+function holiday(d:Date){const y=d.getFullYear(),m=d.getMonth(),n=d.getDate();return [[0,1],[5,19],[6,4],[10,11],[11,25]].some(([mm,dd])=>observed(y,mm,dd,d))||(m===0&&n===nth(y,0,1,3))||(m===1&&n===nth(y,1,1,3))||(m===4&&n===last(y,4,1))||(m===8&&n===nth(y,8,1,1))||(m===9&&n===nth(y,9,1,2))||(m===10&&n===nth(y,10,4,4));}
+function offSaturday(d:Date,anchor:string){const a=parse(anchor);const delta=Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(a.getFullYear(),a.getMonth(),a.getDate()))/86400000);return ((delta%14)+14)%14===0;}
+function fromTemplate(id:string):PlanDay{const t=templates.find(t=>t.id===id)||templates[0];return{kind:t.kind,items:t.items.map(([time,name],i)=>({id:id+"-"+i,time,name,done:false}))};}
+export function RoutinePlanner({schedule,disabled,onSave}:Props){
+const [week,setWeek]=useState(()=>key(startWeek(new Date())));
+const [selected,setSelected]=useState(()=>key(new Date()));
+const [anchor,setAnchor]=useState("2026-08-08");
+const [template,setTemplate]=useState("short");
+const [editing,setEditing]=useState<PlanDay|null>(null);
+const dates=useMemo(()=>Array.from({length:7},(_,i)=>{const d=parse(week);d.setDate(d.getDate()+i);return d;}),[week]);
+function blocked(d:Date){return d.getDay()===0||holiday(d)||(d.getDay()===6&&offSaturday(d,anchor));}
+function defaultKind(d:Date):Kind{if(blocked(d))return "off";if(d.getDay()===5){const sat=new Date(d);sat.setDate(d.getDate()+1);if(offSaturday(sat,anchor))return "friday";}const index=Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(2026,0,5))/86400000);return index%2===0?"short":"long";}
+function plan(d:Date):PlanDay{if(blocked(d))return{kind:"off",items:[]};return schedule[key(d)]||fromTemplate(defaultKind(d));}
+const selectedDate=parse(selected);const closed=blocked(selectedDate);const planNow=editing||plan(selectedDate);
+function select(date:string){setSelected(date);setEditing(null);setTemplate(defaultKind(parse(date)));}
+function save(next:PlanDay){if(closed||disabled)return;const entry={...next,items:next.items.filter(x=>x.name.trim()).map(x=>({...x,name:x.name.trim()}))};onSave({...schedule,[selected]:entry});setEditing(null);}
+function weekShift(n:number){const d=parse(week);d.setDate(d.getDate()+n*7);setWeek(key(d));select(key(d));}
+const change=(fn:(day:PlanDay)=>PlanDay)=>setEditing(fn(editing||plan(selectedDate)));
+return <details style={styles.panel}><summary style={{cursor:"pointer",fontWeight:800,fontSize:18}}>Daily Routine Builder <small style={{color:"#a1aec1",fontSize:12}}>· choose a plan, customize your day</small></summary>
+<p style={{color:"#aebdcd"}}>Not sure where to start? Choose one of four sample workdays. Edit activities, times, or the whole week. Templates are suggestions, not completed work.</p>
+<div style={{display:"flex",gap:8,justifyContent:"space-between",alignItems:"center",margin:"14px 0"}}><button type="button" style={styles.button} onClick={()=>weekShift(-1)}>← Previous</button><strong>Week of {week}</strong><button type="button" style={styles.button} onClick={()=>weekShift(1)}>Next →</button></div>
+<div style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:4}}>{dates.map(d=><button key={key(d)} type="button" aria-pressed={selected===key(d)} onClick={()=>select(key(d))} style={{padding:"10px 2px",border:selected===key(d)?"2px solid #f55b5b":"1px solid #405064",background:selected===key(d)?"#3b2027":"#182536",color:"#fff",borderRadius:4,fontSize:11}}><strong>{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()]}</strong><div>{d.getDate()}</div><small>{blocked(d)?"OFF":plan(d).kind==="friday"?"½ day":plan(d).kind==="long"?"7 hr":"5 hr"}</small></button>)}</div>
+<div style={{marginTop:16}}><strong>{selectedDate.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</strong>{closed?<p style={{color:"#aebdcd"}}>Scheduled day off or observed major holiday. No routine or activity target is assigned.</p>:<>
+<div style={{display:"flex",gap:9,flexWrap:"wrap",alignItems:"end",margin:"13px 0"}}><label style={{flex:"1 1 210px"}}>Start with an example<select style={{...field,width:"100%",display:"block",marginTop:5}} value={template} onChange={e=>setTemplate(e.target.value)}>{templates.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}</select></label><button type="button" disabled={disabled} style={styles.button} onClick={()=>setEditing(fromTemplate(template))}>Preview template</button><button type="button" disabled={disabled} style={styles.button} onClick={()=>save(editing||fromTemplate(template))}>Save today's routine</button></div>
+<div style={{display:"grid",gap:7}}>{planNow.items.map((item,i)=><div key={item.id+"-"+i} style={{display:"grid",gridTemplateColumns:"94px 1fr 30px",gap:7,alignItems:"center"}}><input aria-label="Activity time" type="time" style={{...field,minWidth:0,width:"100%"}} value={item.time} onChange={e=>change(p=>({...p,items:p.items.map((x,j)=>i===j?{...x,time:e.target.value}:x)}))}/><input aria-label="Activity description" style={{...field,minWidth:0,width:"100%"}} value={item.name} onChange={e=>change(p=>({...p,items:p.items.map((x,j)=>i===j?{...x,name:e.target.value}:x)}))}/><button type="button" style={styles.button} onClick={()=>change(p=>({...p,items:p.items.filter((_,j)=>j!==i)}))}>×</button></div>)}</div>
+<div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}><button style={styles.button} type="button" onClick={()=>change(p=>({...p,items:[...p.items,{id:crypto.randomUUID(),time:"12:00",name:"New activity"}]}))}>+ Add activity</button><button style={styles.button} disabled={disabled} type="button" onClick={()=>save(planNow)}>Save edits</button><button style={styles.button} disabled={disabled} type="button" onClick={()=>{const next={...schedule};for(const d of dates)if(!blocked(d))next[key(d)]=fromTemplate(defaultKind(d));onSave(next);setEditing(null);}}>Generate entire sample week</button></div>
+</>}</div>
+<details style={{marginTop:14,borderTop:"1px solid #405064",paddingTop:12}}><summary>Alternating weekend settings</summary><p style={{fontSize:12,color:"#aebdcd"}}>Set a known Saturday off. That Friday automatically uses the noon-finish template. Alternates every 14 days. Sundays and major U.S. federal holidays remain excluded.</p><label>Known Saturday off <input type="date" style={{...field,marginLeft:10}} value={anchor} onChange={e=>setAnchor(e.target.value)}/></label></details>
+<p style={{fontSize:12,color:"#aebdcd"}}>Workday hours are examples. Adjust times to each location's actual shift. Your routines are saved to your account when you click Save.</p></details>;
+}
