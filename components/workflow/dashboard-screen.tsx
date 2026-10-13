@@ -119,7 +119,7 @@ export function DashboardScreen() {
     <>
       <section aria-label="Consultant dashboard">
         <div className={styles.hero} id="start-deal">
-          <p className={styles.eyebrow}>Welcome to NXTDox</p>
+          <p className={styles.eyebrow}>Welcome to NDOX</p>
           <h1 className={styles.pageTitle}>Start a Deal</h1>
           <div className={styles.underline} />
           <p className={styles.subtitle}>Choose a vehicle type to get started.</p>

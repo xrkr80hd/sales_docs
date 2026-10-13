@@ -100,7 +100,7 @@ export async function generateMetadata({ params, searchParams }: CardPageProps):
       description: sharedDescription,
       type: video ? "video.other" : "profile",
       url: sharedUrl,
-      siteName: "NXTDOCS Consultant Profiles",
+      siteName: "NDOX Consultant Profiles",
       locale: "en_US",
       images: imageUrl ? [{ url: imageUrl, alt: vehicle ? `${vehicle.title} vehicle collage` : `${profile.identity.displayName} business card` }] : undefined,
       videos: sharedVideoUrl ? [{

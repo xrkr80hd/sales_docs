@@ -184,7 +184,7 @@ export function MessengerScreen() {
   if (!data) {
     return (
       <div className={styles.container} style={{ padding: "40px", textAlign: "center" }}>
-        <p style={{ color: "#888" }}>Loading NXTDox Messenger…</p>
+        <p style={{ color: "#888" }}>Loading NDOX Messenger…</p>
       </div>
     );
   }
@@ -192,7 +192,7 @@ export function MessengerScreen() {
   if (!data.membership?.chat_enabled) {
     return (
       <div className={styles.container} style={{ padding: "40px" }}>
-        <h1 className={styles.title}>NXTDox Messenger</h1>
+        <h1 className={styles.title}>NDOX Messenger</h1>
         <p style={{ color: "#888", marginTop: "12px" }}>
           Your administrator has not enabled messenger access for your account.
         </p>
@@ -208,7 +208,7 @@ export function MessengerScreen() {
       <header className={styles.topBar}>
         <div>
           <p className={styles.orgBadge}>{orgName}</p>
-          <h1 className={styles.title}>NXTDox Messenger</h1>
+          <h1 className={styles.title}>NDOX Messenger</h1>
         </div>
         <div className={styles.statusIndicator}>
           <span className={styles.statusDot} />
@@ -320,7 +320,7 @@ export function MessengerScreen() {
                   >
                     {!isSelf && (
                       <span className={styles.senderName}>
-                        {m.profiles?.display_name || "NXTDox Member"}
+                        {m.profiles?.display_name || "NDOX Member"}
                       </span>
                     )}
 

@@ -147,10 +147,10 @@ html, body { background: var(--background); }
   .nxt-ui select.bg-white option { background: #0e161a; color: #f5f7f8; }
   .nxt-auth-screen { width: 100%; min-height: 100dvh; display: grid; place-items: center; padding: 32px 20px; }
   .nxt-auth-panel { width: min(100%,460px); overflow: hidden; border: 1px solid #35424a; border-top: 3px solid var(--accent-strong); border-radius: 8px; background: var(--panel); box-shadow: 0 24px 70px #0006; }
-  .nxt-auth-header { padding: 34px 32px 24px; text-align: left; border-bottom: 1px solid var(--border); background: #10171a; }
+  .nxt-auth-header { padding: 34px 32px 24px; text-align: center; border-bottom: 1px solid var(--border); background: #10171a; }
   .nxt-auth-wordmark { color: #fff; font-size: 46px; line-height: 1; font-weight: 800; letter-spacing: -2px; }
   .nxt-auth-wordmark span { color: var(--accent-strong); }
-  .nxt-auth-dealer { width: min(100%,280px); height: 76px; object-fit: cover; object-position: center; margin: 16px 0 0; }
+  .nxt-auth-dealer { width: min(100%,280px); height: 76px; object-fit: cover; object-position: center; display: block; margin: 16px auto 0; }
   .nxt-auth-header h2 { font-size: 30px; margin-top: 16px; }
   .nxt-auth-header p { color: var(--muted); font-size: 10px; letter-spacing: .18em; }
   .nxt-auth-form { padding: 28px 32px; }

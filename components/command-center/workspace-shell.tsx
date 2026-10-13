@@ -60,7 +60,7 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
   return <div className={`nxt-ui ${styles.shell}`}>
     <header className={styles.header}>
       <div className={styles.brands}>
-        <Link href="/dashboard" className={styles.wordmark} aria-label="NXTDox home"><span>N</span>XTD<span>o</span>x</Link>
+        <Link href="/dashboard" className={styles.wordmark} aria-label="NDOX home"><span>N</span>D<span>O</span>X</Link>
         <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} className={styles.dealerLogo} priority />
       </div>
       {display ? <div className={styles.displayLabel}><Monitor /><div>Office Display Board<small>Read only · Live updates</small></div></div> : <>

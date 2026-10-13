@@ -230,7 +230,7 @@ export function SupabaseSessionGate({
       <div className="nxt-ui nxt-auth-screen">
         <div className="nxt-auth-panel">
           <div className="nxt-auth-header">
-            <div className="nxt-auth-wordmark" aria-label="NXTDox"><span>N</span>XTD<span>o</span>x</div>
+            <div className="nxt-auth-wordmark" aria-label="NDOX"><span>N</span>D<span>O</span>X</div>
             <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} priority className="nxt-auth-dealer" />
             <p className="mt-3 text-xs font-bold uppercase tracking-[0.24em] text-white/80 drop-shadow-sm">WALKER AUTOMOTIVE WORKSPACE</p>
           </div>
@@ -251,7 +251,7 @@ export function SupabaseSessionGate({
       <div className="nxt-ui nxt-auth-screen">
         <div className="nxt-auth-panel">
           <div className="nxt-auth-header">
-            <div className="nxt-auth-wordmark" aria-label="NXTDox"><span>N</span>XTD<span>o</span>x</div>
+            <div className="nxt-auth-wordmark" aria-label="NDOX"><span>N</span>D<span>O</span>X</div>
             <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} priority className="nxt-auth-dealer" />
             <p className="mt-3 text-xs font-bold uppercase tracking-[0.24em] text-white/80 drop-shadow-sm">WALKER AUTOMOTIVE WORKSPACE</p>
           </div>
@@ -270,7 +270,7 @@ export function SupabaseSessionGate({
         <div className="nxt-auth-panel">
           {/* Hero header with graphic */}
           <div className="nxt-auth-header">
-            <div className="nxt-auth-wordmark" aria-label="NXTDox"><span>N</span>XTD<span>o</span>x</div>
+            <div className="nxt-auth-wordmark" aria-label="NDOX"><span>N</span>D<span>O</span>X</div>
             <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} priority className="nxt-auth-dealer" />
             <p className="mt-4 text-xs font-bold uppercase tracking-[0.24em] text-white drop-shadow-sm">WALKER AUTOMOTIVE WORKSPACE</p>
             <h2 className="mt-1 text-2xl font-extrabold text-white drop-shadow-sm sm:text-3xl">

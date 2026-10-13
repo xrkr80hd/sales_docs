@@ -357,7 +357,7 @@ export function ProfileEditor() {
           <h1>Business Card Login</h1>
           <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
           <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-          <button type="button" onClick={signIn}>Log in with NXTDox</button>
+          <button type="button" onClick={signIn}>Log in with NDOX</button>
           {notice && <p className={styles.notice}>{notice}</p>}
         </section>
       </main>
