@@ -185,7 +185,7 @@ export default function MessengerAdmin() {
 
 				return (
 					<section key={organization.id} className="overflow-hidden border border-[#2e3035] bg-[#121418]">
-						<header className="flex min-h-16 flex-wrap items-center justify-between gap-4 border-b border-[#2e3035] bg-[#0f1114] px-4 py-3 sm:px-5">
+						<header className="flex min-h-16 flex-wrap items-center justify-between gap-4 border-b border-[#2e3035] bg-[var(--background)] px-4 py-3 sm:px-5">
 							<div>
 								<h2 className="text-sm font-black text-white">{organization.name}</h2>
 								<p className="text-xs text-neutral-500">{members.length} members</p>

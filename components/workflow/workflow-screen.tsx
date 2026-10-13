@@ -397,7 +397,7 @@ export function WorkflowScreen({ dealType = "used" }: { dealType?: "used" | "new
           <div className="grid gap-5 px-5 py-5 sm:px-6">
             <div className="text-center">
               <Image
-                src="/walker-red-graphic-v2.png"
+                src="/branding/walker-automotive.png"
                 alt="Walker Automotive graphic"
                 width={320}
                 height={116}

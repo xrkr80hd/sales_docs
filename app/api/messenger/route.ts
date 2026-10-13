@@ -17,40 +17,17 @@ async function currentUser(request: Request) {
   }
 }
 
-// Local in-memory store for fallback/dev environments
+// Test-only storage. Never substitute fabricated people or conversations when
+// a signed-in user's live database is unavailable.
 const localStore = {
-  conversations: [
-    {
-      id: "org-chat-1",
-      kind: "organization",
-      title: "Walker Automotive Team Chat",
-      updated_at: new Date().toISOString(),
-      messenger_participants: [
-        { user_id: "local-xrkr80hd", last_read_at: new Date().toISOString() },
-        { user_id: "donald-goff", last_read_at: new Date(Date.now() - 60000).toISOString() },
-      ],
-    },
-  ],
-  messages: [
-    {
-      id: "msg-1",
-      conversation_id: "org-chat-1",
-      sender_id: "donald-goff",
-      body: "Hey Travis, checking in on the RAM 2500 inventory for the week!",
-      created_at: new Date(Date.now() - 3600000).toISOString(),
-      deleted_at: null,
-      profiles: { display_name: "Donald Goff" },
-    },
-    {
-      id: "msg-2",
-      conversation_id: "org-chat-1",
-      sender_id: "local-xrkr80hd",
-      body: "Looks good Donald! The Laramie 4x4 is ready on the showcase.",
-      created_at: new Date(Date.now() - 1800000).toISOString(),
-      deleted_at: null,
-      profiles: { display_name: "Travis Wilkinson (Owner)" },
-    },
-  ] as any[],
+  conversations: [{
+    id: "local-verification-room",
+    kind: "organization",
+    title: "Local verification room",
+    updated_at: new Date().toISOString(),
+    messenger_participants: [{ user_id: "local-xrkr80hd", last_read_at: new Date().toISOString() }],
+  }],
+  messages: [] as any[],
 };
 
 export async function GET(request: Request) {
@@ -143,20 +120,19 @@ export async function GET(request: Request) {
 
     return Response.json({ membership, people: people ?? [], conversations: (conversations ?? []).filter((c: any) => ids.includes(c.id)), messages: messages ?? [], me: user.id });
   } catch {
-    if (isOwner || isDonaldGoff) {
-      // Local / offline fallback for Owner & Donald Goff
+    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
+      // Explicitly isolated verification mode, never a live-session fallback.
       return Response.json({
         membership: {
           organization_id: "local-org",
           chat_enabled: true,
           can_dm: true,
           can_org_chat: true,
-          chat_nickname: "Trav",
-          organizations: { name: "Walker Automotive" },
+          chat_nickname: "Local verification account",
+          organizations: { name: "Local verification · no live connection" },
         },
         people: [
-          { user_id: "local-xrkr80hd", profiles: { display_name: "Travis Wilkinson", username: "xrkr80hd", nickname: "Trav", profile_image_url: "" } },
-          { user_id: "donald-goff", profiles: { display_name: "Donald Goff", username: "donald-goff", nickname: "Donald", profile_image_url: "" } },
+          { user_id: "local-xrkr80hd", profiles: { display_name: "Local verification account", username: "local-verification", nickname: "Local verification account", profile_image_url: "" } },
         ],
         conversations: localStore.conversations,
         messages: localStore.messages.filter((m) => !m.deleted_at),
@@ -171,7 +147,6 @@ export async function POST(request: Request) {
   const user = await currentUser(request);
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
   const isOwner = user.email?.toLowerCase() === "xrkr80hd@gmail.com" || process.env.NEXT_PUBLIC_DISABLE_AUTH === "1";
-  const isDonaldGoff = user.email?.toLowerCase().includes("goff") || user.id === "donald-goff";
 
   const body = await request.json();
 
@@ -330,7 +305,7 @@ export async function POST(request: Request) {
 
     return Response.json({ error: "Unknown action." }, { status: 400 });
   } catch {
-    if (isOwner || isDonaldGoff) {
+    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
       if (body.action === "start-dm") {
         const users = [user.id, String(body.userId)].sort();
         const conversationId = `dm-${users.join("-")}`;
@@ -356,7 +331,7 @@ export async function POST(request: Request) {
             body: text,
             created_at: new Date().toISOString(),
             deleted_at: null,
-            profiles: { display_name: isOwner ? "Travis Wilkinson (Owner)" : "Donald Goff" },
+            profiles: { display_name: "Local verification account" },
           };
           localStore.messages.push(newMsg);
         }

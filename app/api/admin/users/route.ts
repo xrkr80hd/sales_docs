@@ -29,6 +29,7 @@ export async function GET(request: Request) {
       return Response.json({ error: usersError.message }, { status: 500 });
     }
 
+    const roleMap = new Map(users.map(u => [u.id, u.app_metadata?.workspace_role]));
     const emailMap = new Map(users.map((u) => [u.id, u.email]));
 
     const { data: cards, error: cardsError } = await supabase
@@ -39,6 +40,7 @@ export async function GET(request: Request) {
 
     const enriched = (profiles ?? []).map((p) => ({
       ...p,
+      workspace_role: p.role === "admin" ? "admin" : roleMap.get(p.id) || p.role,
       email: emailMap.get(p.id) ?? "unknown",
       card_slug: cardMap.get(p.id)?.slug ?? null,
       card_is_published: Boolean(cardMap.get(p.id)?.is_published),

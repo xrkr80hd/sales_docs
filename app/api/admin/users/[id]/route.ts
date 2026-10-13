@@ -1,7 +1,8 @@
+import { validWorkspaceRole, profileRole } from "@/lib/workspace-roles";
 import { requireAdmin } from "@/lib/require-admin";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
-const VALID_ROLES = ["admin", "user", "fni", "sales_manager"] as const;
+
 const OWNER_EMAIL = "xrkr80hd@gmail.com";
 
 function slugify(value: string) {
@@ -40,13 +41,13 @@ export async function PATCH(
         { status: 400 },
       );
     }
-    if (!VALID_ROLES.includes(body.role)) {
+    if (!validWorkspaceRole(body.role)) {
       return Response.json(
-        { error: `Invalid role. Must be one of: ${VALID_ROLES.join(", ")}` },
+        { error: "Invalid workspace role." },
         { status: 400 },
       );
     }
-    updates.role = body.role;
+    updates.role = profileRole(body.role);
   }
 
   if (typeof body?.card_enabled === "boolean") {
@@ -68,6 +69,13 @@ export async function PATCH(
     if (error) {
       if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") return Response.json({ ok: true, updates });
       return Response.json({ error: error.message }, { status: 500 });
+    }
+
+    if (body?.role) {
+      const { data: target, error: targetError } = await supabase.auth.admin.getUserById(id);
+      if (targetError) return Response.json({ error: targetError.message }, { status: 500 });
+      const { error: roleError } = await supabase.auth.admin.updateUserById(id, { app_metadata: { ...target.user.app_metadata, workspace_role: body.role } });
+      if (roleError) return Response.json({ error: roleError.message }, { status: 500 });
     }
 
     let card: { slug: string; is_published: boolean } | null = null;

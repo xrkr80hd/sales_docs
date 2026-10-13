@@ -60,7 +60,7 @@ export function NotificationPrompt() {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-[9999] mx-auto max-w-md animate-[slideUp_0.3s_ease-out] border border-white/15 bg-[#1c1c1e] px-5 py-4 shadow-[0_0_40px_rgba(190,23,23,0.2),0_24px_60px_rgba(0,0,0,0.5)] sm:left-auto sm:right-6 sm:mx-0">
+    <div className="fixed bottom-4 left-4 right-4 z-[9999] mx-auto max-w-md animate-[slideUp_0.3s_ease-out] border border-white/15 bg-[var(--panel)] px-5 py-4 shadow-[0_0_40px_rgba(190,23,23,0.2),0_24px_60px_rgba(0,0,0,0.5)] sm:left-auto sm:right-6 sm:mx-0">
       <div className="mb-3 flex items-start gap-3">
         <span className="mt-0.5 text-2xl">🔔</span>
         <div>
