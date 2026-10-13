@@ -1,5 +1,5 @@
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
-export type OrganizationBranding={iconUrl?:string;theme?:string;hideIcon?:boolean;deletedAt?:string;fallbackOrganizationId?:string};
+export type OrganizationBranding={iconUrl?:string;theme?:string;hideIcon?:boolean;address?:{street:string;city:string;state:string;zip:string};deletedAt?:string;fallbackOrganizationId?:string};
 let owner:Promise<string>|undefined;
 export async function brandingOwner(db:ReturnType<typeof getSupabaseServiceClient>){
   if(!owner)owner=(async()=>{for(let page=1;page<=50;page++){const {data,error}=await db.auth.admin.listUsers({page,perPage:200});if(error)throw error;const found=data.users.find(user=>user.email?.toLowerCase()==="xrkr80hd@gmail.com");if(found)return found.id;if(data.users.length<200)break;}throw new Error("Master Admin account not found.");})().catch(error=>{owner=undefined;throw error;});
