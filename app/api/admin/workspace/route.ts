@@ -32,10 +32,16 @@ export async function POST(request: Request) {
   const { data: invitation, error: inviteError } = (direct ? await db.auth.admin.createUser({ email, password: body.password, email_confirm: true, user_metadata: { display_name: name }, app_metadata: { workspace_role: body.role, must_change_password: true } }) : await db.auth.admin.inviteUserByEmail(email, { data: { display_name: name }, redirectTo: "https://nextdocs.xrkr80hd.studio/dashboard" }));
   if (inviteError || !invitation.user) return Response.json({ error: inviteError?.message || "Invitation could not be sent." }, { status: 500 });
   const id = invitation.user.id;
+  // Every new consultant receives the standard tool bundle by default. Higher roles retain explicitly selected permissions.
+  const consultant = body.role === "user";
+  const cardEnabled = consultant || body.cardEnabled === true;
+  const chatEnabled = consultant || body.chatEnabled === true;
+  const dmEnabled = consultant || (chatEnabled && body.canDm === true);
+  const orgChatEnabled = consultant || (chatEnabled && body.canOrgChat === true);
   const operations = [
     db.auth.admin.updateUserById(id, { app_metadata: { ...invitation.user.app_metadata, workspace_role: body.role } }),
-    db.from("profiles").upsert({ id, role: profileRole(body.role), display_name: name, card_enabled: body.cardEnabled === true }),
-    db.from("organization_memberships").upsert({ user_id: id, organization_id: body.organizationId, chat_enabled: body.chatEnabled === true, can_dm: body.chatEnabled === true && body.canDm === true, can_org_chat: body.chatEnabled === true && body.canOrgChat === true, assigned_by: auth.userId }, { onConflict: "user_id" }),
+    db.from("profiles").upsert({ id, role: profileRole(body.role), display_name: name, card_enabled: cardEnabled }),
+    db.from("organization_memberships").upsert({ user_id: id, organization_id: body.organizationId, chat_enabled: chatEnabled, can_dm: dmEnabled, can_org_chat: orgChatEnabled, assigned_by: auth.userId }, { onConflict: "user_id" }),
   ];
   // The membership references profiles, so finish profile creation first.
   const metadata = await operations[0];
@@ -43,11 +49,18 @@ export async function POST(request: Request) {
   const membership = profile.error ? profile : await operations[2];
   const setupError = metadata.error || profile.error || membership.error;
   if (setupError) return Response.json({ error: `Invitation sent, but account setup needs attention: ${setupError.message}`, userId: id }, { status: 500 });
+  // Provision the editable consultant card record immediately (without publishing it).
+  if (cardEnabled) {
+    const slugBase = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "consultant";
+    const slug = `${slugBase}-${id.slice(0,6)}`;
+    const { error: cardError } = await db.from("consultant_cards").upsert({ user_id: id, slug, display_name: name, email, updated_at: new Date().toISOString() }, { onConflict: "user_id", ignoreDuplicates: true });
+    if (cardError) return Response.json({ error: `Account created, but consultant card setup needs attention: ${cardError.message}`, userId: id }, { status: 500 });
+  }
   const bucket = `consultant-media-${id}`;
   const { error: missingBucket } = await db.storage.getBucket(bucket);
   if (missingBucket) {
     const { error } = await db.storage.createBucket(bucket, { public: true, fileSizeLimit: 100 * 1024 * 1024, allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm", "video/quicktime"] });
     if (error) return Response.json({ error: `Invitation sent and user created; storage setup failed: ${error.message}`, userId: id }, { status: 500 });
   }
-  return Response.json({ ok: true, userId: id, bucket, invited: !direct });
+  return Response.json({ ok: true, userId: id, bucket, invited: !direct, tools: { consultantCard: cardEnabled, messenger: chatEnabled, directMessages: dmEnabled, teamChat: orgChatEnabled, saleCommander: true, documents: true, consultantTools: true } });
 }
