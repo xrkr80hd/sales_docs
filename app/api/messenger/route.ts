@@ -85,11 +85,11 @@ export async function GET(request: Request) {
 
     if (!membership?.chat_enabled) return Response.json({ membership, conversations: [], people: [], messages: [] });
 
-    const [{ data: memberRows, error: membersError }, { data: conversations }] = await Promise.all([
+    const [{ data: memberRows, error: membersError }, { data: conversations,error: conversationError }] = await Promise.all([
       db.from("organization_memberships").select("user_id,chat_nickname,organization_id,can_dm").eq("chat_enabled", true),
       db.from("messenger_conversations").select("id,kind,title,organization_id,updated_at,messenger_participants(user_id,last_read_at)").order("updated_at", { ascending: false }).limit(150),
     ]);
-    if (membersError) return Response.json({ error: membersError.message }, { status: 500 });
+    if (membersError || conversationError) return Response.json({ error: (membersError||conversationError)?.message }, { status: 500 });
 
     const memberIds = (memberRows ?? []).map((member) => member.user_id);
     const { data: memberProfiles, error: profilesError } = memberIds.length
@@ -115,7 +115,8 @@ export async function GET(request: Request) {
     }));
 
     const ids = (conversations ?? []).filter((c: any) => c.kind === "organization" ? c.organization_id === membership.organization_id : c.messenger_participants?.some((p: any) => p.user_id === user.id)).map((c: any) => c.id);
-    const { data: messageRows } = ids.length ? await db.from("messenger_messages").select("id,conversation_id,sender_id,body,created_at,edited_at").in("conversation_id", ids).is("deleted_at", null).order("created_at", {ascending:false}).limit(300) : { data: [] };
+    const { data: messageRows,error: messagesError } = ids.length ? await db.from("messenger_messages").select("id,conversation_id,sender_id,body,created_at,edited_at").in("conversation_id", ids).is("deleted_at", null).order("created_at", {ascending:false}).limit(300) : { data: [],error:null };
+    if(messagesError)return Response.json({error:messagesError.message},{status:500});
     const messages = (messageRows ?? []).slice().reverse().map((message) => ({
       ...message,
       profiles: people.find((person) => person.user_id === message.sender_id)?.profiles,
@@ -216,7 +217,8 @@ export async function POST(request: Request) {
         const created = await db.from("messenger_conversations").insert({ organization_id: mine.organization_id, kind: "dm", dm_key: dmKey, created_by: user.id }).select("id").single();
         if (created.error) return Response.json({ error: created.error.message }, { status: 500 });
         convo = created.data;
-        await db.from("messenger_participants").insert(users.map((id) => ({ conversation_id: convo!.id, user_id: id })));
+        const {error:participantError}=await db.from("messenger_participants").insert(users.map((id) => ({ conversation_id: convo!.id, user_id: id })));
+        if(participantError)return Response.json({error:participantError.message},{status:500});
       }
       return Response.json({ conversationId: convo.id });
     }
