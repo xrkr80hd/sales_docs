@@ -51,6 +51,7 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
   const links = manager ? [
     { label: "Home", href: "/dashboard", icon: Home },
     { label: "Manager Board", href: "/manager-board", icon: Table2 },
+    { label: "Sales Commander Stats", href: "/manager-board/sale-commander", icon: Table2 },
     { label: "Office Display", href: "/office-display", icon: Monitor },
     { label: "Previous Deals", href: "/deals", icon: Files },
   ] : [
