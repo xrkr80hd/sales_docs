@@ -1,3 +1,4 @@
+import { organizationBranding } from "@/lib/organization-branding";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
 /**
@@ -34,7 +35,11 @@ export async function GET(request: Request) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 
-  const dealerInfo = asRecord(data?.dealer_info);
+  const {data: membership}=await supabase.from("organization_memberships").select("organization_id,organizations(name)").eq("user_id",user.id).maybeSingle();
+  const organization=membership?.organizations as unknown as {name?:string}|null;
+  const branded=membership?.organization_id?(await organizationBranding(supabase))[membership.organization_id]:undefined;
+  const assignedDealer=organization?.name?{dealershipName:organization.name,...(branded?.address||{street:"",city:"",state:"",zip:""})}:null;
+  const dealerInfo = {...asRecord(data?.dealer_info),...(assignedDealer||{})};
   const consultantInfo = asRecord(data?.consultant_info);
 
   return Response.json({
@@ -75,7 +80,11 @@ export async function PUT(request: Request) {
     .maybeSingle();
   if (existingError) return Response.json({ error: existingError.message }, { status: 500 });
 
-  const dealerInfo = { ...asRecord(existing?.dealer_info), ...asRecord(body.dealer_info) };
+  const {data: membership}=await supabase.from("organization_memberships").select("organization_id,organizations(name)").eq("user_id",user.id).maybeSingle();
+  const organization=membership?.organizations as unknown as {name?:string}|null;
+  const branded=membership?.organization_id?(await organizationBranding(supabase))[membership.organization_id]:undefined;
+  const assignedDealer=organization?.name?{dealershipName:organization.name,...(branded?.address||{street:"",city:"",state:"",zip:""})}:null;
+  const dealerInfo = { ...asRecord(existing?.dealer_info), ...asRecord(body.dealer_info),...(assignedDealer||{}) };
   const consultantInfo = { ...asRecord(existing?.consultant_info), ...asRecord(body.consultant_info) };
 
   const { error } = await supabase
