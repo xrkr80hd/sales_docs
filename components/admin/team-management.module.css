@@ -63,3 +63,13 @@
 .teamGrid .teamGroup > summary small { font-size:12px; }
 .teamGrid .teamGroup > summary > svg:last-child { margin-left:auto; }
 @media(max-width:700px) { .listHeading { gap:10px; flex-wrap:wrap; align-items:center; } .viewSwitcher { margin-left:0; } .teamGrid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:8px; } .teamGrid .teamGroup > summary { padding:10px; } .teamGrid .teamOrgArt { height:60px; } .teamGrid .teamOrgArt img { max-height:60px; } }
+
+/* Mobile organization grid: always two equal-width cards, never a full-width orphan. */
+@media (max-width: 700px) {
+  .teamGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; width:100%; align-items:start; }
+  .teamGrid > .teamGroup { min-width:0; max-width:100%; width:100%; }
+  .teamGrid .teamGroup > summary { min-width:0; width:100%; }
+  .teamGrid .teamGroup > summary strong { min-width:0; overflow-wrap:anywhere; }
+  .teamGrid .teamMembers { min-width:0; overflow-wrap:anywhere; }
+  .teamGrid .member > summary { flex-wrap:wrap; }
+}
