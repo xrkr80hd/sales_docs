@@ -47,7 +47,7 @@ export async function GET(request:Request){
  const row=lookup.get(m.user_id),commander=(row?.consultant_info as Record<string,any>|null)?.saleCommander||{};
  const todayCounts=commander.days?.[day]||{};
  const month=day.slice(0,7);
- const monthly=Object.entries(commander.days||{}).filter(([key])=>key.startsWith(month)).reduce((total,[,counts])=>{const c=counts as Record<string,number>;for(const key of ["calls","talks","appts","shows","sold"])total[key]+=(Number(c?.[key])||0);return total;},{calls:0,talks:0,appts:0,shows:0,sold:0});
+ const monthly=Object.entries(commander.days||{}).filter(([key])=>key.startsWith(month)).reduce((total,[,counts])=>{const c=counts as Record<string,number>;for(const key of ["calls","talks","appts","shows","sold"] as const)total[key]+=(Number(c?.[key])||0);return total;},{calls:0,talks:0,appts:0,shows:0,sold:0});
  const organization=allowed.find(o=>o.id===m.organization_id);
  return {userId:m.user_id,name:(m.profiles as unknown as {display_name?:string})?.display_name||"Consultant",organizationId:m.organization_id,organization:organization?.name||"",goal:Number(boards[`${m.organization_id}:${month}`]?.rows?.[m.user_id]?.objective)||Number(commander.goal)||5,rates:commander.rates||{},workdays:Number(commander.rates?.workdays)||22,today:Object.fromEntries(["calls","talks","appts","shows","sold"].map(k=>[k,Number(todayCounts[k])||0])),monthly,updatedAt:row?.updated_at||null};
  });
