@@ -11,6 +11,9 @@ export async function POST(request:Request){
   if(theme&&!Object.hasOwn(ORGANIZATION_THEMES,theme))return Response.json({error:"Choose a valid color scheme."},{status:400});
   if((await organizationBranding(db))[organizationId]?.deletedAt)return Response.json({error:"Organization was deleted."},{status:404});
   const removeIcon=form.get("removeIcon")==="1";
+  const addressFields=["street","city","state","zip"] as const;
+  const address=Object.fromEntries(addressFields.map(field=>[field,String(form.get(field)||"").trim()])) as {street:string;city:string;state:string;zip:string};
+  if(addressFields.some(field=>address[field].length>160))return Response.json({error:"Address fields must be 160 characters or fewer."},{status:400});
   const ownerId=await brandingOwner(db);let iconUrl:string|undefined;const file=form.get("file");
   if(file instanceof File&&file.size){
    if(!["image/png","image/webp"].includes(file.type)||file.size>3*1024*1024)return Response.json({error:"Use a transparent PNG or WebP up to 3 MB. Recommended: 512 × 512."},{status:400});
@@ -22,7 +25,7 @@ export async function POST(request:Request){
   }
   // Read after uploading and compare-and-set: branding never replaces board/contact data.
   const {data:settings,error}=await db.from("user_settings").select("dealer_info,updated_at").eq("user_id",ownerId).maybeSingle();if(error)throw error;
-  const dealer=settings?.dealer_info||{};const branding=dealer.organizationBranding||{};const value={...branding[organizationId],...(removeIcon?{iconUrl:"",hideIcon:true}:{}),...(iconUrl?{iconUrl,hideIcon:false}:{}),...(form.has("theme")?{theme}:{})};
+  const dealer=settings?.dealer_info||{};const branding=dealer.organizationBranding||{};const value={...branding[organizationId],...(removeIcon?{iconUrl:"",hideIcon:true}:{}),...(iconUrl?{iconUrl,hideIcon:false}:{}),...(form.has("theme")?{theme}:{}),...(form.has("street")?{address}:{})};
   const update={dealer_info:{...dealer,organizationBranding:{...branding,[organizationId]:value}},updated_at:new Date().toISOString()};
   if(settings){const {data:saved,error}=await db.from("user_settings").update(update).eq("user_id",ownerId).eq("updated_at",settings.updated_at).select("user_id");if(error)throw error;if(!saved?.length)return Response.json({error:"Organization data changed. Try saving again."},{status:409});}
   else {const {error}=await db.from("user_settings").insert({user_id:ownerId,...update});if(error)throw error;}
