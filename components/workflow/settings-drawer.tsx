@@ -1,5 +1,6 @@
 "use client";
 
+import { notifySave } from "@/components/ui/save-toast-host";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -49,16 +50,16 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   async function save() {
-    setSaving(true); setError(""); setStatus("");
+    setSaving(true); setError(""); setStatus(""); notifySave("saving","Saving consultant setup…");
     const ok = await saveServerSettings(dealer, consultant);
     if (ok) {
       saveDealer(dealer); saveConsultant(consultant);
       window.dispatchEvent(new Event("consultant-profile-updated"));
-      setStatus("Consultant setup saved. Your documents will use these details.");
+      setStatus("Consultant setup saved. Your documents will use these details."); notifySave("success","Consultant setup saved.");
     } else if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
       saveDealer(dealer); saveConsultant(consultant);
       setStatus("Saved for local verification only. No live account was changed.");
-    } else setError("Could not save to your account. Your changes are still here; please try again.");
+    } else {setError("Could not save to your account. Your changes are still here; please try again.");notifySave("error","Consultant setup could not be saved.");}
     setSaving(false);
   }
   async function uploadPhoto(event: ChangeEvent<HTMLInputElement>) {
