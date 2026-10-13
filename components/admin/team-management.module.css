@@ -73,3 +73,25 @@
   .teamGrid .teamMembers { min-width:0; overflow-wrap:anywhere; }
   .teamGrid .member > summary { flex-wrap:wrap; }
 }
+
+
+/* Compact, fixed-size cards stay independent of the expandable personnel pane. */
+.teamGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; padding:10px; align-items:stretch; }
+.teamGridCard { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; width:100%; min-width:0; min-height:124px; padding:10px 6px; color:#fff; background:#111b22; border:1px solid #3a4a57; border-radius:5px; text-align:center; cursor:pointer; }
+.teamGridCard[aria-pressed="true"] { border-color:#ed3449; background:#241b23; }
+.teamGridCard strong { width:100%; font-size:12px; line-height:1.25; overflow-wrap:anywhere; }
+.teamGridCard small { font-size:10px; color:#aebcc8; }
+.teamGridArt { display:flex; align-items:center; justify-content:center; width:100%; height:56px; }
+.teamGridArt img { display:block; max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; }
+.selectedTeamPanel { margin:0 10px 12px; min-width:0; border:1px solid #405366; border-radius:5px; background:#101920; }
+.selectedTeamPanel > header { display:flex; justify-content:space-between; gap:10px; align-items:center; padding:12px; border-bottom:1px solid #405366; }
+.selectedTeamPanel h3 { margin:0; font-size:15px; }
+.selectedTeamPanel header button { background:transparent; color:#fff; border:1px solid #53616a; border-radius:4px; padding:6px 9px; cursor:pointer; }
+.selectedTeamScroll { max-height:min(54dvh,480px); overflow-y:auto; overscroll-behavior:contain; }
+@media(max-width:700px) {
+ .teamGrid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; padding:8px; }
+ .teamGridCard { min-height:106px; padding:7px 5px; }
+ .teamGridArt { height:48px; }
+ .selectedTeamScroll { max-height:44dvh; }
+ .selectedTeamPanel { margin:0 8px 10px; }
+}
