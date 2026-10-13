@@ -1,5 +1,16 @@
 import { ConsultantProfileContent, normalizeProfileContent } from "@/lib/consultant-profile";
+import { organizationBranding } from "@/lib/organization-branding";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
+
+async function useAssignedOrganization(db:ReturnType<typeof getSupabaseServiceClient>,userId:string,profile:ConsultantProfileContent){
+  const {data:membership}=await db.from("organization_memberships").select("organization_id,organizations(name)").eq("user_id",userId).maybeSingle();
+  const organization=membership?.organizations as unknown as {name?:string}|null;
+  if(!organization?.name)return profile;
+  const branding=membership?.organization_id?(await organizationBranding(db))[membership.organization_id]:undefined;
+  const address=branding?.address;
+  const location=address?[address.street,[address.city,address.state].filter(Boolean).join(", "),address.zip].filter(Boolean).join(", "):"";
+  return {...profile,identity:{...profile.identity,dealership:organization.name,...(location?{location}:{})}};
+}
 
 export async function getPublishedConsultantProfile(slug: string): Promise<ConsultantProfileContent | null> {
   const isTrav = slug === "trav";
@@ -29,7 +40,7 @@ export async function getPublishedConsultantProfile(slug: string): Promise<Consu
         supabase.from("consultant_social_links").select("*").eq("card_id", card.id).order("sort_order", { ascending: true }),
       ]);
 
-      return {
+      return useAssignedOrganization(supabase,card.user_id,{
         identity: {
           displayName: card.display_name,
           jobTitle: card.job_title || "Sales Consultant",
@@ -96,18 +107,18 @@ export async function getPublishedConsultantProfile(slug: string): Promise<Consu
           url: s.url || "",
           imageUrl: "",
         })),
-      };
+      });
     }
 
     // 2. Fallback: check legacy user_settings json
-    const { data } = await supabase.from("user_settings").select("consultant_info");
+    const { data } = await supabase.from("user_settings").select("user_id,consultant_info");
     const match = data?.find((row) => {
       const c = (row.consultant_info as Record<string, unknown> | null)?.business_card as Record<string, unknown> | undefined;
       return c?.slug === slug && Boolean(c.publishedAt);
     });
     const legacyCard = (match?.consultant_info as Record<string, unknown> | null)?.business_card as Record<string, unknown> | undefined;
     if (legacyCard?.published) {
-      return normalizeProfileContent(legacyCard.published, isTrav);
+      return useAssignedOrganization(supabase,match!.user_id,normalizeProfileContent(legacyCard.published, isTrav));
     }
 
     return null;
