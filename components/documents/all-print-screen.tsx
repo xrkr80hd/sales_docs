@@ -14,6 +14,7 @@ import { VinVerificationSheet } from "@/components/documents/vin-verification-sh
 import {
   loadConsultant,
   loadDealer,
+  fetchServerSettings,
   type ConsultantInfo,
   type DealerInfo,
 } from "@/lib/dealer-consultant";
@@ -31,8 +32,10 @@ export function AllPrintScreen() {
   const searchParams = useSearchParams();
   const isBlank = searchParams.get("blank") === "1";
   const [workflow, setWorkflow] = useState<WorkflowData>(() => isBlank ? createDefaultWorkflowData() : loadWorkflow());
-  const [dealer] = useState<DealerInfo>(() => loadDealer());
-  const [consultant] = useState<ConsultantInfo>(() => loadConsultant());
+  const [dealer,setDealer] = useState<DealerInfo>(() => loadDealer());
+  const [consultant,setConsultant] = useState<ConsultantInfo>(() => loadConsultant());
+  const [settingsReady,setSettingsReady]=useState(false);
+  useEffect(()=>{let active=true;void fetchServerSettings().then(settings=>{if(!active)return;if(settings){setDealer(settings.dealer);setConsultant(settings.consultant);}setSettingsReady(true);});return()=>{active=false;};},[]);
   const [notes, setNotes] = useState<DeliveryChecklistNotes>(() =>
     loadDeliveryChecklistNotes(),
   );
@@ -65,15 +68,16 @@ export function AllPrintScreen() {
   }, []);
 
   useEffect(() => {
-    if (printedRef.current || searchParams.get("autoprint") !== "1") return;
+    if (!settingsReady || printedRef.current || searchParams.get("autoprint") !== "1") return;
     printedRef.current = true;
     const timeout = window.setTimeout(() => {
       window.print();
     }, 400);
     return () => window.clearTimeout(timeout);
-  }, [searchParams]);
+  }, [searchParams, settingsReady]);
 
   function handleAction() {
+    if (!settingsReady) return;
     window.print();
   }
 
