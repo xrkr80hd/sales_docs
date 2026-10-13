@@ -182,7 +182,7 @@ export function MessengerWorkspace() {
       return;
     }
 
-    const channel = supabase.channel(`messenger-presence:${data.membership.organization_id}`, {
+    const channel = supabase.channel(`messenger-presence:walker`, {
       config: { presence: { key: data.me } },
     });
 
