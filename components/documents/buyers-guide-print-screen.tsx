@@ -10,6 +10,7 @@ import { useVinConfirmation } from "@/components/ui/use-vin-confirmation";
 import {
   loadConsultant,
   loadDealer,
+  fetchServerSettings,
   type ConsultantInfo,
   type DealerInfo,
 } from "@/lib/dealer-consultant";
@@ -24,8 +25,10 @@ export function BuyersGuidePrintScreen() {
   const { confirmVinAction, dialog } = useVinConfirmation();
   const searchParams = useSearchParams();
   const [workflow, setWorkflow] = useState<WorkflowData>(() => loadWorkflow());
-  const [dealer] = useState<DealerInfo>(() => loadDealer());
-  const [consultant] = useState<ConsultantInfo>(() => loadConsultant());
+  const [dealer,setDealer] = useState<DealerInfo>(() => loadDealer());
+  const [consultant,setConsultant] = useState<ConsultantInfo>(() => loadConsultant());
+  const [settingsReady,setSettingsReady]=useState(false);
+  useEffect(()=>{let active=true;void fetchServerSettings().then(settings=>{if(!active)return;if(settings){setDealer(settings.dealer);setConsultant(settings.consultant);}setSettingsReady(true);});return()=>{active=false;};},[]);
   const printedRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -52,7 +55,7 @@ export function BuyersGuidePrintScreen() {
   }, []);
 
   useEffect(() => {
-    if (printedRef.current || searchParams.get("autoprint") !== "1") return;
+    if (!settingsReady || printedRef.current || searchParams.get("autoprint") !== "1") return;
     printedRef.current = true;
     const vinChecked = searchParams.get("vinchecked") === "1";
     const timeout = window.setTimeout(async () => {
@@ -61,9 +64,10 @@ export function BuyersGuidePrintScreen() {
       window.print();
     }, 260);
     return () => window.clearTimeout(timeout);
-  }, [searchParams, workflow, confirmVinAction]);
+  }, [searchParams, workflow, confirmVinAction, settingsReady]);
 
   async function handlePrint() {
+    if (!settingsReady) return;
     if (!(await confirmVinAction(workflow.vin, "printing"))) return;
     window.print();
   }
