@@ -49,13 +49,15 @@ export function TeamManagement() {
   const [newOrgAddress,setNewOrgAddress]=useState<Address>(emptyAddress);
   const [newUser,setNewUser] = useState({ name: "", email: "", role: "user" as WorkspaceRole, organizationId: "", cardEnabled: true, chatEnabled: true, canDm: true, canOrgChat: true, createMode: "direct", password: "", forceChange: true });
   const load = useCallback(async () => {
-    try {
-      const [team,directory,invitations] = await Promise.all([api("/api/admin/users"),api("/api/workspace/directory"),api("/api/admin/invites")]);
-      setUsers(team.users); setOrganizations(directory.organizations); setMemberships(directory.memberships); setInvites(invitations.invites); setError("");
-    } catch (failure) { setError(failure instanceof Error ? failure.message : "Could not load users."); }
-    finally { setLoading(false); }
+    const [team,directory,invitations] = await Promise.allSettled([api("/api/admin/users"),api("/api/workspace/directory"),api("/api/admin/invites")]);
+    const errors:string[]=[];
+    if(team.status==="fulfilled")setUsers(team.value.users||[]);else errors.push("Registered user accounts: "+String(team.reason instanceof Error?team.reason.message:team.reason));
+    if(directory.status==="fulfilled"){setOrganizations(directory.value.organizations||[]);setMemberships(directory.value.memberships||[]);}else errors.push("Dealership directory: "+String(directory.reason instanceof Error?directory.reason.message:directory.reason));
+    if(invitations.status==="fulfilled")setInvites(invitations.value.invites||[]);else errors.push("Invitations: "+String(invitations.reason instanceof Error?invitations.reason.message:invitations.reason));
+    setError(errors.join(" | "));setLoading(false);
+    if(team.status==="rejected")throw new Error("Registered account list could not be loaded.");
   },[]);
-  useEffect(() => { void load(); },[load]);
+  useEffect(() => { void load().catch(()=>{}); },[load]);
   async function perform(operation: () => Promise<unknown>, message: string) {
     setBusy(true); setError(""); setStatus(""); notifySave("saving","Saving changes…");
     try { await operation(); await load(); window.dispatchEvent(new Event("consultant-profile-updated")); setStatus(message); notifySave("success",message); }
