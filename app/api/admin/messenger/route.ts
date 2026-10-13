@@ -1,3 +1,4 @@
+import { organizationBranding } from "@/lib/organization-branding";
 import { requireAdmin } from "@/lib/require-admin";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
@@ -26,9 +27,10 @@ export async function GET(request: Request) {
     const queryError = organizationsResult.error ?? membershipsResult.error ?? profilesResult.error ?? authUsers.error;
     if (queryError) return databaseError(queryError.message);
 
+    const branding=await organizationBranding(db);
     const emails = new Map((authUsers.data.users ?? []).map((u) => [u.id, u.email]));
     return Response.json({
-      organizations: organizationsResult.data ?? [],
+      organizations: (organizationsResult.data ?? []).filter(org=>!branding[org.id]?.deletedAt),
       memberships: membershipsResult.data ?? [],
       users: (profilesResult.data ?? []).map((profile) => ({
         ...profile,
@@ -67,6 +69,7 @@ export async function POST(request: Request) {
   }
 
   const db = getSupabaseServiceClient();
+  if((await organizationBranding(db))[body.organizationId]?.deletedAt)return Response.json({error:"Choose an active organization."},{status:400});
   const { data: targetUser, error: targetError } = await db.auth.admin.getUserById(body.userId);
   if (targetError) return Response.json({ error: targetError.message }, { status: 400 });
 

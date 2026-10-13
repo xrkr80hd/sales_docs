@@ -1,3 +1,4 @@
+import { organizationBranding } from "@/lib/organization-branding";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { CDJR_LINKS, validConsultantUrl, type ConsultantLink } from "@/lib/consultant-links";
 type LinkSet = { links: ConsultantLink[]; updatedAt: string };
@@ -14,7 +15,7 @@ async function context(request:Request) {
   const organizationId=admin&&requested?requested:member?.organization_id;
   if(!organizationId)return Response.json({error:"Assign this account to an organization first."},{status:400});
   const {data:organization,error:orgError}=await db.from("organizations").select("id,name").eq("id",organizationId).single();
-  if(orgError||!organization)return Response.json({error:"Organization not found."},{status:404});
+  if(orgError||!organization||(await organizationBranding(db))[organizationId]?.deletedAt)return Response.json({error:"Organization not found."},{status:404});
   return {db,user,admin,organization};
 }
 export async function GET(request:Request) {

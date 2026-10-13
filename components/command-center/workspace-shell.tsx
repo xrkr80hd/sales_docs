@@ -9,6 +9,7 @@ import { Home, FilePlus2, Files, Wrench, MessageCircle, Settings, Table2, Monito
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { useWorkspaceIdentity } from "./workspace-context";
 import { ROLE_LABELS } from "@/lib/workspace-roles";
+import { OrganizationBadge } from "./organization-badge";
 import { ConsultantLinksNav } from "@/components/consultant-links/links-nav";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import styles from "./workspace.module.css";
@@ -66,7 +67,7 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
       </div>
       {display ? <div className={styles.displayLabel}><Monitor /><div>Office Display Board<small>Read only · Live updates</small></div></div> : <>
         <div className={styles.identity}>
-          <details><summary><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div><ChevronDown size={18} /></summary><div className={styles.accountMenu}><button onClick={onSettings}>Consultant Setup</button><button onClick={session.signOut}>Sign Out</button></div></details>
+          <details><summary><span className={styles.profilePhoto}><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span>{identity?.dealership&&<OrganizationBadge name={identity.dealership} iconUrl={identity.organizationIconUrl} hidden={identity.organizationHideIcon}/>}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div><ChevronDown size={18} /></summary><div className={styles.accountMenu}><button onClick={onSettings}>Consultant Setup</button><button onClick={session.signOut}>Sign Out</button></div></details>
           <div className={styles.clock}><small>{now?.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "America/Chicago" }) || ""}</small><strong>{now?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" }) || ""}</strong></div>
         </div>
         <button className={styles.menuButton} aria-label="Open navigation" aria-expanded={navigationOpen} onClick={() => setNavigationOpen(true)}><Menu /></button>

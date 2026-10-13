@@ -167,3 +167,7 @@
 .roomHeader { min-height: 62px; background: #131b1f; }
 .dmWindow { background: #0d1519; border-radius: 6px; }
 @media (max-width: 900px) { .workspace { height: calc(100dvh - 120px); min-height: 430px; } .workspaceBody { grid-template-columns: minmax(0,1fr); } }
+
+/* Messenger remains the fixed Walker dark/red surface in every organization. */
+.workspaceHeader, .roomHeader, .headerTools, .peoplePanel, .panelHeading, .dmHeader { background:var(--panel); color:var(--foreground); }
+.nicknameButton, .soundUpload, .clearButton, .person, .dmTitle { color:var(--foreground); }

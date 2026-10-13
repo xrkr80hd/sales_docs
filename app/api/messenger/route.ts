@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
+import { maskChatText } from "@/lib/chat-moderation";
 import { sendMessengerPush } from "@/lib/messenger-push";
 
 async function currentUser(request: Request) {
@@ -118,7 +119,7 @@ export async function GET(request: Request) {
       profiles: people.find((person) => person.user_id === message.sender_id)?.profiles,
     }));
 
-    return Response.json({ membership, people: people ?? [], conversations: (conversations ?? []).filter((c: any) => ids.includes(c.id)), messages: messages ?? [], me: user.id });
+    return Response.json({ membership, people: people ?? [], conversations: (conversations ?? []).filter((c: any) => ids.includes(c.id)), messages: (messages ?? []).map((message: any) => ({ ...message, body: maskChatText(message.body || "") })), me: user.id });
   } catch {
     if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
       // Explicitly isolated verification mode, never a live-session fallback.
@@ -187,7 +188,7 @@ export async function POST(request: Request) {
     if (!mine?.chat_enabled) return Response.json({ error: "Messenger access has not been enabled." }, { status: 403 });
 
     if (body.action === "update-nickname") {
-      const nickname = String(body.nickname ?? "").trim();
+      const nickname = maskChatText(String(body.nickname ?? "").trim());
       if (!nickname || nickname.length > 32) {
         return Response.json({ error: "Chat names must be between 1 and 32 characters." }, { status: 400 });
       }
@@ -217,7 +218,7 @@ export async function POST(request: Request) {
     }
 
     if (body.action === "send") {
-      const text = String(body.body ?? "").trim(); if (!text) return Response.json({ error: "Message is empty." }, { status: 400 });
+      const text = maskChatText(String(body.body ?? "").trim()); if (!text) return Response.json({ error: "Message is empty." }, { status: 400 });
       const { data: convo } = await db
         .from("messenger_conversations")
         .select("id,kind,organization_id,messenger_participants(user_id)")
@@ -269,7 +270,7 @@ export async function POST(request: Request) {
 
     if (body.action === "edit") {
       const msgId = body.messageId;
-      const text = String(body.body ?? "").trim();
+      const text = maskChatText(String(body.body ?? "").trim());
       if (!msgId || !text) return Response.json({ error: "Message and updated text are required." }, { status: 400 });
       if (text.length > 4000) return Response.json({ error: "Messages must be 4,000 characters or fewer." }, { status: 400 });
       const { data: existingMessage } = await db.from("messenger_messages").select("id,sender_id").eq("id", msgId).maybeSingle();
@@ -322,7 +323,7 @@ export async function POST(request: Request) {
       }
 
       if (body.action === "send") {
-        const text = String(body.body ?? "").trim();
+        const text = maskChatText(String(body.body ?? "").trim());
         if (text) {
           const newMsg = {
             id: `msg-${Date.now()}`,
@@ -347,7 +348,7 @@ export async function POST(request: Request) {
       if (body.action === "edit") {
         const msg = localStore.messages.find((message) => String(message.id) === String(body.messageId));
         if (msg && msg.sender_id === user.id) {
-          msg.body = String(body.body ?? "").trim();
+          msg.body = maskChatText(String(body.body ?? "").trim());
           msg.edited_at = new Date().toISOString();
         }
         return Response.json({ ok: true });

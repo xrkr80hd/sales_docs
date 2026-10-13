@@ -1,3 +1,4 @@
+import { organizationBranding } from "@/lib/organization-branding";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { emptyBoard,emptyRow,currentBoardMonth,safeBoardNumber,type MonthBoard } from "@/lib/manager-board";
 function record(value:unknown):Record<string,unknown>{return value&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,unknown>:{};}
@@ -12,6 +13,7 @@ async function context(request:Request){
  const bdm=profile?.role==="user"&&user.app_metadata?.workspace_role==="bdm";
  const manager=admin||profile?.role==="sales_manager";
  const url=new URL(request.url);const requested=url.searchParams.get("organization");const organizationId=district&&requested?requested:membership?.organization_id;
+ if(organizationId&&(await organizationBranding(db))[organizationId]?.deletedAt)return Response.json({error:"This organization was deleted. Assigned users have moved to Walker Automotive."},{status:404});
  const month=url.searchParams.get("month")||currentBoardMonth();
  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return Response.json({error:"Invalid month."},{status:400});
  return {db,user,profile,admin,district,manager,bdm,organizationId,month};
@@ -52,6 +54,8 @@ export async function GET(request:Request){
    const records=await boardRecords(db);const stores:Record<string,MonthBoard>={};const periods:Record<string,MonthBoard>={};
    for(const row of records)for(const [key,value]of Object.entries(row.boards)){const board=value as MonthBoard;if(!periods[key]||board.publishedAt>periods[key].publishedAt)periods[key]=board;}
    for(const [key,board]of Object.entries(periods)){const id=key.slice(0,-8);if(key.endsWith(`:${month}`))stores[id]=board;else if(!stores[id])stores[id]=annualDefault(records,id,month);}
+   const branding=await organizationBranding(db);
+   for(const id of Object.keys(stores))if(branding[id]?.deletedAt)delete stores[id];
    const notifications=Object.entries(periods).flatMap(([key,board])=>(board.events||[]).filter(event=>!event.readBy.includes(user.id)).map(event=>({...event,organizationId:key.slice(0,-8),month:key.slice(-7),version:board.publishedAt})));
    return Response.json({stores,notifications,month},{headers:{"Cache-Control":"private, no-store"}});
   }
@@ -66,7 +70,8 @@ export async function GET(request:Request){
   if(settingsError)throw settingsError;
   const proposals=Object.fromEntries((settings||[]).map(row=>[row.user_id,record(record(row.consultant_info).monthlyProjections)[`${organizationId}:${month}`]]));
   const publicBoard={newGoal:board.newGoal,usedGoal:board.usedGoal,rows:board.rows,schedule:board.schedule,weeklyUpdate:board.weeklyUpdate,publishedAt:board.publishedAt};
-  return Response.json({organization,month,board:manager||bdm?{...board,...(!manager?{events:[]}: {})}:publicBoard,roster,proposals:manager?proposals:{[user.id]:proposals[user.id]},me:user.id,canManage:manager,canViewStats:manager||bdm,version:board.publishedAt},{headers:{"Cache-Control":"private, no-store"}});
+  const branding=(await organizationBranding(db))[organizationId];
+  return Response.json({organization:{...organization,...branding},month,board:manager||bdm?{...board,...(!manager?{events:[]}: {})}:publicBoard,roster,proposals:manager?proposals:{[user.id]:proposals[user.id]},me:user.id,canManage:manager,canViewStats:manager||bdm,version:board.publishedAt},{headers:{"Cache-Control":"private, no-store"}});
  }catch(error){return Response.json({error:error instanceof Error?error.message:"Could not load the board."},{status:500});}
 }
 export async function POST(request:Request){
@@ -113,7 +118,7 @@ export async function POST(request:Request){
      const {data:person}=await db.from("profiles").select("display_name").eq("id",id).maybeSingle();
      board.events.push({id:crypto.randomUUID(),type:"sale-update",consultantId:id,consultantName:person?.display_name||"Consultant",previous:previous.mtd,next:nextMtd,reason:"Manager reported an updated month-to-date sold count.",by:profile?.display_name||user.email||"Manager",at:new Date().toISOString(),readBy:[]});
     }
-    board.rows[id]={...previous,objective:safeBoardNumber(row.objective),appointmentsGoal:safeBoardNumber(row.appointmentsGoal??previous.appointmentsGoal??0),appointmentsSet:safeBoardNumber(row.appointmentsSet??previous.appointmentsSet??0),mtd:nextMtd,weeklyGoal:safeBoardNumber(row.weeklyGoal),avg90:safeBoardNumber(row.avg90,false),days:Array.from({length:6},(_,index)=>safeBoardNumber(Array.isArray(row.days)?row.days[index]||0:0))};
+    board.rows[id]={...previous,objective:safeBoardNumber(row.objective),appointmentsGoal:safeBoardNumber(row.appointmentsGoal??previous.appointmentsGoal??0),appointmentsSet:safeBoardNumber(row.appointmentsSet??previous.appointmentsSet??0),mtd:nextMtd,weeklyGoal:safeBoardNumber(row.weeklyGoal),avg90:safeBoardNumber(row.avg90,false),days:Array.from({length:7},(_,index)=>safeBoardNumber(Array.isArray(row.days)?row.days[index]||0:0))};
    }
   }else if(body.action==="confirm-projection"||body.action==="change-projection"){
    const {data:member}=await db.from("organization_memberships").select("user_id,profiles!organization_memberships_user_id_fkey(display_name,role)").eq("user_id",body.userId).eq("organization_id",organizationId).maybeSingle();

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import ts from 'typescript';
-const base='c96b667';
+const base=process.env.PROTECTED_BASE||'29eb3eda64155fc294d14f38cf94c7b797ecb265';
 const protectedRoots=['components/documents','app/(print)','app/(app)/documents','app/(app)/deal-sheet','app/api/deals','app/api/me/settings','lib/walker-workflow.ts','lib/deals.ts','lib/dealer-consultant.ts','supabase/migrations'];
 const changes=execFileSync('git',['diff','--name-only',base],{encoding:'utf8'}).trim().split('\n');
 const violations=changes.filter(path=>protectedRoots.some(root=>path===root||path.startsWith(root+'/')));

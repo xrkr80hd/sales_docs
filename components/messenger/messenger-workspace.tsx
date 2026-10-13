@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 import { ChatProvider, ChatMessages, ChatComposer } from "./chatcn/chat";
+import { organizationThemeStyle } from "@/lib/organization-theme";
+import { maskChatText, maskCompletedChatWords } from "@/lib/chat-moderation";
 import type { ChatMessageData } from "./chatcn/types";
 
 import styles from "./messenger-workspace.module.css";
@@ -281,7 +283,7 @@ export function MessengerWorkspace() {
   }
 
   async function send(conversationId: string, body: string, clear: () => void) {
-    const message = body.trim();
+    const message = maskChatText(body.trim());
     if (!message || sendingId) return false;
     audioContext ??= new AudioContext();
     if (audioContext.state === "suspended") void audioContext.resume();
@@ -451,15 +453,15 @@ export function MessengerWorkspace() {
   }
 
   function chatMessages(messages: Message[]): ChatMessageData[] {
-    return messages.map(message => ({ id: String(message.id), senderId: message.sender_id, senderName: message.profiles?.nickname || message.profiles?.display_name || personName(message.sender_id), senderAvatar: message.profiles?.profile_image_url, text: message.body, timestamp: new Date(message.created_at), isEdited: Boolean(message.edited_at) }));
+    return messages.map(message => ({ id: String(message.id), senderId: message.sender_id, senderName: message.profiles?.nickname || message.profiles?.display_name || personName(message.sender_id), senderAvatar: message.profiles?.profile_image_url, text: maskChatText(message.body), timestamp: new Date(message.created_at), isEdited: Boolean(message.edited_at) }));
   }
   function renderRoom(messages: Message[], conversationId: string | undefined, placeholder: string, allowed: boolean) {
     const edited = messages.find(message => String(message.id) === String(editingMessageId));
     return <ChatProvider currentUser={{ id: data?.me || "", name: personName(data?.me || "") }} theme="midnight" className="nxt-chat" onEdit={message => { setEditingMessageId(message.id); setEditDraft(message.text || ""); }} onDelete={id => void deleteMessage(id)}>
       {messages.length === 0 && <p className={styles.empty}>No messages yet. Start the conversation.</p>}
       <ChatMessages messages={chatMessages(messages)} />
-      {edited && <form className={styles.editForm} onSubmit={event => { event.preventDefault(); void editMessage(edited.id); }}><input aria-label="Edit message" value={editDraft} onChange={event => setEditDraft(event.target.value)} maxLength={4000} autoFocus /><button type="submit">Save</button><button type="button" onClick={() => setEditingMessageId(null)}>Cancel</button></form>}
-      <ChatComposer key={conversationId} placeholder={placeholder} disabled={!conversationId || !allowed || Boolean(sendingId)} onSend={body => conversationId ? send(conversationId, body, () => {}) : false} />
+      {edited && <form className={styles.editForm} onSubmit={event => { event.preventDefault(); void editMessage(edited.id); }}><input aria-label="Edit message" value={editDraft} onBlur={() => setEditDraft(maskChatText(editDraft))} onChange={event => setEditDraft(maskCompletedChatWords(event.target.value))} maxLength={4000} autoFocus /><button type="submit">Save</button><button type="button" onClick={() => setEditingMessageId(null)}>Cancel</button></form>}
+      <ChatComposer key={conversationId} placeholder={placeholder} transformInput={maskCompletedChatWords} finalizeInput={maskChatText} disabled={!conversationId || !allowed || Boolean(sendingId)} onSend={body => conversationId ? send(conversationId, body, () => {}) : false} />
     </ChatProvider>;
   }
 
@@ -469,7 +471,7 @@ export function MessengerWorkspace() {
   const organizationName = data.membership.organizations?.name || "Walker Automotive";
 
   return (
-    <div className={styles.workspace}>
+    <div style={organizationThemeStyle("Walker CDJR")} data-fixed-chat-theme="walker" className={styles.workspace}>
       <header className={styles.workspaceHeader}>
         <div>
           <p className={styles.eyebrow}>{organizationName}</p>

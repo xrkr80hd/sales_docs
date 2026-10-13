@@ -1,13 +1,16 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { organizationTheme, organizationThemeStyle } from "@/lib/organization-theme";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase-browser";
 
-export type WorkspaceIdentity = { id: string; displayName: string; role: string; email: string; profileImageUrl?: string; dealership?: string; workspaceRole?: string };
+export type WorkspaceIdentity = { id: string; displayName: string; role: string; email: string; profileImageUrl?: string; dealership?: string; workspaceRole?: string; organizationHideIcon?:boolean; organizationId?:string; organizationIconUrl?:string; organizationTheme?:string };
 const WorkspaceContext = createContext<WorkspaceIdentity | null>(null);
 export function useWorkspaceIdentity() { return useContext(WorkspaceContext); }
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
+  const [boardOrganization,setBoardOrganization]=useState<{name:string;theme?:string}|null>(null);
+  useEffect(()=>{const update=(event:Event)=>setBoardOrganization((event as CustomEvent<{name:string;theme?:string}|null>).detail);window.addEventListener("organization-theme",update);return()=>window.removeEventListener("organization-theme",update);},[]);
   const [identity, setIdentity] = useState<WorkspaceIdentity | null>(() => process.env.NEXT_PUBLIC_DISABLE_AUTH === "1"
     ? { id: "local-preview", displayName: "Local interface preview", role: "admin", email: "" }
     : null);
@@ -29,5 +32,5 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const { data: listener } = client.auth.onAuthStateChange(() => { window.setTimeout(() => void load(), 0); });
     return () => { active = false; window.removeEventListener("consultant-profile-updated", refresh); listener.subscription.unsubscribe(); };
   }, []);
-  return <WorkspaceContext.Provider value={identity}>{children}</WorkspaceContext.Provider>;
+  return <WorkspaceContext.Provider value={identity}><div className="organization-theme" data-mode={organizationTheme(boardOrganization?.name||identity?.dealership,boardOrganization?boardOrganization.theme:identity?.organizationTheme).mode} style={organizationThemeStyle(boardOrganization?.name||identity?.dealership,boardOrganization?boardOrganization.theme:identity?.organizationTheme)}>{children}</div></WorkspaceContext.Provider>;
 }

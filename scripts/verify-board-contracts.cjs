@@ -8,7 +8,7 @@ const period=month.find(p=>p.type==='year').value+'-'+month.find(p=>p.type==='mo
 const state={profiles:[{id:'manager',role:'sales_manager',display_name:'Test manager'},{id:'consultant',role:'user',display_name:'Test consultant'},{id:'district',role:'sales_manager',display_name:'Test district manager'},{id:'admin',role:'admin',display_name:'Test admin'}],organizations:[{id:'store-a',name:'Test CDJR',slug:'test-cdjr'},{id:'store-b',name:'Other test store',slug:'other-test'}],organization_memberships:[{user_id:'manager',organization_id:'store-a'},{user_id:'consultant',organization_id:'store-a'},{user_id:'district',organization_id:'store-b'},{user_id:'admin',organization_id:'store-a'}],user_settings:[{user_id:'manager',dealer_info:{street:'Keep this address'},consultant_info:{name:'Keep manager contact'},updated_at:'2020-01-01T00:00:00.000Z'},{user_id:'consultant',dealer_info:{street:'Keep consultant address'},consultant_info:{phone:'Keep this phone'},updated_at:'2020-01-01T00:00:00.000Z'}],consultant_cards:[]};
 const authUsers=Object.fromEntries(state.profiles.map(user=>[user.id,{id:user.id,email:`${user.id}@test.invalid`,app_metadata:{...(user.id==='district'?{workspace_role:'district_manager'}:{})}}]));
 authUsers.admin.email='xrkr80hd@gmail.com';
-const actions=[];
+const actions=[];const pushedMessages=[];
 class Query {
  constructor(table){this.table=table;this.filters=[];this.operation='read';}
  select(){return this;}
@@ -37,8 +37,12 @@ class Query {
 }
 const db={from:table=>new Query(table),auth:{getUser:async token=>({data:{user:authUsers[token]||null},error:authUsers[token]?null:{message:'invalid'}}),admin:{listUsers:async()=>({data:{users:Object.values(authUsers)},error:null}),inviteUserByEmail:async email=>{actions.push('invite');const user={id:'new-test-user',email,app_metadata:{}};authUsers[user.id]=user;return {data:{user},error:null};},updateUserById:async(id,value)=>{actions.push('metadata');Object.assign(authUsers[id],value);return {data:{user:authUsers[id]},error:null};}}},storage:{getBucket:async()=>({error:{message:'not found'}}),createBucket:async name=>{actions.push('bucket:'+name);return {error:null};},from:()=>({upload:async()=>({error:null}),getPublicUrl:()=>({data:{publicUrl:'https://test.invalid/photo.jpg'}})})}};
 const cache=new Map();
-function load(file){if(cache.has(file))return cache.get(file);const module={exports:{}};cache.set(file,module.exports);const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;const requireLocal=name=>{if(name==='@/lib/supabase-server')return {getSupabaseServiceClient:()=>db};if(name==='@/lib/require-admin')return {requireAdmin:async request=>request.headers.get('authorization')==='Bearer admin'?{userId:'admin'}:Response.json({error:'Admin required'},{status:403})};if(name.startsWith('@/'))return load(path.resolve(name.slice(2)+'.ts'));return require(name);};vm.runInNewContext(code,{module,exports:module.exports,require:requireLocal,process:{env:{}},Response,Request,URL,File,FormData,Uint8Array,crypto:globalThis.crypto,structuredClone,Intl,Date,console},{filename:file});cache.set(file,module.exports);return module.exports;}
+function load(file){if(cache.has(file))return cache.get(file);const module={exports:{}};cache.set(file,module.exports);const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;const requireLocal=name=>{if(name==='@/lib/messenger-push')return {sendMessengerPush:async(_ids,message)=>pushedMessages.push(message.body)};if(name==='@/lib/supabase-server')return {getSupabaseServiceClient:()=>db};if(name==='@/lib/require-admin')return {requireAdmin:async request=>request.headers.get('authorization')==='Bearer admin'?{userId:'admin'}:Response.json({error:'Admin required'},{status:403})};if(name.startsWith('@/'))return load(path.resolve(name.slice(2)+'.ts'));return require(name);};vm.runInNewContext(code,{module,exports:module.exports,require:requireLocal,process:{env:{}},Response,Request,URL,File,FormData,Uint8Array,crypto:globalThis.crypto,structuredClone,Intl,Date,console},{filename:file});cache.set(file,module.exports);return module.exports;}
+const messenger=load(path.resolve('app/api/messenger/route.ts'));
 const queue=load(path.resolve('app/api/workspace/queue/route.ts'));
+const organizationsApi=load(path.resolve('app/api/admin/organizations/[id]/route.ts'));
+const directoryApi=load(path.resolve('app/api/workspace/directory/route.ts'));
+const branding=load(path.resolve('app/api/admin/organization-branding/route.ts'));
 const board=load(path.resolve('app/api/manager-board/route.ts')); 
 const links=load(path.resolve('app/api/consultant-links/route.ts'));
 const photo=load(path.resolve('app/api/me/photo/route.ts'));
@@ -47,6 +51,8 @@ const empty=load(path.resolve('lib/manager-board.ts')).emptyBoard;
 function req(user,body,query='',endpoint='manager-board'){return new Request('https://test.invalid/api/'+endpoint+query,{method:body?'POST':'GET',headers:user?{authorization:'Bearer '+user,'content-type':'application/json'}:{},...(body?{body:JSON.stringify(body)}:{})});}
 async function json(response){const data=await response.json();return {status:response.status,data};}
 (async()=>{
+ assert.equal((await branding.POST(req('consultant',{}))).status,403);
+ state.profiles.push({id:'manager-two',role:'sales_manager',display_name:'Second test manager'});authUsers['manager-two']={id:'manager-two',email:'manager-two@test.invalid',app_metadata:{}};state.organization_memberships.push({user_id:'manager-two',organization_id:'store-a'});
  assert.equal((await board.GET(req(''))).status,401);
  state.deals=[{id:'local-deal',user_id:'consultant',sm_ready:true,status:'open',sm_finished_at:null},{id:'foreign-deal',user_id:'outside-consultant',sm_ready:true,status:'open',sm_finished_at:null}];
  const scopedQueue=await json(await queue.GET(req('manager',undefined,'?type=sm')));assert.equal(scopedQueue.status,200,JSON.stringify(scopedQueue.data));assert.deepEqual(scopedQueue.data.deals.map(deal=>deal.id),['local-deal']);
@@ -54,6 +60,11 @@ async function json(response){const data=await response.json();return {status:re
  let response=await json(await board.POST(req('manager',{action:'save-board',board:{...empty(),newGoal:12,usedGoal:8,monthlyGross:54321,yearlyGross:654321,rows:{consultant:{objective:10,mtd:3,weeklyGoal:2,avg90:7.5,days:[1,0,0,1,0,1]}}},version:''})));
  assert.equal(response.status,200,JSON.stringify(response.data));let version=response.data.version;
  assert.equal(state.user_settings[0].dealer_info.street,'Keep this address');
+ const secondManager=await json(await board.GET(req('manager-two')));assert.equal(secondManager.data.board.newGoal,12);assert.equal(secondManager.data.version,version);
+ response=await json(await board.POST(req('manager-two',{action:'save-board',board:{...secondManager.data.board,usedGoal:9},version})));assert.equal(response.status,200);version=response.data.version;
+ assert.equal((await json(await board.GET(req('manager')))).data.board.usedGoal,9);
+ assert.equal((await json(await board.GET(req('manager-two',undefined,'?organization=store-b')))).data.organization.id,'store-a');
+
  assert.equal((await board.POST(req('consultant',{action:'submit-projection',projection:8}))).status,200);
  assert.equal(state.user_settings[1].consultant_info.phone,'Keep this phone');
  let publicData=await json(await board.GET(req('consultant')));assert.equal(publicData.status,200);assert.equal(publicData.data.board.monthlyGross,undefined);assert.equal(publicData.data.board.yearlyGross,undefined);assert.equal(publicData.data.board.events,undefined);assert.equal(publicData.data.proposals.consultant.value,8);
@@ -79,6 +90,25 @@ async function json(response){const data=await response.json();return {status:re
  assert.equal((await workspace.POST(req('consultant',{action:'create-organization',name:'Unauthorized'}))).status,403);
  response=await json(await workspace.POST(req('admin',{action:'create-user',name:'New test user',email:'new-user@test.invalid',role:'floor_manager',organizationId:'store-a',chatEnabled:true,canDm:true,canOrgChat:true,cardEnabled:true})));assert.equal(response.status,200,JSON.stringify(response.data));
  assert.equal(authUsers['new-test-user'].app_metadata.workspace_role,'floor_manager');assert.equal(state.profiles.find(user=>user.id==='new-test-user').role,'sales_manager');assert.equal(state.organization_memberships.find(member=>member.user_id==='new-test-user').organization_id,'store-a');assert.ok(actions.includes('bucket:consultant-media-new-test-user'));
- console.log('PASS: authorization, organization isolation, gross privacy, projection approval/lock, reason-required manager changes, district notifications/read, stale-write rejection, contact preservation, safe URLs, and invitation/role/membership/bucket contract.');
+ const form=new FormData();form.set('organizationId','store-a');form.set('theme','honda');form.set('file',new File([new Uint8Array([137,80,78,71,13,10,26,10,0])],'icon.png',{type:'image/png'}));
+ response=await json(await branding.POST(new Request('https://test.invalid/api/admin/organization-branding',{method:'POST',headers:{authorization:'Bearer admin'},body:form})));assert.equal(response.status,200,JSON.stringify(response.data));
+ const orgBoard=await json(await board.GET(req('manager')));assert.equal(orgBoard.data.organization.theme,'honda');assert.equal(orgBoard.data.organization.iconUrl,'https://test.invalid/photo.jpg');assert.equal(orgBoard.data.board.rows.consultant.projection,10);
+ const badForm=new FormData();badForm.set('organizationId','store-a');badForm.set('file',new File(['bad'],'bad.svg',{type:'image/svg+xml'}));assert.equal((await branding.POST(new Request('https://test.invalid/api/admin/organization-branding',{method:'POST',headers:{authorization:'Bearer admin'},body:badForm}))).status,400);
+ state.organization_memberships.find(member=>member.user_id==='manager').chat_enabled=true;
+ state.organization_memberships.find(member=>member.user_id==='manager').can_org_chat=true;
+ state.messenger_conversations=[{id:'test-room',kind:'organization',organization_id:'store-a',messenger_participants:[]}];state.messenger_messages=[];
+ response=await json(await messenger.POST(req('manager',{action:'send',conversationId:'test-room',body:'Goddamn! Mierda.'},'','messenger')));assert.equal(response.status,200,JSON.stringify(response.data));assert.equal(state.messenger_messages[0].body,'*******! ******.');assert.equal(pushedMessages[0],'*******! ******.');
+ state.messenger_messages[0].id='message-one';response=await json(await messenger.POST(req('manager',{action:'edit',messageId:'message-one',body:'cabrón'},'','messenger')));assert.equal(response.status,200);assert.equal(state.messenger_messages[0].body,'******');
+ const removeIcon=new FormData();removeIcon.set('organizationId','store-a');removeIcon.set('removeIcon','1');response=await json(await branding.POST(new Request('https://test.invalid/api/admin/organization-branding',{method:'POST',headers:{authorization:'Bearer admin'},body:removeIcon})));assert.equal(response.status,200);assert.equal(response.data.branding.hideIcon,true);assert.equal(response.data.branding.theme,'honda');
+ const organizationContext={params:Promise.resolve({id:'store-a'})};
+ assert.equal((await organizationsApi.PATCH(req('consultant',{name:'Denied'}),organizationContext)).status,403);
+ response=await json(await organizationsApi.PATCH(req('admin',{name:'Renamed test store'}),organizationContext));assert.equal(response.status,200);assert.equal(state.organizations.find(org=>org.id==='store-a').name,'Renamed test store');
+ const rolesBefore=state.profiles.map(user=>[user.id,user.role]);const storedBoard=structuredClone(state.user_settings.find(row=>row.user_id==='admin').dealer_info.managerBoards);
+ response=await json(await organizationsApi.DELETE(req('admin',{}),organizationContext));assert.equal(response.status,200,JSON.stringify(response.data));const home=response.data.fallbackOrganization;
+ assert.equal(home.name,'Walker Automotive');assert.ok(response.data.movedUsers>=3);assert.ok(state.organization_memberships.filter(member=>['manager','manager-two','consultant'].includes(member.user_id)).every(member=>member.organization_id===home.id));assert.deepEqual(state.profiles.map(user=>[user.id,user.role]),rolesBefore);assert.deepEqual(state.user_settings.find(row=>row.user_id==='admin').dealer_info.managerBoards,storedBoard);assert.equal(state.messenger_messages.length,1);
+ assert.equal((await organizationsApi.DELETE(req('admin',{}),{params:Promise.resolve({id:home.id})})).status,400);
+ const activeDirectory=await json(await directoryApi.GET(req('admin')));assert.ok(!activeDirectory.data.organizations.some(org=>org.id==='store-a'));assert.ok(activeDirectory.data.organizations.some(org=>org.id===home.id));
+ assert.equal((await board.GET(req('admin',undefined,'?organization=store-a'))).status,404);
+ console.log('PASS: authorization, organization isolation, gross privacy, projection approval/lock, reason-required manager changes, district notifications/read, stale-write rejection, contact preservation, safe URLs, invitation/role/membership/bucket contract, icon replacement/removal, organization rename/deletion, fallback reassignment, and retained history.');
  console.log('All fixtures are in-memory. No live data, accounts, buckets, or emails were created.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

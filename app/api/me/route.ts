@@ -1,3 +1,4 @@
+import { organizationBranding } from "@/lib/organization-branding";
 import { validWorkspaceRole, profileRole } from "@/lib/workspace-roles";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
@@ -30,9 +31,10 @@ export async function GET(request: Request) {
 
   const [{ data: settings }, { data: membership }] = await Promise.all([
     supabase.from("user_settings").select("consultant_info").eq("user_id", user.id).maybeSingle(),
-    supabase.from("organization_memberships").select("organizations(name)").eq("user_id", user.id).maybeSingle(),
+    supabase.from("organization_memberships").select("organization_id,organizations(name)").eq("user_id", user.id).maybeSingle(),
   ]);
   const info = settings?.consultant_info as { profileImageUrl?: string } | null;
+  const branding = membership?.organization_id ? (await organizationBranding(supabase).catch(()=>({} as Record<string,{iconUrl?:string;theme?:string;hideIcon?:boolean}>)))[membership.organization_id] : undefined;
   const organization = membership?.organizations as unknown as { name?: string } | null;
   return Response.json({
     id: user.id,
@@ -42,5 +44,9 @@ export async function GET(request: Request) {
     displayName: profile?.display_name ?? user.email?.split("@")[0] ?? "",
     profileImageUrl: info?.profileImageUrl || "",
     dealership: organization?.name || "",
+    organizationId: membership?.organization_id || "",
+    organizationHideIcon: branding?.hideIcon || false,
+    organizationIconUrl: branding?.iconUrl || "",
+    organizationTheme: branding?.theme || "",
   });
 }

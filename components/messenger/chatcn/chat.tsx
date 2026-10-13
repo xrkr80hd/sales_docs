@@ -1134,6 +1134,8 @@ function ChatFilePreview({
 // ─── ChatComposer ─────────────────────────────────────────────────────────────
 
 interface ChatComposerProps {
+  transformInput?: (text: string) => string
+  finalizeInput?: (text: string) => string
   onSend?: (text: string) => boolean | void | Promise<boolean | void>
   onTyping?: (isTyping: boolean) => void
   onFileUpload?: (files: File[]) => void
@@ -1146,6 +1148,8 @@ interface ChatComposerProps {
 }
 
 function ChatComposer({
+  transformInput,
+  finalizeInput,
   onSend,
   onTyping,
   onFileUpload,
@@ -1197,14 +1201,14 @@ function ChatComposer({
   }, [])
 
   const handleSend = React.useCallback(async () => {
-    const trimmed = value.trim()
+    const trimmed = finalizeInput ? finalizeInput(value.trim()) : value.trim()
     if ((!trimmed && files.length === 0) || disabled) return
     if (trimmed && await onSend?.(trimmed) === false) return
     setValue("")
     setFiles([])
     stopTyping()
     if (textareaRef.current) textareaRef.current.style.height = "auto"
-  }, [value, files, disabled, onSend, textareaRef, stopTyping])
+  }, [value, files, disabled, onSend, finalizeInput, textareaRef, stopTyping])
 
   const handleKeyDown = React.useCallback(
     (e: React.KeyboardEvent) => {
@@ -1341,7 +1345,8 @@ function ChatComposer({
               <textarea
                 ref={textareaRef}
                 value={value}
-                onChange={(e) => { setValue(e.target.value); resize() }}
+                onBlur={() => { if (finalizeInput) setValue(finalizeInput(value)) }}
+                onChange={(e) => { setValue(transformInput ? transformInput(e.target.value) : e.target.value); resize() }}
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
                 aria-label={placeholder}

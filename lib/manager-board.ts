@@ -2,7 +2,7 @@ export type BoardRow = { objective:number; appointmentsGoal?:number; appointment
 export type ProjectionEvent = { id:string; type:"projection-change"|"sale-update"|"weekly-update"; consultantId:string; consultantName:string; previous:number; next:number; reason:string; by:string; at:string; readBy:string[] };
 export type MonthBoard = { newGoal:number; usedGoal:number; monthlyGross:number; yearlyGross:number; rows:Record<string,BoardRow>; schedule:string; weeklyUpdate:string; publishedAt:string; events:ProjectionEvent[] };
 export const emptyBoard = ():MonthBoard=>({newGoal:0,usedGoal:0,monthlyGross:0,yearlyGross:0,rows:{},schedule:"",weeklyUpdate:"",publishedAt:"",events:[]});
-export const emptyRow = ():BoardRow=>({objective:0,appointmentsGoal:0,appointmentsSet:0,mtd:0,weeklyGoal:0,avg90:0,days:[0,0,0,0,0,0]});
+export const emptyRow = ():BoardRow=>({objective:0,appointmentsGoal:0,appointmentsSet:0,mtd:0,weeklyGoal:0,avg90:0,days:[0,0,0,0,0,0,0]});
 export function currentBoardMonth(){const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Chicago",year:"numeric",month:"2-digit"}).formatToParts(new Date());return `${parts.find(p=>p.type==="year")?.value}-${parts.find(p=>p.type==="month")?.value}`;}
 export function safeBoardNumber(value:unknown,integer=true){const number=Number(value);if(!Number.isFinite(number)||number<0||number>1000000000||(integer&&!Number.isInteger(number)))throw new Error("Use a valid nonnegative number.");return number;}
 export function pace(row:BoardRow){return row.objective>0?Math.round(row.mtd/row.objective*100):null;}

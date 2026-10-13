@@ -1,3 +1,4 @@
+import { organizationBranding } from "@/lib/organization-branding";
 import { requireAdmin } from "@/lib/require-admin";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { profileRole, validWorkspaceRole } from "@/lib/workspace-roles";
@@ -21,14 +22,14 @@ export async function POST(request: Request) {
   const name = typeof body.name === "string" ? body.name.trim() : "";
   if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !body.organizationId) return Response.json({ error: "Name, email, and organization are required." }, { status: 400 });
   const { data: organization, error: orgError } = await db.from("organizations").select("id").eq("id",body.organizationId).single();
-  if (orgError || !organization) return Response.json({ error: "Choose an existing organization." }, { status: 400 });
+  if (orgError || !organization || (await organizationBranding(db))[body.organizationId]?.deletedAt) return Response.json({ error: "Choose an existing organization." }, { status: 400 });
   const { data: existing, error: usersError } = await db.auth.admin.listUsers({ perPage: 1000 });
   if (usersError) return Response.json({ error: usersError.message }, { status: 500 });
   if (existing.users.some(user => user.email?.toLowerCase() === email)) return Response.json({ error: "That account already exists. Edit its organization and permissions below." }, { status: 409 });
   const direct = body.createMode === "direct";
   if (direct && (typeof body.password !== "string" || body.password.length < 12 || body.password.length > 128)) return Response.json({ error: "Use a temporary password between 12 and 128 characters." }, { status: 400 });
   // Existing app domain is used for the invitation, never a caller-supplied redirect.
-  const { data: invitation, error: inviteError } = (direct ? await db.auth.admin.createUser({ email, password: body.password, email_confirm: true, user_metadata: { display_name: name }, app_metadata: { workspace_role: body.role, must_change_password: body.forceChange !== false } }) : await db.auth.admin.inviteUserByEmail(email, { data: { display_name: name }, redirectTo: "https://nextdocs.xrkr80hd.studio/dashboard" }));
+  const { data: invitation, error: inviteError } = (direct ? await db.auth.admin.createUser({ email, password: body.password, email_confirm: true, user_metadata: { display_name: name }, app_metadata: { workspace_role: body.role, must_change_password: true } }) : await db.auth.admin.inviteUserByEmail(email, { data: { display_name: name }, redirectTo: "https://nextdocs.xrkr80hd.studio/dashboard" }));
   if (inviteError || !invitation.user) return Response.json({ error: inviteError?.message || "Invitation could not be sent." }, { status: 500 });
   const id = invitation.user.id;
   const operations = [

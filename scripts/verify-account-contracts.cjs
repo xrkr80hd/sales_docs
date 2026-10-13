@@ -71,7 +71,7 @@ const target=id=>({params:Promise.resolve({id})});
  assert.equal((await password.POST(req('',{password:'in-memory-fixture-only'}))).status,401);
  assert.equal((await password.POST(req('consultant',{password:'short'}))).status,400);
  assert.equal((await password.POST(req('consultant',{password:'in-memory-fixture-only'}))).status,200);assert.equal(authUsers.consultant.app_metadata.must_change_password,false);
- assert.equal((await workspace.POST(req('admin',{action:'create-user',name:'Fixture BDM',email:'bdm@test.invalid',role:'bdm',organizationId:'store-a',createMode:'direct',password:'in-memory-fixture-only',forceChange:true}))).status,200);
+ assert.equal((await workspace.POST(req('admin',{action:'create-user',name:'Fixture BDM',email:'bdm@test.invalid',role:'bdm',organizationId:'store-a',createMode:'direct',password:'in-memory-fixture-only',forceChange:false}))).status,200);
  assert.equal(authUsers['direct-user'].email_confirm,true);assert.equal(authUsers['direct-user'].app_metadata.must_change_password,true);assert.equal(authUsers['direct-user'].app_metadata.workspace_role,'bdm');
  let response=await board.POST(req('manager',{action:'save-board',board:{...empty(),monthlyGross:15000,rows:{consultant:{objective:10,mtd:0,weeklyGoal:2,avg90:3,appointmentsGoal:40,appointmentsSet:12}}},version:''}));assert.equal(response.status,200,await response.clone().text());
  let payload=await (await board.GET(req('direct-user',undefined,'GET'))).json();assert.equal(payload.canManage,false);assert.equal(payload.canViewStats,true);assert.equal(payload.board.monthlyGross,15000);assert.equal(payload.board.rows.consultant.appointmentsGoal,40);assert.equal(payload.board.rows.consultant.appointmentsSet,12);
