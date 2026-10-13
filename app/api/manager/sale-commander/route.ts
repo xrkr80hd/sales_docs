@@ -2,7 +2,7 @@ import {getSupabaseServiceClient} from "@/lib/supabase-server";
 import {organizationBranding} from "@/lib/organization-branding";
 function dateInChicago(){return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Chicago",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());}
 export async function GET(request:Request){
- const token=(request.headers.get("authorization")||"").replace(/^Bearer\\s+/i,"").trim();
+ const token=(request.headers.get("authorization")||"").replace(/^Bearer\s+/i,"").trim();
  if(!token)return Response.json({error:"Sign in required."},{status:401});
  try{
  const db=getSupabaseServiceClient();const {data:{user},error}=await db.auth.getUser(token);
@@ -23,7 +23,7 @@ export async function GET(request:Request){
  const selected=requested||(!district?organizationId:"");
  const today=dateInChicago();
  const day=url.searchParams.get("date")||today;
- if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(day))return Response.json({error:"Invalid date."},{status:400});
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(day))return Response.json({error:"Invalid date."},{status:400});
  const branding=await organizationBranding(db);
  const {data:organizations,error:orgErr}=await db.from("organizations").select("id,name").order("name");
  if(orgErr)throw orgErr;
