@@ -308,11 +308,12 @@ export async function POST(request: Request) {
     if (body.action === "mark-read") {
       const conversationId = body.conversationId;
       if (!conversationId) return Response.json({ error: "Conversation ID required." }, { status: 400 });
-      await db.from("messenger_participants").upsert({
-        conversation_id: conversationId,
-        user_id: user.id,
-        last_read_at: new Date().toISOString(),
-      }, { onConflict: "conversation_id,user_id" });
+      const {data:room,error:roomError}=await db.from("messenger_conversations").select("id,kind,organization_id,messenger_participants(user_id)").eq("id",conversationId).maybeSingle();
+      if(roomError)return Response.json({error:roomError.message},{status:500});
+      if(!room)return Response.json({error:"Conversation not found."},{status:404});
+      if(room.kind==="organization"?(room.organization_id!==mine.organization_id||!mine.can_org_chat):!room.messenger_participants?.some(p=>p.user_id===user.id))return Response.json({error:"Conversation access denied."},{status:403});
+      const {error:readError}=await db.from("messenger_participants").upsert({conversation_id:conversationId,user_id:user.id,last_read_at:new Date().toISOString()},{onConflict:"conversation_id,user_id"});
+      if(readError)return Response.json({error:readError.message},{status:500});
       return Response.json({ ok: true });
     }
 
