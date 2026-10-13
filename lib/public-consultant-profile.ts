@@ -9,7 +9,7 @@ async function useAssignedOrganization(db:ReturnType<typeof getSupabaseServiceCl
   const branding=membership?.organization_id?(await organizationBranding(db))[membership.organization_id]:undefined;
   const address=branding?.address;
   const location=address?[address.street,[address.city,address.state].filter(Boolean).join(", "),address.zip].filter(Boolean).join(", "):"";
-  return {...profile,identity:{...profile.identity,dealership:organization.name,...(location?{location}:{})}};
+  return {...profile,identity:{...profile.identity,dealership:organization.name,location}};
 }
 
 export async function getPublishedConsultantProfile(slug: string): Promise<ConsultantProfileContent | null> {
