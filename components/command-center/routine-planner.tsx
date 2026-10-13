@@ -3,7 +3,7 @@ import {useMemo,useState} from "react";
 type RoutineItem={id:string;time:string;name:string;done?:boolean};
 type PlanDay={kind:"short"|"long"|"friday"|"off";items:RoutineItem[]};
 type Kind=PlanDay["kind"];
-type Props={schedule:Record<string,PlanDay>;disabled:boolean;onSave:(next:Record<string,PlanDay>)=>void};
+type Props={schedule:Record<string,PlanDay>;weekendAnchor:string;onWeekendAnchor:(day:string)=>void;disabled:boolean;onSave:(next:Record<string,PlanDay>)=>void};
 const field={background:"#0d1724",border:"1px solid #405064",color:"#fff",padding:"9px",borderRadius:5} as const;
 const styles={panel:{padding:16,background:"#121a25",border:"1px solid #344152",borderRadius:8,marginTop:12},button:{background:"#223247",border:"1px solid #405064",color:"#fff",padding:"8px 12px",borderRadius:5,cursor:"pointer"}} as const;
 const templates:{id:string;label:string;kind:Kind;items:[string,string][]}[]=[
@@ -22,10 +22,10 @@ function observed(y:number,m:number,day:number,date:Date){const v=new Date(y,m,d
 function holiday(d:Date){const y=d.getFullYear(),m=d.getMonth(),n=d.getDate();return [[0,1],[5,19],[6,4],[10,11],[11,25]].some(([mm,dd])=>observed(y,mm,dd,d))||(m===0&&n===nth(y,0,1,3))||(m===1&&n===nth(y,1,1,3))||(m===4&&n===last(y,4,1))||(m===8&&n===nth(y,8,1,1))||(m===9&&n===nth(y,9,1,2))||(m===10&&n===nth(y,10,4,4));}
 function offSaturday(d:Date,anchor:string){const a=parse(anchor);const delta=Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(a.getFullYear(),a.getMonth(),a.getDate()))/86400000);return ((delta%14)+14)%14===0;}
 function fromTemplate(id:string):PlanDay{const t=templates.find(t=>t.id===id)||templates[0];return{kind:t.kind,items:t.items.map(([time,name],i)=>({id:id+"-"+i,time,name,done:false}))};}
-export function RoutinePlanner({schedule,disabled,onSave}:Props){
+export function RoutinePlanner({schedule,weekendAnchor,onWeekendAnchor,disabled,onSave}:Props){
 const [week,setWeek]=useState(()=>key(startWeek(new Date())));
 const [selected,setSelected]=useState(()=>key(new Date()));
-const [anchor,setAnchor]=useState("2026-08-08");
+const anchor=weekendAnchor;
 const [template,setTemplate]=useState("short");
 const [editing,setEditing]=useState<PlanDay|null>(null);
 const dates=useMemo(()=>Array.from({length:7},(_,i)=>{const d=parse(week);d.setDate(d.getDate()+i);return d;}),[week]);
@@ -46,6 +46,6 @@ return <details style={styles.panel}><summary style={{cursor:"pointer",fontWeigh
 <div style={{display:"grid",gap:7}}>{planNow.items.map((item,i)=><div key={item.id+"-"+i} style={{display:"grid",gridTemplateColumns:"94px 1fr 30px",gap:7,alignItems:"center"}}><input aria-label="Activity time" type="time" style={{...field,minWidth:0,width:"100%"}} value={item.time} onChange={e=>change(p=>({...p,items:p.items.map((x,j)=>i===j?{...x,time:e.target.value}:x)}))}/><input aria-label="Activity description" style={{...field,minWidth:0,width:"100%"}} value={item.name} onChange={e=>change(p=>({...p,items:p.items.map((x,j)=>i===j?{...x,name:e.target.value}:x)}))}/><button type="button" style={styles.button} onClick={()=>change(p=>({...p,items:p.items.filter((_,j)=>j!==i)}))}>×</button></div>)}</div>
 <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}><button style={styles.button} type="button" onClick={()=>change(p=>({...p,items:[...p.items,{id:crypto.randomUUID(),time:"12:00",name:"New activity"}]}))}>+ Add activity</button><button style={styles.button} disabled={disabled} type="button" onClick={()=>save(planNow)}>Save edits</button><button style={styles.button} disabled={disabled} type="button" onClick={()=>{const next={...schedule};for(const d of dates)if(!blocked(d))next[key(d)]=fromTemplate(defaultKind(d));onSave(next);setEditing(null);}}>Generate entire sample week</button></div>
 </>}</div>
-<details style={{marginTop:14,borderTop:"1px solid #405064",paddingTop:12}}><summary>Alternating weekend settings</summary><p style={{fontSize:12,color:"#aebdcd"}}>Set a known Saturday off. That Friday automatically uses the noon-finish template. Alternates every 14 days. Sundays and major U.S. federal holidays remain excluded.</p><label>Known Saturday off <input type="date" style={{...field,marginLeft:10}} value={anchor} onChange={e=>setAnchor(e.target.value)}/></label></details>
+<details style={{marginTop:14,borderTop:"1px solid #405064",paddingTop:12}}><summary>Alternating weekend settings</summary><p style={{fontSize:12,color:"#aebdcd"}}>Set a known Saturday off. That Friday automatically uses the noon-finish template. Alternates every 14 days. Sundays and major U.S. federal holidays remain excluded.</p><label>Known Saturday off <input type="date" style={{...field,marginLeft:10}} value={anchor} onChange={e=>{if(e.target.value&&parse(e.target.value).getDay()===6)onWeekendAnchor(e.target.value);}}/></label></details>
 <p style={{fontSize:12,color:"#aebdcd"}}>Workday hours are examples. Adjust times to each location's actual shift. Your routines are saved to your account when you click Save.</p></details>;
 }
