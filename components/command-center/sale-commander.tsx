@@ -1,4 +1,5 @@
 "use client";
+import {notifySave} from "@/components/ui/save-toast-host";
 import {useCallback,useEffect,useMemo,useState} from "react";
 import {RoutinePlanner} from "@/components/command-center/routine-planner";
 import {getSupabaseBrowserClient} from "@/lib/supabase-browser";
@@ -39,7 +40,7 @@ export function SaleCommander(){
  useEffect(()=>{let alive=true;request("GET").then(v=>{if(alive)setState(v);}).catch(e=>{if(alive)setNotice(e.message);}).finally(()=>{if(alive)setReady(true);});return()=>{alive=false;};},[request]);
  const proj=useMemo(()=>projection(state),[state]);const today=state.days[day]||blank();
  const monthTotals=useMemo(()=>Object.entries(state.days).filter(([date])=>date.startsWith(month)).reduce((out,[,v])=>{for(const k of keys)out[k]+=v[k]||0;return out;},blank()),[state.days,month]);
- async function persist(next:State){setBusy(true);setNotice("");try{const saved=await request("PUT",next);setState(saved);setNotice("Saved to your account. Available on other devices.");}catch(e){setNotice(e instanceof Error?e.message:"Save failed. Changes were not committed.");}finally{setBusy(false);}}
+ async function persist(next:State){setBusy(true);setNotice("");notifySave("saving","Saving Sale Commander…");try{const saved=await request("PUT",next);setState(saved);setNotice("Saved to your account. Available on other devices.");notifySave("success","Sale Commander saved.");}catch(e){setNotice(e instanceof Error?e.message:"Save failed. Changes were not committed.");notifySave("error","Sale Commander changes could not be saved.");}finally{setBusy(false);}}
  const change=(fn:(s:State)=>State)=>{if(ready&&!busy)void persist(fn(state));};
  const tile=(key:keyof Counts,target:number)=><div key={key} style={style.panel}><small style={{color:"#aebdcd"}}>{names[key]}</small><h2 style={{margin:"8px 0"}}>{today[key]} <small style={{fontSize:13,color:"#9caabd"}}>/ {target} today</small></h2><div style={{display:"flex",gap:8}}><button type="button" disabled={busy} style={style.button} onClick={()=>change(s=>({...s,days:{...s.days,[day]:{...(s.days[day]||blank()),[key]:Math.max(0,(s.days[day]?.[key]||0)-1)}}}))}>−</button><button type="button" disabled={busy} style={style.button} onClick={()=>change(s=>({...s,days:{...s.days,[day]:{...(s.days[day]||blank()),[key]:(s.days[day]?.[key]||0)+1}}}))}>+</button></div></div>;
  return <div style={{maxWidth:980,margin:"auto",padding:"16px 14px 90px",color:"#f4f7fa"}}>
