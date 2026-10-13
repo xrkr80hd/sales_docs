@@ -9,6 +9,7 @@ import { getWorkflowReturnPath } from "@/components/workflow/workflow-screen";
 import {
   loadConsultant,
   loadDealer,
+  fetchServerSettings,
   type ConsultantInfo,
   type DealerInfo,
 } from "@/lib/dealer-consultant";
@@ -24,8 +25,10 @@ const PAGE_W = 816;
 export function BuyersGuideReverseScreen() {
   const { confirmVinAction, dialog } = useVinConfirmation();
   const [workflow, setWorkflow] = useState<WorkflowData>(() => loadWorkflow());
-  const [dealer] = useState<DealerInfo>(() => loadDealer());
-  const [consultant] = useState<ConsultantInfo>(() => loadConsultant());
+  const [dealer,setDealer] = useState<DealerInfo>(() => loadDealer());
+  const [consultant,setConsultant] = useState<ConsultantInfo>(() => loadConsultant());
+  const [settingsReady,setSettingsReady]=useState(false);
+  useEffect(()=>{let active=true;void fetchServerSettings().then(settings=>{if(!active)return;if(settings){setDealer(settings.dealer);setConsultant(settings.consultant);}setSettingsReady(true);});return()=>{active=false;};},[]);
   const containerRef = useRef<HTMLDivElement>(null);
   const [pageScale, setPageScale] = useState(1);
 
