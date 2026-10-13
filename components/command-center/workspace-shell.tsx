@@ -25,7 +25,7 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [districtUnread, setDistrictUnread] = useState(0);
   const [now, setNow] = useState<Date | null>(null);
-  const manager = identity?.role === "sales_manager" || identity?.role === "admin" || identity?.email.toLowerCase() === "xrkr80hd@gmail.com";
+  const manager = identity?.workspaceRole === "bdm" || identity?.role === "sales_manager" || identity?.role === "admin" || identity?.email.toLowerCase() === "xrkr80hd@gmail.com";
   const admin = identity?.role === "admin" || identity?.email.toLowerCase() === "xrkr80hd@gmail.com";
   const display = pathname === "/office-display";
   useEffect(() => {
@@ -86,7 +86,7 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
             {manager && <Link href="/manager-board#team-schedule" onClick={close} className={styles.navLink}><CalendarDays />Team Schedule</Link>}
             <button onClick={() => { close(); onSettings(); }} className={styles.navButton}><Settings />Consultant Setup</button>
             <button onClick={() => { close(); session.signOut(); }} className={styles.navButton}><LogOut />Sign Out</button>
-            {admin && <details open><summary><Shield />Role Views</summary><div className={styles.subnav}>{(["user", "floor_manager", "sales_manager", "fni", "district_manager"] as const).map(role => <Link key={role} href={`/role-views/${role}`} onClick={close} aria-current={pathname === `/role-views/${role}` ? "page" : undefined}>{ROLE_LABELS[role]}{role === "district_manager" && districtUnread > 0 && <span className={styles.roleUnread}>{districtUnread}</span>}</Link>)}</div></details>}
+            {admin && <details open><summary><Shield />Role Views</summary><div className={styles.subnav}>{(["user", "floor_manager", "sales_manager", "fni", "district_manager", "bdm"] as const).map(role => <Link key={role} href={`/role-views/${role}`} onClick={close} aria-current={pathname === `/role-views/${role}` ? "page" : undefined}>{ROLE_LABELS[role]}{role === "district_manager" && districtUnread > 0 && <span className={styles.roleUnread}>{districtUnread}</span>}</Link>)}</div></details>}
             {!admin && identity?.workspaceRole && identity.workspaceRole !== "user" && <Link href={`/role-views/${identity.workspaceRole}`} onClick={close} className={styles.navLink}><Table2 />My Role View{identity.workspaceRole === "district_manager" && districtUnread > 0 && <span className={styles.roleUnread}>{districtUnread}</span>}</Link>}
             {admin && <details><summary><Shield />Administration</summary><div className={styles.subnav}><Link href="/admin" onClick={close}>People &amp; Organizations</Link><Link href="/admin/messenger" onClick={close}>Messenger Permissions</Link></div></details>}
           </nav>

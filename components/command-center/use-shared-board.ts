@@ -2,7 +2,7 @@
 import { useCallback,useEffect,useRef,useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { MonthBoard } from "@/lib/manager-board";
-export type SharedBoard = { organization:{id:string;name:string};month:string;board:MonthBoard;roster:{id:string;name:string}[];proposals:Record<string,{value:number;submittedAt:string}|undefined>;me:string;canManage:boolean;version:string };
+export type SharedBoard = { organization:{id:string;name:string};month:string;board:MonthBoard;roster:{id:string;name:string}[];proposals:Record<string,{value:number;submittedAt:string}|undefined>;me:string;canManage:boolean;canViewStats?:boolean;version:string };
 export async function boardRequest(organization="",body?:unknown,month=""){
  const {data}=await getSupabaseBrowserClient().auth.getSession();
  const query=new URLSearchParams();if(organization)query.set("organization",organization);if(month)query.set("month",month);

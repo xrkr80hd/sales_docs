@@ -28,6 +28,12 @@ export async function PATCH(
   const body = await request.json().catch(() => null);
   const updates: Record<string, unknown> = {};
 
+  if (body && Object.prototype.hasOwnProperty.call(body, "display_name")) {
+    const name = typeof body.display_name === "string" ? body.display_name.trim() : "";
+    if (!name || name.length > 120) return Response.json({ error: "Enter a display name between 1 and 120 characters." }, { status: 400 });
+    updates.display_name = name;
+  }
+
   if (body?.role) {
     if (await isOwnerAccount(id)) {
       return Response.json(

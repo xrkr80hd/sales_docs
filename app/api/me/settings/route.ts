@@ -17,11 +17,6 @@ function clean(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function dealershipAddress(dealer: Record<string, unknown>): string {
-  const cityState = [clean(dealer.city), clean(dealer.state)].filter(Boolean).join(", ");
-  return [clean(dealer.street), cityState, clean(dealer.zip)].filter(Boolean).join(", ");
-}
-
 export async function GET(request: Request) {
   const token = getToken(request);
   if (!token) return Response.json({ error: "Missing authorization." }, { status: 401 });
@@ -30,10 +25,9 @@ export async function GET(request: Request) {
   const { data: { user }, error: userError } = await supabase.auth.getUser(token);
   if (userError || !user) return Response.json({ error: "Invalid session." }, { status: 401 });
 
-  const [{ data, error }, { data: profile }, { data: card }] = await Promise.all([
+  const [{ data, error }, { data: profile }] = await Promise.all([
     supabase.from("user_settings").select("dealer_info, consultant_info, updated_at").eq("user_id", user.id).maybeSingle(),
     supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
-    supabase.from("consultant_cards").select("display_name, dealership, location, phone, email").eq("user_id", user.id).maybeSingle(),
   ]);
 
   if (error && error.code !== "PGRST116") {
@@ -46,13 +40,13 @@ export async function GET(request: Request) {
   return Response.json({
     dealer_info: {
       ...dealerInfo,
-      dealershipName: clean(dealerInfo.dealershipName) || clean(card?.dealership),
+      dealershipName: clean(dealerInfo.dealershipName),
     },
     consultant_info: {
       ...consultantInfo,
-      name: clean(consultantInfo.name) || clean(profile?.display_name) || clean(card?.display_name),
-      phone: clean(consultantInfo.phone) || clean(card?.phone),
-      email: clean(consultantInfo.email) || clean(card?.email) || clean(user.email),
+      name: clean(profile?.display_name) || clean(consultantInfo.name),
+      phone: clean(consultantInfo.phone),
+      email: clean(consultantInfo.email) || clean(user.email),
     },
     updated_at: data?.updated_at ?? null,
   }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
@@ -99,26 +93,10 @@ export async function PUT(request: Request) {
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   const name = clean(consultantInfo.name);
-  const phone = clean(consultantInfo.phone);
-  const email = clean(consultantInfo.email);
-  const dealership = clean(dealerInfo.dealershipName);
-  const location = dealershipAddress(dealerInfo);
-
-  const syncTasks = [];
-  if (name) syncTasks.push(supabase.from("profiles").update({ display_name: name }).eq("id", user.id));
-  syncTasks.push(
-    supabase.from("consultant_cards").update({
-      ...(name ? { display_name: name } : {}),
-      phone,
-      email,
-      dealership,
-      location,
-      updated_at: now,
-    }).eq("user_id", user.id),
-  );
-  const syncResults = await Promise.all(syncTasks);
-  const syncError = syncResults.find((result) => result.error)?.error;
-  if (syncError) return Response.json({ error: syncError.message }, { status: 500 });
+  if (name) {
+    const { error: profileError } = await supabase.from("profiles").update({ display_name: name }).eq("id", user.id);
+    if (profileError) return Response.json({ error: profileError.message }, { status: 500 });
+  }
 
   return Response.json({ saved: true, dealer_info: dealerInfo, consultant_info: consultantInfo, updated_at: now });
 }

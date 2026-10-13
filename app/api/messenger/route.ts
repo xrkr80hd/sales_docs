@@ -95,11 +95,11 @@ export async function GET(request: Request) {
       : { data: [], error: null };
     if (profilesError) return Response.json({ error: profilesError.message }, { status: 500 });
 
-    const { data: cardProfiles } = memberIds.length
-      ? await db.from("consultant_cards").select("user_id,profile_image_url").in("user_id", memberIds)
+    const { data: internalProfiles } = memberIds.length
+      ? await db.from("user_settings").select("user_id,consultant_info").in("user_id", memberIds)
       : { data: [] };
     const profileMap = new Map((memberProfiles ?? []).map((profile) => [profile.id, profile]));
-    const profileImages = new Map((cardProfiles ?? []).map((card) => [card.user_id, card.profile_image_url]));
+    const profileImages = new Map((internalProfiles ?? []).map((profile) => [profile.user_id, profile.consultant_info?.profileImageUrl || ""]));
     const nicknameMap = new Map((memberRows ?? []).map((member) => [member.user_id, member.chat_nickname]));
     const people = memberIds.map((userId) => ({
       user_id: userId,

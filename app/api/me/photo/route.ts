@@ -36,8 +36,6 @@ export async function POST(request: Request) {
     const consultantInfo = { ...(settings?.consultant_info || {}), profileImageUrl };
     const { error: saveError } = await db.from("user_settings").upsert({ user_id: user.id, consultant_info: consultantInfo, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
     if (saveError) throw saveError;
-    const { error: cardError } = await db.from("consultant_cards").update({ profile_image_url: profileImageUrl }).eq("user_id", user.id);
-    if (cardError) throw cardError;
     return Response.json({ profileImageUrl });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Your photo could not be saved. Try again." }, { status: 500 });

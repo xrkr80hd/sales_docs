@@ -25,8 +25,10 @@ export async function POST(request: Request) {
   const { data: existing, error: usersError } = await db.auth.admin.listUsers({ perPage: 1000 });
   if (usersError) return Response.json({ error: usersError.message }, { status: 500 });
   if (existing.users.some(user => user.email?.toLowerCase() === email)) return Response.json({ error: "That account already exists. Edit its organization and permissions below." }, { status: 409 });
+  const direct = body.createMode === "direct";
+  if (direct && (typeof body.password !== "string" || body.password.length < 12 || body.password.length > 128)) return Response.json({ error: "Use a temporary password between 12 and 128 characters." }, { status: 400 });
   // Existing app domain is used for the invitation, never a caller-supplied redirect.
-  const { data: invitation, error: inviteError } = await db.auth.admin.inviteUserByEmail(email, { data: { display_name: name }, redirectTo: "https://nextdocs.xrkr80hd.studio/dashboard" });
+  const { data: invitation, error: inviteError } = (direct ? await db.auth.admin.createUser({ email, password: body.password, email_confirm: true, user_metadata: { display_name: name }, app_metadata: { workspace_role: body.role, must_change_password: body.forceChange !== false } }) : await db.auth.admin.inviteUserByEmail(email, { data: { display_name: name }, redirectTo: "https://nextdocs.xrkr80hd.studio/dashboard" }));
   if (inviteError || !invitation.user) return Response.json({ error: inviteError?.message || "Invitation could not be sent." }, { status: 500 });
   const id = invitation.user.id;
   const operations = [
@@ -46,5 +48,5 @@ export async function POST(request: Request) {
     const { error } = await db.storage.createBucket(bucket, { public: true, fileSizeLimit: 100 * 1024 * 1024, allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm", "video/quicktime"] });
     if (error) return Response.json({ error: `Invitation sent and user created; storage setup failed: ${error.message}`, userId: id }, { status: 500 });
   }
-  return Response.json({ ok: true, userId: id, bucket, invited: true });
+  return Response.json({ ok: true, userId: id, bucket, invited: !direct });
 }

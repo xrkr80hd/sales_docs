@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     return Response.json({ error: "Missing authorization." }, { status: 401 });
   }
 
-  const supabase = getSupabaseServiceClient();
+  const supabase = getSupabaseServiceClient({ allowPasswordChange: true });
 
   const {
     data: { user },
@@ -20,15 +20,16 @@ export async function GET(request: Request) {
     return Response.json({ error: "Invalid session." }, { status: 401 });
   }
 
+  if (user.app_metadata?.must_change_password === true) return Response.json({ mustChangePassword: true }, { headers: { "Cache-Control": "no-store" } });
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("role, display_name")
     .eq("id", user.id)
     .single();
 
-  const [{ data: settings }, { data: card }, { data: membership }] = await Promise.all([
+  const [{ data: settings }, { data: membership }] = await Promise.all([
     supabase.from("user_settings").select("consultant_info").eq("user_id", user.id).maybeSingle(),
-    supabase.from("consultant_cards").select("profile_image_url").eq("user_id", user.id).maybeSingle(),
     supabase.from("organization_memberships").select("organizations(name)").eq("user_id", user.id).maybeSingle(),
   ]);
   const info = settings?.consultant_info as { profileImageUrl?: string } | null;
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
     role: profile?.role ?? "user",
     workspaceRole: profile?.role === "admin" ? "admin" : validWorkspaceRole(user.app_metadata?.workspace_role) && profileRole(user.app_metadata.workspace_role) === profile?.role ? user.app_metadata.workspace_role : profile?.role || "user",
     displayName: profile?.display_name ?? user.email?.split("@")[0] ?? "",
-    profileImageUrl: info?.profileImageUrl || card?.profile_image_url || "",
+    profileImageUrl: info?.profileImageUrl || "",
     dealership: organization?.name || "",
   });
 }

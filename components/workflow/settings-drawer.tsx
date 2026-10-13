@@ -7,6 +7,7 @@ import { Camera, ChevronDown, UserRound, X } from "lucide-react";
 import { fetchServerSettings, loadConsultant, loadDealer, saveConsultant, saveDealer, saveServerSettings, type ConsultantInfo, type DealerInfo } from "@/lib/dealer-consultant";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { useWorkspaceIdentity } from "@/components/command-center/workspace-context";
+import { ROLE_LABELS, type WorkspaceRole } from "@/lib/workspace-roles";
 import { LinksEditor } from "@/components/consultant-links/links-editor";
 import styles from "./consultant-setup.module.css";
 
@@ -85,9 +86,10 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
       <div className={styles.content}>
         <section className={styles.photoSection}>
           <div className={styles.photo}>{photo ? <Image src={photo} alt="Your profile photo" width={84} height={84} unoptimized /> : <UserRound size={36} />}</div>
-          <div><h3>Profile picture</h3><p>Shown at the top of your dashboard.</p><label className={styles.upload}><Camera size={16} />Upload photo<input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload profile picture" onChange={uploadPhoto} disabled={saving || loading} /></label><small>JPG, PNG or WebP · up to 3 MB</small></div>
+          <div><h3>Organization profile</h3><p>{identity?.displayName || "Your name"}</p><p>{ROLE_LABELS[(identity?.workspaceRole || identity?.role || "user") as WorkspaceRole]} · {identity?.dealership || "Unassigned"}</p><p>Internal staff photo. Separate from your public business card.</p><label className={styles.upload}><Camera size={16} />Upload photo<input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload profile picture" onChange={uploadPhoto} disabled={saving || loading} /></label><small>JPG, PNG or WebP · up to 3 MB</small></div>
         </section>
         {status && <p className={styles.status} role="status">{status}</p>}{error && <p className={styles.error} role="alert">{error}</p>}
+        <Link href="/business-card" onClick={onClose} className={styles.adminLink}>Edit public business card separately</Link>
         <LinksEditor />
         <form onSubmit={event => { event.preventDefault(); void save(); }}>
           <fieldset disabled={saving || loading}>
@@ -97,7 +99,7 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
             <details className={styles.section}><summary><div><h3>Dealership</h3><p>{identity?.dealership ? `Organization: ${identity.dealership}` : "Your dealership information"}</p></div><ChevronDown size={18} /></summary><div className={styles.fields}>
               {([["dealershipName", "Dealership name"], ["street", "Street address"], ["city", "City"], ["state", "State"], ["zip", "ZIP"]] as const).map(([field,label]) => <label key={field}>{label}<input value={dealer[field]} onChange={event => setDealer(current => ({ ...current, [field]: event.target.value }))} /></label>)}
             </div></details>
-            <p className={styles.help}>Save once. These details populate your documents, business card, and vehicle tools.</p>
+            <p className={styles.help}>These internal details populate your documents and vehicle tools. Your public business card has its own name, photo, and contact details.</p>
             <button type="submit" className={styles.save}>{loading ? "Loading account…" : saving ? "Saving…" : "Save consultant setup"}</button>
           </fieldset>
         </form>

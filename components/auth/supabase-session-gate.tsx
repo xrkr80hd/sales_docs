@@ -1,5 +1,6 @@
 "use client";
 
+import { PasswordRequirement } from "./required-password-change";
 import type { Session } from "@supabase/supabase-js";
 import Image from "next/image";
 import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
@@ -398,7 +399,7 @@ export function SupabaseSessionGate({
   }
 
   if (surface === "print") {
-    return <>{children}</>;
+    return <><PasswordRequirement session={session}>{children}</PasswordRequirement></>;
   }
 
   const sessionCtx: SessionContextValue = {
@@ -434,7 +435,7 @@ export function SupabaseSessionGate({
           ) : null}
         </div>
       )}
-      {children}
+      <PasswordRequirement session={session}>{children}</PasswordRequirement>
     </SessionContext.Provider>
   );
 }

@@ -9,11 +9,12 @@ async function context(request:Request){
  const [{data:profile},{data:membership}]=await Promise.all([db.from("profiles").select("role,display_name").eq("id",user.id).single(),db.from("organization_memberships").select("organization_id").eq("user_id",user.id).maybeSingle()]);
  const admin=profile?.role==="admin"||user.email?.toLowerCase()==="xrkr80hd@gmail.com";
  const district=admin||(profile?.role==="sales_manager"&&user.app_metadata?.workspace_role==="district_manager");
+ const bdm=profile?.role==="user"&&user.app_metadata?.workspace_role==="bdm";
  const manager=admin||profile?.role==="sales_manager";
  const url=new URL(request.url);const requested=url.searchParams.get("organization");const organizationId=district&&requested?requested:membership?.organization_id;
  const month=url.searchParams.get("month")||currentBoardMonth();
  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return Response.json({error:"Invalid month."},{status:400});
- return {db,user,profile,admin,district,manager,organizationId,month};
+ return {db,user,profile,admin,district,manager,bdm,organizationId,month};
 }
 let ownerLookup: Promise<string> | undefined;
 async function boardOwner(db:ReturnType<typeof getSupabaseServiceClient>){
@@ -45,7 +46,7 @@ function annualDefault(records:Awaited<ReturnType<typeof boardRecords>>,organiza
 export async function GET(request:Request){
  try{
   const ctx=await context(request);if(ctx instanceof Response)return ctx;
-  const {db,user,manager,district,organizationId,month}=ctx;
+  const {db,user,manager,bdm,district,organizationId,month}=ctx;
   if(new URL(request.url).searchParams.get("district")==="1"){
    if(!district)return Response.json({error:"District manager access required."},{status:403});
    const records=await boardRecords(db);const stores:Record<string,MonthBoard>={};const periods:Record<string,MonthBoard>={};
@@ -65,7 +66,7 @@ export async function GET(request:Request){
   if(settingsError)throw settingsError;
   const proposals=Object.fromEntries((settings||[]).map(row=>[row.user_id,record(record(row.consultant_info).monthlyProjections)[`${organizationId}:${month}`]]));
   const publicBoard={newGoal:board.newGoal,usedGoal:board.usedGoal,rows:board.rows,schedule:board.schedule,weeklyUpdate:board.weeklyUpdate,publishedAt:board.publishedAt};
-  return Response.json({organization,month,board:manager?board:publicBoard,roster,proposals:manager?proposals:{[user.id]:proposals[user.id]},me:user.id,canManage:manager,version:board.publishedAt},{headers:{"Cache-Control":"private, no-store"}});
+  return Response.json({organization,month,board:manager||bdm?{...board,...(!manager?{events:[]}: {})}:publicBoard,roster,proposals:manager?proposals:{[user.id]:proposals[user.id]},me:user.id,canManage:manager,canViewStats:manager||bdm,version:board.publishedAt},{headers:{"Cache-Control":"private, no-store"}});
  }catch(error){return Response.json({error:error instanceof Error?error.message:"Could not load the board."},{status:500});}
 }
 export async function POST(request:Request){
@@ -80,6 +81,7 @@ export async function POST(request:Request){
   const records=await boardRecords(db,organizationId,month);
   const latest=records.filter(row=>"saved"in row&&row.saved).sort((a,b)=>(b.saved as MonthBoard).publishedAt.localeCompare((a.saved as MonthBoard).publishedAt))[0];
   const board=structuredClone(latest&&"saved"in latest?latest.saved as MonthBoard:annualDefault(records,organizationId,month));
+  if(ctx.bdm)return Response.json({error:"BDM board access is read only."},{status:403});
   if(body.action==="submit-projection"){
    if(board.rows[user.id]?.confirmedAt)return Response.json({error:"Your projection is confirmed and locked. Ask your manager for a change."},{status:403});
    const {data:membership}=await db.from("organization_memberships").select("user_id").eq("user_id",user.id).eq("organization_id",organizationId).maybeSingle();
@@ -111,7 +113,7 @@ export async function POST(request:Request){
      const {data:person}=await db.from("profiles").select("display_name").eq("id",id).maybeSingle();
      board.events.push({id:crypto.randomUUID(),type:"sale-update",consultantId:id,consultantName:person?.display_name||"Consultant",previous:previous.mtd,next:nextMtd,reason:"Manager reported an updated month-to-date sold count.",by:profile?.display_name||user.email||"Manager",at:new Date().toISOString(),readBy:[]});
     }
-    board.rows[id]={...previous,objective:safeBoardNumber(row.objective),mtd:nextMtd,weeklyGoal:safeBoardNumber(row.weeklyGoal),avg90:safeBoardNumber(row.avg90,false),days:Array.from({length:6},(_,index)=>safeBoardNumber(Array.isArray(row.days)?row.days[index]||0:0))};
+    board.rows[id]={...previous,objective:safeBoardNumber(row.objective),appointmentsGoal:safeBoardNumber(row.appointmentsGoal??previous.appointmentsGoal??0),appointmentsSet:safeBoardNumber(row.appointmentsSet??previous.appointmentsSet??0),mtd:nextMtd,weeklyGoal:safeBoardNumber(row.weeklyGoal),avg90:safeBoardNumber(row.avg90,false),days:Array.from({length:6},(_,index)=>safeBoardNumber(Array.isArray(row.days)?row.days[index]||0:0))};
    }
   }else if(body.action==="confirm-projection"||body.action==="change-projection"){
    const {data:member}=await db.from("organization_memberships").select("user_id,profiles!organization_memberships_user_id_fkey(display_name,role)").eq("user_id",body.userId).eq("organization_id",organizationId).maybeSingle();

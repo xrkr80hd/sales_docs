@@ -41,6 +41,8 @@ export async function GET(request: Request) {
     const enriched = (profiles ?? []).map((p) => ({
       ...p,
       workspace_role: p.role === "admin" ? "admin" : roleMap.get(p.id) || p.role,
+      email_verified: Boolean(users.find(u => u.id === p.id)?.email_confirmed_at),
+      must_change_password: users.find(u => u.id === p.id)?.app_metadata?.must_change_password === true,
       email: emailMap.get(p.id) ?? "unknown",
       card_slug: cardMap.get(p.id)?.slug ?? null,
       card_is_published: Boolean(cardMap.get(p.id)?.is_published),

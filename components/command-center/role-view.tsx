@@ -38,7 +38,7 @@ export function RoleView({ role }: {role:string}) {
     async function load() {
       setLoading(true); setError("");
       try {
-        if (role === "user") return;
+        if (role === "user" || role === "bdm") return;
         const path = role === "district_manager" ? "/api/workspace/directory" : role === "fni" ? "/api/workspace/queue?type=fni" : "/api/workspace/queue?type=sm";
         const {data} = await getSupabaseBrowserClient().auth.getSession();
         const response = await fetch(path,{headers:{Authorization:`Bearer ${data.session?.access_token || ""}`},cache:"no-store"});
@@ -84,6 +84,7 @@ export function RoleView({ role }: {role:string}) {
   if(!identity) return <p className={styles.notice}>Checking your access…</p>;
   if(!allowed) return <p className={styles.notice}>You do not have access to this role view.</p>;
   if(role==="user") return <><p className={styles.notice}>Consultant view{admin ? " · Master Admin access retained" : ""}</p><DashboardScreen /></>;
+  if(role==="bdm") return <><header><h1 className={styles.pageTitle}>BDM</h1><p>Read-only manager board statistics for your assigned organization.</p></header><ManagerBoard /></>;
   const selected=directory?.organizations.find(org=>org.id===organization);
   const assigned=directory?.memberships.filter(member=>member.organization_id===organization).map(member=>directory.users.find(user=>user.id===member.user_id)).filter(Boolean) || [];
   return <div className="grid gap-5">
