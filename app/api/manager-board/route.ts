@@ -69,9 +69,10 @@ export async function GET(request:Request){
   const {data:settings,error:settingsError}=ids.length?await db.from("user_settings").select("user_id,consultant_info").in("user_id",ids):{data:[],error:null};
   if(settingsError)throw settingsError;
   const proposals=Object.fromEntries((settings||[]).map(row=>[row.user_id,record(record(row.consultant_info).monthlyProjections)[`${organizationId}:${month}`]]));
+  const grossYtd=Object.entries(records[0]?.boards||{}).filter(([key])=>key.startsWith(`${organizationId}:${month.slice(0,4)}-`)&&key.slice(-7)<=month).reduce((total,[,value])=>{const saved=value as MonthBoard;return total+Object.values(saved.rows||{}).reduce((sum,row)=>sum+(Number(row.newGrossActual)||0)+(Number(row.usedGrossActual)||0),0);},0);
   const publicBoard={newGoal:board.newGoal,usedGoal:board.usedGoal,rows:board.rows,schedule:board.schedule,weeklyUpdate:board.weeklyUpdate,publishedAt:board.publishedAt};
   const branding=(await organizationBranding(db))[organizationId];
-  return Response.json({organization:{...organization,...branding},month,board:manager||bdm?{...board,...(!manager?{events:[]}: {})}:publicBoard,roster,proposals:manager?proposals:{[user.id]:proposals[user.id]},me:user.id,canManage:manager,canViewStats:manager||bdm,version:board.publishedAt},{headers:{"Cache-Control":"private, no-store"}});
+  return Response.json({organization:{...organization,...branding},month,board:manager||bdm?{...board,...(!manager?{events:[]}: {})}:publicBoard,roster,proposals:manager?proposals:{[user.id]:proposals[user.id]},me:user.id,canManage:manager,canViewStats:manager||bdm,grossYtd,version:board.publishedAt},{headers:{"Cache-Control":"private, no-store"}});
  }catch(error){return Response.json({error:error instanceof Error?error.message:"Could not load the board."},{status:500});}
 }
 export async function POST(request:Request){
