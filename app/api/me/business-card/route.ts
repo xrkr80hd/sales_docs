@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { organizationBranding } from "@/lib/organization-branding";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import {
   ConsultantProfileContent,
@@ -243,9 +244,17 @@ export async function GET(request: NextRequest) {
   const settingsName = setting(consultantSettings.name);
   const settingsPhone = setting(consultantSettings.phone);
   const settingsEmail = setting(consultantSettings.email);
-  const settingsDealer = setting(dealerSettings.dealershipName);
-  const cityState = [setting(dealerSettings.city), setting(dealerSettings.state)].filter(Boolean).join(", ");
-  const settingsAddress = [setting(dealerSettings.street), cityState, setting(dealerSettings.zip)].filter(Boolean).join(", ");
+  const {data:membership}=await supabase.from("organization_memberships").select("organization_id,organizations(name)").eq("user_id",user.id).maybeSingle();
+  const assignedOrganization=membership?.organizations as unknown as {name?:string}|null;
+  const assignedBranding=membership?.organization_id?(await organizationBranding(supabase))[membership.organization_id]:undefined;
+  const assignedAddress=assignedBranding?.address;
+  const settingsDealer = assignedOrganization?.name || setting(dealerSettings.dealershipName);
+  const street=assignedAddress?assignedAddress.street:setting(dealerSettings.street);
+  const city=assignedAddress?assignedAddress.city:setting(dealerSettings.city);
+  const state=assignedAddress?assignedAddress.state:setting(dealerSettings.state);
+  const zip=assignedAddress?assignedAddress.zip:setting(dealerSettings.zip);
+  const cityState = [city,state].filter(Boolean).join(", ");
+  const settingsAddress = [street,cityState,zip].filter(Boolean).join(", ");
   draft.identity = {
     ...draft.identity,
     ...(settingsName ? { displayName: settingsName } : {}),
