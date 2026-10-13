@@ -151,3 +151,10 @@
 .updateToast strong { color: #ff8591; font-size: 14px; }
 .updateToast p { margin: 8px 0; font-size: 15px; }
 .updateToast button { font-size: 12px; text-decoration: underline; color: #b8cbd8; }
+
+/* Walker is the primary brand; software branding stays secondary. */
+.dealerLogo { width: 320px; height: 72px; }
+@media (max-width: 1200px) { .dealerLogo { width: 260px; } }
+@media (max-width: 900px) { .dealerLogo { width: 220px; height: 54px; } }
+@media (max-width: 680px) { .dealerLogo { width: 170px; height: 48px; } }
+@media (max-width: 360px) { .dealerLogo { width: 150px; height: 44px; } }

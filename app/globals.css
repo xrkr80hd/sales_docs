@@ -177,3 +177,5 @@ html, body { background: var(--background); }
 
 /* Compact software branding; Walker remains the dealership identity. */
 .nxt-auth-wordmark { display: flex; justify-content: center; }
+
+.nxt-auth-dealer { width: min(100%, 340px); height: 96px; }

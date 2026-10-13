@@ -1,5 +1,5 @@
 /* Frame the supplied artwork without its large transparent canvas margins. */
-.logo { display: block; position: relative; overflow: hidden; flex: none; width: 170px; aspect-ratio: 1335 / 385; }
+.logo { display: block; position: relative; overflow: hidden; flex: none; width: 108px; aspect-ratio: 1335 / 385; }
 .artwork { position: absolute; width: 108.4644%; max-width: none; height: auto; left: -4.8689%; top: -93.5065%; }
-@media (max-width: 680px) { .logo { width: 120px; } }
-@media (max-width: 360px) { .logo { width: 104px; } }
+@media (max-width: 680px) { .logo { width: 76px; } }
+@media (max-width: 360px) { .logo { width: 64px; } }
