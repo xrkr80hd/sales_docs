@@ -101,7 +101,7 @@ export async function POST(request:Request){
   if(body.version!==board.publishedAt)return Response.json({error:"The board changed. Reload before saving so another update is preserved."},{status:409});
   if(body.action==="save-board"){
    const input=record(body.board);
-   board.newGoal=safeBoardNumber(input.newGoal);board.usedGoal=safeBoardNumber(input.usedGoal);board.monthlyGross=safeBoardNumber(input.monthlyGross,false);board.yearlyGross=safeBoardNumber(input.yearlyGross,false);
+   board.newGoal=safeBoardNumber(input.newGoal);board.usedGoal=safeBoardNumber(input.usedGoal);board.newGrossGoal=safeBoardNumber(input.newGrossGoal??0,false);board.usedGrossGoal=safeBoardNumber(input.usedGrossGoal??0,false);board.monthlyGross=board.newGrossGoal+board.usedGrossGoal;board.yearlyGross=safeBoardNumber(input.yearlyGross,false);
    board.schedule=String(input.schedule||"").slice(0,4000);
    const weeklyUpdate=String(input.weeklyUpdate||"").slice(0,4000);
    if(weeklyUpdate!==board.weeklyUpdate&&weeklyUpdate)board.events.push({id:crypto.randomUUID(),type:"weekly-update",consultantId:"",consultantName:"Weekly update",previous:0,next:0,reason:weeklyUpdate,by:profile?.display_name||user.email||"Manager",at:new Date().toISOString(),readBy:[]});
