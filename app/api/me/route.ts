@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     supabase.from("organization_memberships").select("organization_id,organizations(name)").eq("user_id", user.id).maybeSingle(),
   ]);
   const info = settings?.consultant_info as { profileImageUrl?: string } | null;
-  const branding = membership?.organization_id ? (await organizationBranding(supabase).catch(()=>({} as Record<string,{iconUrl?:string;theme?:string;hideIcon?:boolean}>)))[membership.organization_id] : undefined;
+  const branding = membership?.organization_id ? (await organizationBranding(supabase).catch(()=>({} as Record<string,{iconUrl?:string;theme?:string;hideIcon?:boolean;address?:{street:string;city:string;state:string;zip:string}}>)))[membership.organization_id] : undefined;
   const organization = membership?.organizations as unknown as { name?: string } | null;
   return Response.json({
     id: user.id,
@@ -48,5 +48,6 @@ export async function GET(request: Request) {
     organizationHideIcon: branding?.hideIcon || false,
     organizationIconUrl: branding?.iconUrl || "",
     organizationTheme: branding?.theme || "",
+    organizationAddress: branding?.address || {street:"",city:"",state:"",zip:""},
   });
 }
