@@ -13,10 +13,8 @@ export async function GET(request: Request) {
       .select("id, role, display_name, created_at, card_enabled")
       .order("created_at", { ascending: true });
 
-    if (error) {
-      if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") throw error;
-      return Response.json({ error: error.message }, { status: 500 });
-    }
+    // Authentication accounts remain visible even when a profile query fails.
+    const profileWarning=error?.message||"";
 
     // Enrich with email from auth.users
     const users: Array<{id:string;email?:string;email_confirmed_at?:string|null;app_metadata?:Record<string,unknown>;user_metadata?:Record<string,unknown>;created_at:string}> = [];
@@ -27,12 +25,11 @@ export async function GET(request: Request) {
       if(data.users.length<200)break;
     }
     const roleMap = new Map(users.map(u => [u.id, u.app_metadata?.workspace_role]));
-    const emailMap = new Map(users.map((u) => [u.id, u.email]));
 
     const { data: cards, error: cardsError } = await supabase
       .from("consultant_cards")
       .select("user_id, slug, is_published");
-    if (cardsError) return Response.json({ error: cardsError.message }, { status: 500 });
+    const cardWarning=cardsError?.message||"";
     const cardMap = new Map((cards ?? []).map((card) => [card.user_id, card]));
 
     const profileMap=new Map((profiles??[]).map(p=>[p.id,p]));
@@ -47,7 +44,7 @@ export async function GET(request: Request) {
         needs_setup:!p,
       };
     });
-    return Response.json({ users: enriched });
+    return Response.json({ users: enriched, warnings:[profileWarning&&`Profiles unavailable: ${profileWarning}`,cardWarning&&`Consultant cards unavailable: ${cardWarning}`].filter(Boolean) });
   } catch {
     if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
       return Response.json({
