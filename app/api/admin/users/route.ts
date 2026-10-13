@@ -19,16 +19,13 @@ export async function GET(request: Request) {
     }
 
     // Enrich with email from auth.users
-    const {
-      data: { users },
-      error: usersError,
-    } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-
-    if (usersError) {
-      if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") throw usersError;
-      return Response.json({ error: usersError.message }, { status: 500 });
+    const users: Array<{id:string;email?:string;email_confirmed_at?:string|null;app_metadata?:Record<string,unknown>;user_metadata?:Record<string,unknown>;created_at:string}> = [];
+    for(let page=1;page<=100;page++){
+      const {data,error:usersError}=await supabase.auth.admin.listUsers({page,perPage:200});
+      if(usersError)return Response.json({error:usersError.message},{status:500});
+      users.push(...data.users);
+      if(data.users.length<200)break;
     }
-
     const roleMap = new Map(users.map(u => [u.id, u.app_metadata?.workspace_role]));
     const emailMap = new Map(users.map((u) => [u.id, u.email]));
 
@@ -38,16 +35,18 @@ export async function GET(request: Request) {
     if (cardsError) return Response.json({ error: cardsError.message }, { status: 500 });
     const cardMap = new Map((cards ?? []).map((card) => [card.user_id, card]));
 
-    const enriched = (profiles ?? []).map((p) => ({
-      ...p,
-      workspace_role: p.role === "admin" ? "admin" : roleMap.get(p.id) || p.role,
-      email_verified: Boolean(users.find(u => u.id === p.id)?.email_confirmed_at),
-      must_change_password: users.find(u => u.id === p.id)?.app_metadata?.must_change_password === true,
-      email: emailMap.get(p.id) ?? "unknown",
-      card_slug: cardMap.get(p.id)?.slug ?? null,
-      card_is_published: Boolean(cardMap.get(p.id)?.is_published),
-    }));
-
+    const profileMap=new Map((profiles??[]).map(p=>[p.id,p]));
+    const enriched=users.map(u=>{
+      const p=profileMap.get(u.id);
+      const name=String(p?.display_name||u.user_metadata?.display_name||u.email?.split("@")[0]||"Unassigned");
+      return {
+        id:u.id,email:u.email||"",role:p?.role||"user",workspace_role:p?.role==="admin"?"admin":roleMap.get(u.id)||p?.role||"user",
+        display_name:name,created_at:p?.created_at||u.created_at,card_enabled:p?.card_enabled===true,
+        email_verified:Boolean(u.email_confirmed_at),must_change_password:u.app_metadata?.must_change_password===true,
+        card_slug:cardMap.get(u.id)?.slug??null,card_is_published:Boolean(cardMap.get(u.id)?.is_published),
+        needs_setup:!p,
+      };
+    });
     return Response.json({ users: enriched });
   } catch {
     if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
