@@ -68,7 +68,7 @@ type MessengerIdentity = {
   nickname?: string;
   profile_image_url?: string;
 };
-type Person = { user_id: string; profiles?: MessengerIdentity };
+type Person = { user_id: string; profiles?: MessengerIdentity & {can_dm?:boolean} };
 type MessengerPayload = {
   membership?: {
     organization_id: string;
@@ -167,7 +167,7 @@ export function MessengerWorkspace() {
 
   useEffect(() => {
     void load();
-    const timer = window.setInterval(() => void load(), 4000);
+    const timer = window.setInterval(() => { if(document.visibilityState==="visible") void load(); }, 15000);
     return () => window.clearInterval(timer);
   }, [load]);
 
@@ -506,7 +506,7 @@ export function MessengerWorkspace() {
           </div>
           <div className={styles.peopleList}>
             {allPeople.map((person) => (
-              <button key={person.user_id} type="button" className={styles.person} onClick={() => openPersonDm(person.user_id)} disabled={!data.membership?.can_dm}>
+              <button key={person.user_id} type="button" className={styles.person} onClick={() => openPersonDm(person.user_id)} disabled={!data.membership?.can_dm || person.profiles?.can_dm===false}>
                 <span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span>
                 <span>{personName(person.user_id)}</span>
                 <span className={`${styles.openDm} ${onlineUserIds.has(person.user_id) ? styles.onlineText : ""}`}>{onlineUserIds.has(person.user_id) ? "Online" : "Offline"}</span>
