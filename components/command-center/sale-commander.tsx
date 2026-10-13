@@ -49,7 +49,7 @@ export function SaleCommander(){
     pending.current=false;
     const snapshot=latest.current;
     const saved=await request("PUT",snapshot);
-    if(!pending.current){latest.current=saved;setState(saved);}
+    if(!pending.current && latest.current===snapshot){latest.current=saved;setState(saved);}
    }
    notifySave("success","Sale Commander saved.");
   }catch(e){setNotice(e instanceof Error?e.message:"Save failed. Your entries remain on screen.");notifySave("error","Sale Commander could not save. Your entries are still visible.");}
@@ -61,7 +61,7 @@ export function SaleCommander(){
   <header><p style={{color:"#fa6969",fontWeight:800,letterSpacing:2}}>WALKER AUTOMOTIVE · CONSULTANT TOOLS</p><h1 style={{fontSize:32,margin:"5px 0"}}>Sale Commander</h1><p style={{color:"#aebdcd"}}>Sales goals converted into measurable daily activity. Projections are estimates, never guaranteed sales.</p></header>
   {notice&&<p role="status" style={{color:"#f9c06e"}}>{notice}</p>}
   {!ready?<p>Loading your saved command center…</p>:<>
-  <section style={{...style.panel,marginBottom:12}}><label htmlFor="sales-goal">Monthly sales objective</label><input id="sales-goal" aria-label="Monthly sales goal" type="number" min={1} max={250} style={{...style.input,fontSize:23,maxWidth:160,display:"block",margin:"9px 0"}} value={state.goal} disabled={busy||assignedGoal!==null} onChange={e=>setState(s=>({...s,goal:number(Number(e.target.value),5,1,250)}))} onBlur={()=>void persist(latest.current)} /><p style={{fontSize:12,color:"#aebdcd"}}>{assignedGoal!==null?"Your manager sets this monthly objective. Sale Commander automatically calculates your required activity.":"Change the target and leave the field to save. All projections update immediately."}</p></section>
+  <section style={{...style.panel,marginBottom:12}}><label htmlFor="sales-goal">Monthly sales objective</label><input id="sales-goal" aria-label="Monthly sales goal" type="number" min={1} max={250} style={{...style.input,fontSize:23,maxWidth:160,display:"block",margin:"9px 0"}} value={state.goal} disabled={busy||assignedGoal!==null} onChange={e=>{const next={...latest.current,goal:number(Number(e.target.value),5,1,250)};latest.current=next;setState(next);}} onBlur={()=>void persist(latest.current)} /><p style={{fontSize:12,color:"#aebdcd"}}>{assignedGoal!==null?"Your manager sets this monthly objective. Sale Commander automatically calculates your required activity.":"Change the target and leave the field to save. All projections update immediately."}</p></section>
   <section style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:9,marginBottom:15}}>{tile("calls",proj.daily.calls)}{tile("talks",proj.daily.talks)}{tile("appts",proj.daily.appts)}{tile("shows",round(proj.adjusted.shows/state.rates.workdays))}{tile("sold",round(state.goal/state.rates.workdays))}</section>
   <section style={style.panel}><h2>Monthly activity required</h2><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(125px,1fr))",gap:10}}>{keys.map(k=><div key={k}><small>{names[k]}</small><h2>{proj.adjusted[k]}</h2></div>)}</div><p style={{color:"#aebdcd"}}>Based on {state.rates.workdays} selling days and a {state.rates.buffer}% activity cushion.</p></section>
   <RoutinePlanner schedule={state.schedule} weekendAnchor={state.weekendAnchor} onWeekendAnchor={weekendAnchor=>change(current=>({...current,weekendAnchor}))} disabled={busy} onSave={schedule=>change(current=>({...current,schedule}))}/>
