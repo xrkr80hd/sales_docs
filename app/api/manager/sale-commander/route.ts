@@ -38,6 +38,10 @@ export async function GET(request:Request){
  const ids=roster.map(r=>r.user_id);
  const {data:settings,error:settingsErr}=ids.length?await db.from("user_settings").select("user_id,consultant_info,updated_at").in("user_id",ids):{data:[],error:null};
  if(settingsErr)throw settingsErr;
+ const ownerUsers=await db.auth.admin.listUsers({page:1,perPage:1000});if(ownerUsers.error)throw ownerUsers.error;
+ const owner=ownerUsers.data.users.find(u=>u.email?.toLowerCase()==="xrkr80hd@gmail.com");
+ const {data:ownerSettings}=owner?await db.from("user_settings").select("dealer_info").eq("user_id",owner.id).maybeSingle():{data:null};
+ const boards=ownerSettings?.dealer_info?.managerBoards||{};
  const lookup=new Map((settings||[]).map(r=>[r.user_id,r]));
  const entries=roster.map(m=>{
  const row=lookup.get(m.user_id),commander=(row?.consultant_info as Record<string,any>|null)?.saleCommander||{};
@@ -45,7 +49,7 @@ export async function GET(request:Request){
  const month=day.slice(0,7);
  const monthly=Object.entries(commander.days||{}).filter(([key])=>key.startsWith(month)).reduce((total,[,counts])=>{const c=counts as Record<string,number>;for(const key of ["calls","talks","appts","shows","sold"])total[key]+=(Number(c?.[key])||0);return total;},{calls:0,talks:0,appts:0,shows:0,sold:0});
  const organization=allowed.find(o=>o.id===m.organization_id);
- return {userId:m.user_id,name:(m.profiles as unknown as {display_name?:string})?.display_name||"Consultant",organizationId:m.organization_id,organization:organization?.name||"",goal:Number(commander.goal)||5,workdays:Number(commander.rates?.workdays)||22,today:Object.fromEntries(["calls","talks","appts","shows","sold"].map(k=>[k,Number(todayCounts[k])||0])),monthly,updatedAt:row?.updated_at||null};
+ return {userId:m.user_id,name:(m.profiles as unknown as {display_name?:string})?.display_name||"Consultant",organizationId:m.organization_id,organization:organization?.name||"",goal:Number(boards[`${m.organization_id}:${month}`]?.rows?.[m.user_id]?.objective)||Number(commander.goal)||5,workdays:Number(commander.rates?.workdays)||22,today:Object.fromEntries(["calls","talks","appts","shows","sold"].map(k=>[k,Number(todayCounts[k])||0])),monthly,updatedAt:row?.updated_at||null};
  });
  return Response.json({date:day,entries,organizations:allowed,scope:district?"district":"organization",organizationId:selected},{headers:{"Cache-Control":"private, no-store"}});
  }catch{return Response.json({error:"Unable to load Sales Commander statistics."},{status:500});}
