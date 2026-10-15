@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandSplash } from "./brand-splash";
 import { SoftwareLogo } from "@/components/branding/software-logo";
 import { PasswordRequirement } from "./required-password-change";
 import type { Session } from "@supabase/supabase-js";
@@ -46,6 +47,7 @@ export function SupabaseSessionGate({
   const authDisabled = process.env.NEXT_PUBLIC_DISABLE_AUTH === "1";
 
   const [checking, setChecking] = useState(!authDisabled);
+  const [startupComplete, setStartupComplete] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [session, setSession] = useState<Session | null>(null);
@@ -54,6 +56,11 @@ export function SupabaseSessionGate({
   const [sending, setSending] = useState(false);
   const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setStartupComplete(true), 650);
+    return () => window.clearTimeout(timeout);
+  }, []);
 
   useEffect(() => {
     if (authDisabled || !isSupabaseConfigured()) {
@@ -248,26 +255,12 @@ export function SupabaseSessionGate({
     );
   }
 
-  if (checking) {
-    return (
-      <div className="nxt-ui nxt-auth-screen">
-        <div className="nxt-auth-panel">
-          <div className="nxt-auth-header">
-            <div className="nxt-auth-wordmark"><SoftwareLogo /></div>
-            <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} priority className="nxt-auth-dealer" />
-            <p className="mt-3 text-xs font-bold uppercase tracking-[0.24em] text-white/80 drop-shadow-sm">WALKER AUTOMOTIVE WORKSPACE</p>
-          </div>
-          <div className="bg-[var(--panel)] px-5 py-6 sm:px-6">
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--accent)]">Authorizing</p>
-            <h1 className="mt-2 text-2xl font-extrabold text-white">Checking access…</h1>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (checking || !startupComplete) return <BrandSplash />;
 
   if (!session) {
     return (
+      <>
+      {sending && mode === "login" && <div className="hidden md:block"><BrandSplash checkingCredentials /></div>}
       <div className="nxt-ui nxt-auth-screen">
         <div className="nxt-auth-panel">
           {/* Hero header with graphic */}
@@ -396,6 +389,7 @@ export function SupabaseSessionGate({
           </div>
         </div>
       </div>
+      </>
     );
   }
 
