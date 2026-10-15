@@ -1,5 +1,6 @@
 "use client";
 import {useCallback,useEffect,useState} from "react";
+import styles from "./sales-commander-stats.module.css";
 import {getSupabaseBrowserClient} from "@/lib/supabase-browser";
 type Counts={calls:number;talks:number;appts:number;shows:number;sold:number};
 type Entry={userId:string;name:string;organization:string;organizationId:string;goal:number;rates?:{contact?:number;set?:number;show?:number;sold?:number;buffer?:number};workdays:number;today:Counts;monthly:Counts;updatedAt:string|null};
@@ -13,18 +14,26 @@ export function SalesCommanderStats(){
  useEffect(()=>{void load();const id=window.setInterval(()=>void load(),5000);const refresh=()=>void load();window.addEventListener("focus",refresh);return()=>{window.clearInterval(id);window.removeEventListener("focus",refresh);};},[load]);
  const entries=(result?.entries||[]).filter(e=>!selected||e.userId===selected);
  const totals=entries.reduce((t,e)=>{for(const [field]of fields)t[field]+=(e[view==="today"?"today":"monthly"][field]||0);return t;},{calls:0,talks:0,appts:0,shows:0,sold:0});
- const popout=()=>{window.open("/manager-board/sale-commander?display=1"+(org?"&organization="+encodeURIComponent(org):""),"_blank","noopener,noreferrer,width=1500,height=950");};
- return <div style={{color:"#eff3fa",padding:"18px",maxWidth:1600,margin:"auto"}}>
- <header style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:12,alignItems:"center"}}><div><small style={{color:"#f26c6c",letterSpacing:2,fontWeight:800}}>WALKER AUTOMOTIVE · MANAGER COACHING</small><h1 style={{fontSize:30,margin:"6px 0"}}>Sales Commander Stats</h1><p style={{color:"#a5b5c7"}}>Actual / simulated target by consultant. Refreshes every 5 seconds while open.</p></div><button type="button" onClick={popout} style={{background:"#ad2028",border:"1px solid #ef6767",borderRadius:5,color:"#fff",padding:12,cursor:"pointer"}}>Open Pop-out Display ↗</button></header>
- {error&&<p role="alert" style={{color:"#ffa2a2"}}>{error}</p>}
- <div style={{display:"flex",gap:9,flexWrap:"wrap",margin:"16px 0"}}>
- <label>Date <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{padding:8,background:"#162334",border:"1px solid #4a596a",color:"white"}}/></label>
- {result?.scope==="district"&&<label>Dealership <select value={org} onChange={e=>{setOrg(e.target.value);setSelected("");}} style={{padding:8,background:"#162334",border:"1px solid #4a596a",color:"white"}}><option value="">All dealerships</option>{result.organizations.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label>}
- <label>Consultant <select value={selected} onChange={e=>setSelected(e.target.value)} style={{padding:8,background:"#162334",border:"1px solid #4a596a",color:"white"}}><option value="">Entire team</option>{result?.entries.map(e=><option key={e.userId} value={e.userId}>{e.name}</option>)}</select></label>
- <button onClick={()=>setView("today")} style={{padding:9,color:"white",background:view==="today"?"#a92730":"#263649",border:0}}>Today</button><button onClick={()=>setView("month")} style={{padding:9,color:"white",background:view==="month"?"#a92730":"#263649",border:0}}>Month to date</button>
+ return <section className={styles.page}>
+ <header className={styles.header}><small>MANAGER COACHING</small><h1>Sales Commander Stats</h1><p>Track saved activity and compare each consultant’s progress with their goals.</p></header>
+ {error&&<p role="alert" className={styles.error}>{error}</p>}
+ <div className={styles.filters}>
+ <label>Date<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
+ {result?.scope==="district"&&<label>Dealership<select value={org} onChange={e=>{setOrg(e.target.value);setSelected("");}}><option value="">All dealerships</option>{result.organizations.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label>}
+ <label>Consultant<select value={selected} onChange={e=>setSelected(e.target.value)}><option value="">Entire team</option>{result?.entries.map(e=><option key={e.userId} value={e.userId}>{e.name}</option>)}</select></label>
  </div>
- <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",gap:10,marginBottom:18}}>{fields.map(([k,label])=><div key={k} style={{background:"#152234",border:"1px solid #38495e",padding:16,borderRadius:7}}><small>{label}</small><h2 style={{fontSize:31,margin:"8px 0"}}>{totals[k]}</h2></div>)}</div>
- <div style={{overflowX:"auto",background:"#101b2a",border:"1px solid #405064",borderRadius:8}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:830}}><thead><tr>{["Consultant","Dealership","Monthly sales goal",...fields.map(x=>x[1]),"Last saved"].map(h=><th key={h} style={{padding:12,borderBottom:"1px solid #3e5065",textAlign:"left",fontSize:12}}>{h}</th>)}</tr></thead><tbody>{entries.map(e=><tr key={e.userId}><td style={{padding:12,borderBottom:"1px solid #253448",fontWeight:700}}>{e.name}</td><td style={{padding:12,borderBottom:"1px solid #253448"}}>{e.organization}</td><td style={{padding:12,borderBottom:"1px solid #253448"}}>{e.goal}</td>{fields.map(([k])=><td key={k} style={{padding:12,borderBottom:"1px solid #253448"}}>{e[view==="today"?"today":"monthly"][k]} <small style={{color:"#92b9cd"}}>/ {view==="today"?Math.ceil(targets(e)[k]/e.workdays):targets(e)[k]}</small></td>)}<td style={{padding:12,borderBottom:"1px solid #253448",fontSize:12}}>{e.updatedAt?new Date(e.updatedAt).toLocaleTimeString():"No activity saved"}</td></tr>)}</tbody></table>{!entries.length&&<p style={{padding:18}}>No consultants match this view.</p>}</div>
- <details style={{marginTop:16,background:"#132032",padding:15,border:"1px solid #405064"}}><summary>Coaching interpretation</summary><p>These figures represent saved activity, not calls verified independently by a phone system. Compare actual calls, conversations, appointments and sales to the simulated requirements inside each consultant's Sale Commander. An activity gap suggests coaching on execution; a low conversion rate suggests coaching on call quality, appointment setting or follow-up.</p></details>
- </div>;
+ <div className={styles.period} aria-label="Reporting period"><button type="button" aria-pressed={view==="today"} onClick={()=>setView("today")}>Selected day</button><button type="button" aria-pressed={view==="month"} onClick={()=>setView("month")}>Month to date</button></div>
+ {!result&&!error&&<p role="status">Loading team activity…</p>}
+ {result&&<>
+ <div className={styles.totals}>{fields.map(([k,label])=><div key={k}><span>{label}</span><strong>{totals[k].toLocaleString()}</strong></div>)}</div>
+ <div className={styles.sectionTitle}><h2>Consultant activity</h2><span>Actual / planning target</span></div>
+ <div className={styles.people}>{entries.map(e=><article key={e.userId} className={styles.person}>
+ <header><div><h3>{e.name}</h3><p>{e.organization}</p></div><span className={styles.goal}>{e.goal} monthly sales goal</span></header>
+ <dl>{fields.map(([k,label])=>{const actual=e[view==="today"?"today":"monthly"][k]||0;const target=view==="today"?Math.ceil(targets(e)[k]/Math.max(1,e.workdays)):targets(e)[k];return <div key={k}><dt>{label}</dt><dd><strong>{actual.toLocaleString()}</strong><span> / {target.toLocaleString()}</span></dd><progress aria-label={`${label}: ${actual} of ${target}`} value={Math.min(actual,Math.max(1,target))} max={Math.max(1,target)}/></div>;})}</dl>
+ <footer>{e.updatedAt?`Last saved ${new Date(e.updatedAt).toLocaleString()}`:"No activity saved yet"}</footer>
+ </article>)}</div>
+ {!entries.length&&<p className={styles.empty}>No consultants match these filters.</p>}
+ </>}
+ <details className={styles.notes}><summary>How to read these numbers</summary><p>Actuals are activity saved by consultants. Planning targets use each consultant’s sales goal and conversion settings; daily targets divide that plan across their workdays. These are coaching estimates, not verified phone-system records. Activity refreshes automatically.</p></details>
+ </section>;
 }

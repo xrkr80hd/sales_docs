@@ -64,3 +64,44 @@ export function maskCompletedChatWords(text:string):string{
   if(!lastWord)return maskChatText(text);
   const index=lastWord.index!;return maskChatText(text.slice(0,index))+text.slice(index);
 }
+
+// Hateful language is always masked; ordinary profanity becomes deliberately silly.
+// Deterministic replacements remain stable across send, reload, and historical reads.
+const hatefulTerms = new Set([
+  "nigger", "niggers", "nigga", "niggas", "niggah", "niggahs", "negrata", "negratas",
+  "wetback", "wetbacks", "beaner", "beaners", "spic", "spics", "chink", "chinks",
+  "gook", "gooks", "kike", "kikes", "raghead", "ragheads", "towelhead", "towelheads",
+  "redskin", "redskins", "coon", "coons", "darkie", "darkies", "paki", "pakis",
+  "faggot", "faggots", "fag", "fags", "dyke", "dykes", "tranny", "trannies",
+  "maricon", "maricones", "marica", "maricas", "joto", "jotos", "retard", "retarded",
+  "mojado", "mojados", "sudaca", "sudacas", "panchito", "panchitos",
+]);
+const classifiedPatterns = [...terms].sort((a,b)=>b.replace(/\s/g,"").length-a.replace(/\s/g,"").length).map(term => ({
+  term, pattern: new RegExp(`^(?:${[...normalized(term).value.replace(/\s/g,"")].map(letter=>`${letter}+`).join(separator)})$`, "u"),
+}));
+const sillyWords = [
+  "turbo-powered pudding ferret", "intergalactic waffle walrus", "Captain Soggy Noodlepants",
+  "fart bean", "disco-flavored pickle tornado", "Sir Wobbles von Crouton",
+  "tap-dancing gravy hamster", "emergency spaghetti parachute", "glitter-powered tater goblin",
+  "Professor Bubblewrap McNugget", "cosmic jellybean lawnmower", "ravioli moon goose",
+  "deep-fried kazoo astronaut", "marshmallow-powered sock gremlin", "Count Snickerdoodle Wobblebottom",
+  "rocket-propelled pudding pelican", "majestic broccoli unicycle", "banana-powered disco vacuum",
+  "Supreme Chancellor of Waffle Socks", "sentient gravy trampoline", "Duke Pickleboots the Confused",
+  "spaghetti-powered thunder muffin", "professional bubblegum scarecrow", "Lord Fluffernoodle of Tater Town",
+];
+export function moderateChatText(text: string): string {
+  const { value, positions } = normalized(text);
+  let result = "", cursor = 0;
+  for (const match of value.matchAll(matcher)) {
+    const start = positions[match.index].start, end = positions[match.index + match[0].length - 1].end;
+    const term = classifiedPatterns.find(entry => entry.pattern.test(match[0]))?.term;
+    let replacement = "****";
+    if (term && !hatefulTerms.has(term)) {
+      const index = [...`${text}:${start}:${term}`].reduce((hash, letter) => (hash * 31 + letter.charCodeAt(0)) >>> 0, 0) % sillyWords.length;
+      replacement = sillyWords[index];
+    }
+    result += text.slice(cursor, start) + replacement;
+    cursor = end;
+  }
+  return result + text.slice(cursor);
+}

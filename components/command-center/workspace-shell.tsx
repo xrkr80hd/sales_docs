@@ -66,7 +66,7 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
         <Link href="/dashboard" className={styles.wordmark} aria-label="NXTDOX home"><SoftwareLogo /></Link>
         <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} className={styles.dealerLogo} priority />
       </div>
-      {display ? <div className={styles.displayLabel}><Monitor /><div>Office Display Board<small>Read only · Live updates</small></div></div> : <>
+      {display ? <div className={styles.displayActions}><div className={styles.displayLabel}><Monitor /><div>Office Display Board<small>Read only · Live updates</small></div></div><Link href="/manager-board" className={styles.exitDisplay} aria-label="Close Office Display and return to Manager Board"><X size={22}/><span>Close</span></Link></div> : <>
         <div className={styles.identity}>
           <details><summary><span className={styles.profilePhoto}><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span>{identity?.dealership&&<OrganizationBadge name={identity.dealership} iconUrl={identity.organizationIconUrl} hidden={identity.organizationHideIcon}/>}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div><ChevronDown size={18} /></summary><div className={styles.accountMenu}><button onClick={onSettings}>Consultant Setup</button><button onClick={session.signOut}>Sign Out</button></div></details>
           <div className={styles.clock}><small>{now?.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "America/Chicago" }) || ""}</small><strong>{now?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" }) || ""}</strong></div>
@@ -95,7 +95,7 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
           </nav>
         </aside>
       </>}
-      <main className={`${styles.main} ${pathname.startsWith("/documents") || pathname.startsWith("/deal-sheet") ? styles.formMain : ""}`}>{children}</main>
+      <main className={`${styles.main} ${pathname === "/messenger" ? styles.messengerMain : ""} ${pathname.startsWith("/documents") || pathname.startsWith("/deal-sheet") ? styles.formMain : ""}`}>{children}</main>
     </div>
   </div>;
 }
