@@ -166,6 +166,18 @@ export function MessengerWorkspace() {
   }, [collapsedDmIds]);
 
   useEffect(() => {
+    if (!openDmIds.length) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpenDmIds([]);
+        setCollapsedDmIds([]);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [openDmIds.length]);
+
+  useEffect(() => {
     void load();
     const timer = window.setInterval(() => { if(document.visibilityState==="visible") void load(); }, 15000);
     return () => window.clearInterval(timer);
@@ -274,6 +286,12 @@ export function MessengerWorkspace() {
       method: "POST",
       body: JSON.stringify({ action: "mark-read", conversationId }),
     }).then(load).catch(() => {});
+  }
+
+  function closeDm(conversationId: string) {
+    // Closing the window only changes local presentation state; server messages remain untouched.
+    setOpenDmIds((current) => current.filter((id) => id !== conversationId));
+    setCollapsedDmIds((current) => current.filter((id) => id !== conversationId));
   }
 
   function openDm(conversationId: string) {
@@ -545,7 +563,7 @@ export function MessengerWorkspace() {
                 }} aria-expanded={!collapsed}>
                   <span className={`${styles.dmStatus} ${onlineUserIds.has(otherUserId || "") ? "" : styles.offline}`}  /><span>{name}</span>
                 </button>
-                <button type="button" className={styles.dmClose} onClick={() => setOpenDmIds((current) => current.filter((id) => id !== conversationId))} aria-label={`Close chat with ${name}`}>×</button>
+                <button type="button" className={styles.dmClose} onClick={() => closeDm(conversationId)} aria-label={`Close chat with ${name} without deleting messages`} title="Close conversation (messages are saved)">×</button>
               </header>
               {!collapsed && <>
                 <button type="button" className={styles.dmClear} onClick={() => void clearMyMessages(conversationId)}>Clear my messages</button>
