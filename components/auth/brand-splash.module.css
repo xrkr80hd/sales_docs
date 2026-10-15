@@ -1,7 +1,7 @@
 .splash{position:fixed;inset:0;z-index:9999;overflow:hidden;background:#020713;isolation:isolate}
 .artwork{position:absolute;inset:0;display:block}
-.artwork img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
-.loadingTrack{position:absolute;left:50%;top:66%;transform:translateX(-50%);width:min(23vw,230px);height:3px;border-radius:99px;overflow:hidden;background:rgba(57,255,20,.14);box-shadow:0 0 12px rgba(57,255,20,.2)}
+.artwork img{display:block;width:100%;height:100%;object-fit:contain;object-position:center}
+.loadingTrack{display:none}
 .loadingTrack span{display:block;width:32%;height:100%;border-radius:inherit;background:#39ff14;box-shadow:0 0 12px #39ff14;animation:slide 1.15s ease-in-out infinite alternate}
 @keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(315%)}}
 @media(max-width:767px){.loadingTrack{top:61%;width:min(38vw,175px);height:3px}}
