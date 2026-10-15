@@ -68,7 +68,8 @@ type MessengerIdentity = {
   nickname?: string;
   profile_image_url?: string;
 };
-type Person = { user_id: string; profiles?: MessengerIdentity & {can_dm?:boolean} };
+type Person = { user_id: string; organization_id?: string; profiles?: MessengerIdentity & {can_dm?:boolean} };
+type Organization = { id: string; name: string };
 type MessengerPayload = {
   membership?: {
     organization_id: string;
@@ -80,6 +81,7 @@ type MessengerPayload = {
   };
   conversations?: Conversation[];
   people?: Person[];
+  organizations?: Organization[];
   messages?: Message[];
   me?: string;
 };
@@ -119,6 +121,7 @@ export function MessengerWorkspace() {
     try { const stored = JSON.parse(localStorage.getItem("nxtdox.collapsed-dms") || "[]"); return Array.isArray(stored) ? stored.filter((id): id is string => typeof id === "string") : []; } catch { return []; }
   });
   const [peopleOpen, setPeopleOpen] = useState(false);
+  const [expandedOrganizationId, setExpandedOrganizationId] = useState<string | null>(null);
   const [identityUserId, setIdentityUserId] = useState<string | null>(null);
   const [nicknameOpen, setNicknameOpen] = useState(false);
   const [nicknameDraft, setNicknameDraft] = useState("");
@@ -237,6 +240,8 @@ export function MessengerWorkspace() {
   const teamMessageCount = teamMessages.length;
   const allPeople = (data?.people ?? []).filter(person => person.user_id !== currentUserId).sort((a, b) => Number(onlineUserIds.has(b.user_id)) - Number(onlineUserIds.has(a.user_id)) || personName(a.user_id).localeCompare(personName(b.user_id)));
   const onlinePeople = allPeople.filter(person => onlineUserIds.has(person.user_id));
+  const organizationDirectory = (data?.organizations ?? []).filter(org => org.name && org.id);
+  const peopleForOrganization = (organizationId: string) => allPeople.filter(person => person.organization_id === organizationId);
 
 
   useEffect(() => {
@@ -520,18 +525,34 @@ export function MessengerWorkspace() {
       <div className={styles.workspaceBody}>
         <aside className={styles.peoplePanel}>
           <div className={styles.panelHeading}>
-            <p>People</p>
+            <p>Organizations</p>
             <span>{onlinePeople.length} online</span>
           </div>
-          <div className={styles.peopleList}>
-            {allPeople.map((person) => (
-              <button key={person.user_id} type="button" className={styles.person} onClick={() => openPersonDm(person.user_id)} disabled={!data.membership?.can_dm || person.profiles?.can_dm===false}>
-                <span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span>
-                <span>{personName(person.user_id)}</span>
-                <span className={`${styles.openDm} ${onlineUserIds.has(person.user_id) ? styles.onlineText : ""}`}>{onlineUserIds.has(person.user_id) ? "Online" : "Offline"}</span>
-                {identityUserId === person.user_id && <span className={styles.peopleIdentity}><span className={styles.identityPhoto}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><strong>@{person.profiles?.username || "member"}</strong></span>}
-              </button>
-            ))}
+          <div className={styles.organizationList} aria-label="Organization directory">
+            {organizationDirectory.map((organization) => {
+              const members = peopleForOrganization(organization.id);
+              const expanded = expandedOrganizationId === organization.id;
+              return <div key={organization.id} className={styles.organizationGroup}>
+                <button type="button" className={styles.organizationToggle} aria-expanded={expanded} onClick={() => setExpandedOrganizationId(expanded ? null : organization.id)}>
+                  <span className={styles.organizationChevron}>{expanded ? "▾" : "▸"}</span>
+                  <span className={styles.organizationTitle}>{organization.name}</span>
+                  <span className={styles.organizationCount}>{members.length}</span>
+                </button>
+                {expanded && <div className={styles.organizationMembers}>
+                  {organization.id === data.membership?.organization_id && <div className={styles.organizationHint}>Your dealership team</div>}
+                  {members.length === 0 && <p className={styles.organizationEmpty}>No chat-enabled members</p>}
+                  {members.map(person => {
+                    const name = personName(person.user_id);
+                    const canMessage = Boolean(data.membership?.can_dm && person.profiles?.can_dm !== false);
+                    return <button key={person.user_id} type="button" className={styles.organizationPerson} disabled={!canMessage} onClick={() => openPersonDm(person.user_id)}>
+                      <span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : name.charAt(0)}</span>
+                      <span className={styles.organizationPersonName}>{name}</span>
+                      <span className={`${styles.dmStatus} ${onlineUserIds.has(person.user_id) ? "" : styles.offline}`} />
+                    </button>;
+                  })}
+                </div>}
+              </div>;
+            })}
           </div>
         </aside>
 
@@ -600,14 +621,14 @@ export function MessengerWorkspace() {
         })}
       </nav>}
 
-      <button type="button" className={styles.peopleTab} onClick={() => setPeopleOpen(true)} aria-label={`Show registered members, ${allPeople.length} people`}>
-        People {allPeople.length}{totalUnread > 0 ? ` · ${totalUnread}` : ""}
+      <button type="button" className={styles.peopleTab} onClick={() => setPeopleOpen(true)} aria-label={`Show organizations, ${organizationDirectory.length} organizations`}>
+        Organizations {organizationDirectory.length}{totalUnread > 0 ? ` · ${totalUnread}` : ""}
       </button>
       {peopleOpen && <div className={styles.mobilePeopleOverlay}>
         <button type="button" className={styles.mobilePeopleBackdrop} onClick={() => setPeopleOpen(false)} aria-label="Close members" />
         <aside className={styles.mobilePeopleDrawer}>
-          <header><div><strong>Registered members</strong><span>{allPeople.length} members</span></div><button type="button" onClick={() => setPeopleOpen(false)}>×</button></header>
-          {allPeople.map((person) => <button key={person.user_id} type="button" onClick={() => openPersonDm(person.user_id)}><span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><span>{personName(person.user_id)} · {onlineUserIds.has(person.user_id) ? "Online" : "Offline"}</span>{identityUserId === person.user_id && <span className={styles.drawerIdentity}>@{person.profiles?.username || "member"}</span>}</button>)}
+          <header><div><strong>Organizations</strong><span>{organizationDirectory.length} dealerships</span></div><button type="button" onClick={() => setPeopleOpen(false)}>×</button></header>
+          {organizationDirectory.map(org => <div key={org.id} className={styles.organizationGroup}><button type="button" className={styles.organizationToggle} aria-expanded={expandedOrganizationId === org.id} onClick={() => setExpandedOrganizationId(expandedOrganizationId === org.id ? null : org.id)}><span>{expandedOrganizationId === org.id ? "▾" : "▸"}</span><span className={styles.organizationTitle}>{org.name}</span><span>{peopleForOrganization(org.id).length}</span></button>{expandedOrganizationId === org.id && peopleForOrganization(org.id).map(person => <button key={person.user_id} type="button" className={styles.organizationPerson} disabled={!data.membership?.can_dm || person.profiles?.can_dm === false} onClick={() => openPersonDm(person.user_id)}><span className={styles.avatar}>{person.profiles?.profile_image_url ? <img src={person.profiles.profile_image_url} alt="" /> : personName(person.user_id).charAt(0)}</span><span className={styles.organizationPersonName}>{personName(person.user_id)}</span><span className={`${styles.dmStatus} ${onlineUserIds.has(person.user_id) ? "" : styles.offline}`} /></button>)}</div>)}
         </aside>
       </div>}
     </div>

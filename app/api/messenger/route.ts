@@ -85,11 +85,12 @@ export async function GET(request: Request) {
 
     if (!membership?.chat_enabled) return Response.json({ membership, conversations: [], people: [], messages: [] });
 
-    const [{ data: memberRows, error: membersError }, { data: conversations,error: conversationError }] = await Promise.all([
+    const [{ data: memberRows, error: membersError }, { data: conversations,error: conversationError }, { data: organizationRows, error: organizationsError }] = await Promise.all([
       db.from("organization_memberships").select("user_id,chat_nickname,organization_id,can_dm").eq("chat_enabled", true),
       db.from("messenger_conversations").select("id,kind,title,organization_id,updated_at,messenger_participants(user_id,last_read_at)").order("updated_at", { ascending: false }).limit(150),
+      db.from("organizations").select("id,name").order("name"),
     ]);
-    if (membersError || conversationError) return Response.json({ error: (membersError||conversationError)?.message }, { status: 500 });
+    if (membersError || conversationError || organizationsError) return Response.json({ error: (membersError||conversationError||organizationsError)?.message }, { status: 500 });
 
     const memberIds = (memberRows ?? []).map((member) => member.user_id);
     const { data: memberProfiles, error: profilesError } = memberIds.length
@@ -105,6 +106,7 @@ export async function GET(request: Request) {
     const nicknameMap = new Map((memberRows ?? []).map((member) => [member.user_id, member.chat_nickname]));
     const people = memberIds.map((userId) => ({
       user_id: userId,
+      organization_id: memberRows?.find(member => member.user_id === userId)?.organization_id,
       profiles: {
         display_name: profileMap.get(userId)?.display_name || "Team Member",
         username: profileMap.get(userId)?.username || "member",
@@ -122,7 +124,7 @@ export async function GET(request: Request) {
       profiles: people.find((person) => person.user_id === message.sender_id)?.profiles,
     }));
 
-    return Response.json({ membership, people: people ?? [], conversations: (conversations ?? []).filter((c: any) => ids.includes(c.id)), messages: (messages ?? []).map((message: any) => ({ ...message, body: maskChatText(message.body || "") })), me: user.id });
+    return Response.json({ membership, organizations: organizationRows ?? [], people: people ?? [], conversations: (conversations ?? []).filter((c: any) => ids.includes(c.id)), messages: (messages ?? []).map((message: any) => ({ ...message, body: maskChatText(message.body || "") })), me: user.id });
   } catch {
     if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
       // Explicitly isolated verification mode, never a live-session fallback.
