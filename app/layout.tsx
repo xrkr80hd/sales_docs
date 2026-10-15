@@ -25,11 +25,8 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   icons: {
-    icon: [
-      { url: "/icons/nxtdocs-icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/nxtdocs-icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: "/apple-touch-icon.png",
+    icon: [{ url: "/icons/nxtdox-app-icon.png", sizes: "1254x1254", type: "image/png" }],
+    apple: "/icons/nxtdox-app-icon.png",
   },
   manifest: "/site.webmanifest",
 };
@@ -40,10 +37,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${barlow.variable} ${plexMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${barlow.variable} ${plexMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
