@@ -113,10 +113,10 @@ export function MessengerWorkspace() {
   const [data, setData] = useState<MessengerPayload | null>(null);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [openDmIds, setOpenDmIds] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem("nxtdox.open-dms") || "[]"); } catch { return []; }
+    try { const stored = JSON.parse(localStorage.getItem("nxtdox.open-dms") || "[]"); return Array.isArray(stored) ? stored.filter((id): id is string => typeof id === "string").slice(-1) : []; } catch { return []; }
   });
   const [collapsedDmIds, setCollapsedDmIds] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem("nxtdox.collapsed-dms") || "[]"); } catch { return []; }
+    try { const stored = JSON.parse(localStorage.getItem("nxtdox.collapsed-dms") || "[]"); return Array.isArray(stored) ? stored.filter((id): id is string => typeof id === "string") : []; } catch { return []; }
   });
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [identityUserId, setIdentityUserId] = useState<string | null>(null);
@@ -277,7 +277,8 @@ export function MessengerWorkspace() {
   }
 
   function openDm(conversationId: string) {
-    setOpenDmIds((current) => current.includes(conversationId) ? current : [...current, conversationId]);
+    setOpenDmIds([conversationId]);
+    setPeopleOpen(false);
     setCollapsedDmIds((current) => current.filter((id) => id !== conversationId));
     markRead(conversationId);
   }
@@ -560,13 +561,17 @@ export function MessengerWorkspace() {
           const conversation = dmForPerson(person.user_id);
           const unread = unreadCount(conversation);
           const name = personName(person.user_id);
-          const open = Boolean(conversation && openDmIds.includes(conversation.id));
+          const open = Boolean(conversation && openDmIds.includes(conversation.id) && !collapsedDmIds.includes(conversation.id));
           return (
             <button
               key={person.user_id}
               type="button"
               className={`${styles.dmTab} ${open ? styles.dmTabOpen : ""} ${unread > 0 ? styles.dmTabUnread : ""}`}
-              onClick={() => openPersonDm(person.user_id)}
+              onClick={() => {
+                if (conversation && openDmIds.includes(conversation.id) && !collapsedDmIds.includes(conversation.id)) {
+                  setCollapsedDmIds([conversation.id]);
+                } else openPersonDm(person.user_id);
+              }}
               aria-label={`${name}${unread ? `, ${unread} unread messages` : ""}`}
             >
               <span className={`${styles.dmStatus} ${onlineUserIds.has(person.user_id) ? "" : styles.offline}`} />
