@@ -95,3 +95,13 @@
  .selectedTeamScroll { max-height:44dvh; }
  .selectedTeamPanel { margin:0 8px 10px; }
 }
+
+/* Compact inline password controls, optimized for narrow mobile panels. */
+.passwordControl { display:flex; align-items:stretch; width:100%; min-width:0; border:1px solid #43535c; border-radius:8px; background:#0e161a; overflow:hidden; }
+.page .passwordControl input { flex:1; width:0; min-width:0; min-height:52px; border:0; border-radius:0; background:transparent; padding:10px 12px; font-size:16px; }
+.passwordActions { display:flex; align-items:stretch; gap:5px; padding:5px; flex-shrink:0; border-left:1px solid #43535c; }
+.passwordActions button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:56px; padding:4px 8px; border-radius:6px; border:1px solid #40515c; background:#1a2730; color:#f0f4f7; font-size:11px; font-weight:700; cursor:pointer; margin:0; }
+.passwordActions .passwordCopy { background:#b91e30; border-color:#e2364a; color:white; }
+.passwordActions button:disabled { opacity:.45; cursor:not-allowed; }
+.passwordActions button:focus-visible { outline:2px solid white; outline-offset:-3px; }
+@media(max-width:390px) { .passwordActions { gap:3px; padding:3px; } .passwordActions button { min-width:46px; padding:4px; font-size:10px; } .page .passwordControl input { padding:8px; } }
