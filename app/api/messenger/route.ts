@@ -6,7 +6,7 @@ import { moderateChatText } from "@/lib/chat-moderation";
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 class ApiError extends Error { constructor(message: string, public status = 500) { super(message); } }
 function checked<T>(result: { data: T; error: { message: string } | null }): T {
-  if (result.error) throw new ApiError("Messenger data is unavailable. Please retry.");
+  if (result.error) { console.error("messenger_database_request_failed"); throw new ApiError("Messenger data is unavailable. Please retry."); }
   return result.data;
 }
 async function context(request: Request) {
@@ -19,8 +19,10 @@ async function context(request: Request) {
   const scoped = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     global: { headers: { Authorization: `Bearer ${token}` } }, auth: { persistSession: false, autoRefreshToken: false },
   });
-  const profile = checked(await db.from("profiles").select("role").eq("id", user.id).single());
-  const membership = checked(await db.from("organization_memberships").select("*").eq("user_id", user.id).maybeSingle());
+  const [profile, membership] = await Promise.all([
+    db.from("profiles").select("role").eq("id", user.id).single().then(checked),
+    db.from("organization_memberships").select("*").eq("user_id", user.id).maybeSingle().then(checked),
+  ]);
   const admin = profile?.role === "admin";
   if (!admin && !membership?.chat_enabled) throw new ApiError("Messenger access has not been enabled for your account.", 403);
   return { db, scoped, user, membership, admin };
@@ -51,10 +53,12 @@ export async function GET(request: Request) {
       return Response.json({ messages: page.reverse().map(m => ({ ...m, body: moderateChatText(m.body), senderName: senders.find(p => p.id === m.sender_id)?.display_name || "Team member" })), hasMore: more }, { headers: { "Cache-Control": "no-store" } });
     }
     const allowedIds: string[] = checked(await scoped.rpc("messenger_accessible_organizations")) || [];
-    const branding = await organizationBranding(db);
-    const organizations = allowedIds.length ? checked(await db.from("organizations").select("id,name").in("id", allowedIds).order("name")) || [] : [];
-    const members = allowedIds.length ? checked(await db.from("organization_memberships").select("user_id,organization_id,can_dm,chat_nickname").in("organization_id", allowedIds).eq("chat_enabled", true)) || [] : [];
-    const conversations = checked(await scoped.from("messenger_conversations").select("id,kind,channel,title,organization_id,updated_at,messenger_participants(user_id,last_read_at)").order("updated_at", { ascending: false })) || [];
+    const [branding, organizations, members, conversations] = await Promise.all([
+      organizationBranding(db),
+      allowedIds.length ? db.from("organizations").select("id,name").in("id", allowedIds).order("name").then(result => checked(result) || []) : Promise.resolve([]),
+      allowedIds.length ? db.from("organization_memberships").select("user_id,organization_id,can_dm,chat_nickname").in("organization_id", allowedIds).eq("chat_enabled", true).then(result => checked(result) || []) : Promise.resolve([]),
+      scoped.from("messenger_conversations").select("id,kind,channel,title,organization_id,updated_at,messenger_participants(user_id,last_read_at)").order("updated_at", { ascending: false }).then(result => checked(result) || []),
+    ]);
     const personIds = [...new Set([...members.map(m => m.user_id), ...conversations.flatMap(c => c.messenger_participants.map(p => p.user_id)), user.id])];
     const profiles = personIds.length ? checked(await db.from("profiles").select("id,display_name,role").in("id", personIds)) || [] : [];
     const people = profiles.map(p => {

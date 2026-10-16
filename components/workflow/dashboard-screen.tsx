@@ -16,7 +16,9 @@ import {
   setLocalDealId,
   type DealSummary
 } from "@/lib/deals";
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase-browser";
+import { useSession } from "@/components/auth/supabase-session-gate";
+import { messengerRequest } from "@/lib/messenger-request";
+import { isSupabaseConfigured } from "@/lib/supabase-browser";
 import {
   clearWorkflowSession,
   loadWorkflow,
@@ -26,6 +28,7 @@ import {
 } from "@/lib/walker-workflow";
 
 export function DashboardScreen() {
+  const { accessToken } = useSession();
   const router = useRouter();
   const [lastDeal, setLastDeal] = useState<DealSummary | null>(null);
   const [allDeals, setAllDeals] = useState<DealSummary[]>([]);
@@ -67,29 +70,21 @@ export function DashboardScreen() {
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
     let cancelled = false;
+    let pending = false;
     async function loadUnread() {
-      const { data: sessionData } = await getSupabaseBrowserClient().auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) return;
-      const response = await fetch("/api/messenger", { headers: { authorization: `Bearer ${token}` } });
-      if (!response.ok) return;
-      const payload = await response.json();
-      const unread = (payload.conversations ?? []).reduce((total: number, conversation: { id: string; messenger_participants?: Array<{ user_id: string; last_read_at: string }> }) => {
-        const lastRead = conversation.messenger_participants?.find((participant) => participant.user_id === payload.me)?.last_read_at;
-        const threshold = lastRead ? new Date(lastRead).getTime() : 0;
-        return total + (payload.messages ?? []).filter((message: { conversation_id: string; sender_id: string; created_at: string; deleted_at?: string | null }) =>
-          message.conversation_id === conversation.id
-          && message.sender_id !== payload.me
-          && !message.deleted_at
-          && new Date(message.created_at).getTime() > threshold
-        ).length;
-      }, 0);
-      if (!cancelled) setMessengerUnread(unread);
+      if (pending || !accessToken) return;
+      pending = true;
+      try {
+        const payload = await messengerRequest(accessToken);
+        const unread = (payload.conversations ?? []).reduce((total: number, conversation: { unread: number }) => total + (conversation.unread || 0), 0);
+        if (!cancelled) setMessengerUnread(unread);
+      } catch { /* Messenger displays detailed request failures when opened. */ }
+      finally { pending = false; }
     }
     void loadUnread();
-    const timer = window.setInterval(() => void loadUnread(), 15000);
+    const timer = window.setInterval(() => { if (document.visibilityState === "visible") void loadUnread(); }, 15000);
     return () => { cancelled = true; window.clearInterval(timer); };
-  }, []);
+  }, [accessToken]);
 
   function startFreshDeal(dealType: "new" | "used") {
     clearWorkflowSession();

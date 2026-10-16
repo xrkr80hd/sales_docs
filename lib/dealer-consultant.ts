@@ -1,3 +1,4 @@
+import { requestJson, withDeadline } from "@/lib/request-json";
 const DEALER_STORAGE_KEY = "walker.dealer.v1";
 const CONSULTANT_STORAGE_KEY = "walker.consultant.v1";
 
@@ -110,24 +111,19 @@ async function getAuthToken(): Promise<string | null> {
     const { getSupabaseBrowserClient, isSupabaseConfigured } = await import("@/lib/supabase-browser");
     if (!isSupabaseConfigured()) return null;
     const supabase = getSupabaseBrowserClient();
-    const { data } = await supabase.auth.getSession();
+    const { data } = await withDeadline(supabase.auth.getSession(), "Your session took too long to load. Please retry.");
     return data.session?.access_token ?? null;
   } catch {
     return null;
   }
 }
 
-export async function fetchServerSettings(): Promise<{ dealer: DealerInfo; consultant: ConsultantInfo } | null> {
-  const token = await getAuthToken();
+export async function fetchServerSettings(accessToken?: string): Promise<{ dealer: DealerInfo; consultant: ConsultantInfo } | null> {
+  const token = accessToken ?? await getAuthToken();
   if (!token) return null;
 
   try {
-    const res = await fetch("/api/me/settings", {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
+    const json = await requestJson<{dealer_info:unknown;consultant_info:unknown}>("/api/me/settings", { headers: { Authorization: `Bearer ${token}` } });
     return {
       dealer: normalizeDealer(json.dealer_info),
       consultant: normalizeConsultant(json.consultant_info),

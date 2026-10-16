@@ -11,7 +11,7 @@ import { useWorkspaceIdentity } from "./workspace-context";
 import { ROLE_LABELS } from "@/lib/workspace-roles";
 import { OrganizationBadge } from "./organization-badge";
 import { ConsultantLinksNav } from "@/components/consultant-links/links-nav";
-import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+import { requestJson } from "@/lib/request-json";
 import styles from "./workspace.module.css";
 
 
@@ -35,9 +35,9 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
     let active = true;
     async function loadNotifications() {
       try {
-        const { data } = await getSupabaseBrowserClient().auth.getSession();
-        const response = await fetch("/api/manager-board?district=1", { headers: { Authorization: `Bearer ${data.session?.access_token || ""}` }, cache: "no-store" });
-        if (response.ok && active) setDistrictUnread((await response.json()).notifications?.length || 0);
+        if (!session.accessToken) return;
+        const response = await requestJson<{notifications:unknown[]}>("/api/manager-board?district=1", { headers: { Authorization: `Bearer ${session.accessToken}` } });
+        if (active) setDistrictUnread(response.notifications?.length || 0);
       } catch { /* The role view provides detailed errors. */ }
     }
     const refresh = () => { void loadNotifications(); };
@@ -45,7 +45,7 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
     const timer = window.setInterval(refresh, 30000);
     window.addEventListener("manager-board-updated", refresh);
     return () => { active = false; window.clearInterval(timer); window.removeEventListener("manager-board-updated", refresh); };
-  }, [admin, identity?.workspaceRole]);
+  }, [admin, identity?.workspaceRole, session.accessToken]);
 
   useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, []);
   const links = manager ? [

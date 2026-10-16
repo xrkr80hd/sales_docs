@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { OrganizationBadge } from "./organization-badge";
 import { useWorkspaceIdentity } from "./workspace-context";
-import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
-import { BarChart3,CalendarDays,CarFront,CircleDollarSign,ExternalLink,Target,LockKeyhole,Check } from "lucide-react";
+import { useSession } from "@/components/auth/supabase-session-gate";
+import { requestJson } from "@/lib/request-json";
+import { BarChart3,CalendarDays,ExternalLink,LockKeyhole,Check } from "lucide-react";
 import { emptyBoard,emptyRow,pace,type MonthBoard,type BoardRow } from "@/lib/manager-board";
 import { useSharedBoard } from "./use-shared-board";
 import styles from "./workspace.module.css";
@@ -26,15 +27,15 @@ export function ConsultantTeamBoard({full=false}:{full?:boolean}){
 }
 const BOARD_DAYS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 export function ManagerBoard({office=false,organization=""}:{office?:boolean;organization?:string}){
- const router=useRouter();const identity=useWorkspaceIdentity();const [organizations,setOrganizations]=useState<{id:string;name:string}[]>([]);
+ const {accessToken}=useSession();const router=useRouter();const identity=useWorkspaceIdentity();const [organizations,setOrganizations]=useState<{id:string;name:string}[]>([]);
  const {data,error,saving,save,reload}=useSharedBoard(organization);const [draft,setDraft]=useState<MonthBoard|null>(null);const dirty=Boolean(draft);const [notice,setNotice]=useState("");
  const [changes,setChanges]=useState<Record<string,{projection:string;reason:string}>>({});
- useEffect(()=>{if(identity?.role!=="admin"&&identity?.workspaceRole!=="district_manager"&&identity?.email!=="xrkr80hd@gmail.com")return;let active=true;void getSupabaseBrowserClient().auth.getSession().then(async({data})=>{const response=await fetch("/api/workspace/directory",{headers:{Authorization:`Bearer ${data.session?.access_token||""}`}});if(response.ok&&active)setOrganizations((await response.json()).organizations||[]);}).catch(()=>{});return()=>{active=false;};},[identity]);
+ useEffect(()=>{if(!accessToken||(identity?.role!=="admin"&&identity?.workspaceRole!=="district_manager"&&identity?.email!=="xrkr80hd@gmail.com"))return;let active=true;void requestJson<{organizations:{id:string;name:string}[]}>("/api/workspace/directory",{headers:{Authorization:`Bearer ${accessToken}`}}).then(result=>{if(active)setOrganizations(result.organizations||[]);}).catch(()=>{});return()=>{active=false;};},[identity,accessToken]);
  useEffect(()=>{if(!data?.organization.name)return;window.dispatchEvent(new CustomEvent("organization-theme",{detail:{name:data.organization.name,theme:data.organization.theme}}));return()=>{window.dispatchEvent(new CustomEvent("organization-theme",{detail:null}));};},[data?.organization.name,data?.organization.theme]);
  async function share(){try{await navigator.clipboard.writeText(`${window.location.origin}/manager-board?organization=${encodeURIComponent(data!.organization.id)}`);setNotice("Shared board link copied. Managers sign in with their assigned organization access.");}catch{setNotice("Copy the board address from your browser to share it with an assigned manager.");}}
  function update(field:keyof MonthBoard,value:unknown){setDraft(current=>({...current||data?.board||emptyBoard(),[field]:value}));}
  function updateRow(id:string,field:keyof BoardRow,value:unknown){setDraft(current=>{const source=current||data?.board||emptyBoard();return {...source,rows:{...source.rows,[id]:{...(source.rows[id]||emptyRow()),[field]:value}}};});}
- if(!data)return <p className={styles.notice} role={error?"alert":"status"}>{error||"Loading manager board…"}</p>;
+ if(!data)return <div className={styles.notice} role={error?"alert":"status"}><p>{error||"Loading manager board…"}</p>{error&&<button className={styles.textLink} onClick={()=>void reload()}>Retry board</button>}</div>;
  if(!data.canManage&&!data.canViewStats)return <p className={styles.notice}>Manager access required. Your unit goals are available on your dashboard.</p>;
  const editable=!office&&data.canManage;const board=office?data.board:draft||data.board;
  const money=(n:number)=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(n||0);

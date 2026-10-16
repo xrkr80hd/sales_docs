@@ -1,22 +1,32 @@
 "use client";
-import {useCallback,useEffect,useState} from "react";
+import {useCallback,useEffect,useRef,useState} from "react";
 import styles from "./sales-commander-stats.module.css";
-import {getSupabaseBrowserClient} from "@/lib/supabase-browser";
+import {useSession} from "@/components/auth/supabase-session-gate";
+import {requestJson} from "@/lib/request-json";
 type Counts={calls:number;talks:number;appts:number;shows:number;sold:number};
 type Entry={userId:string;name:string;organization:string;organizationId:string;goal:number;rates?:{contact?:number;set?:number;show?:number;sold?:number;buffer?:number};workdays:number;today:Counts;monthly:Counts;updatedAt:string|null};
 type Result={entries:Entry[];organizations:{id:string;name:string}[];scope:string;date:string};
 function targets(e:Entry){const r=e.rates||{};const sold=Math.max(1,r.sold||40)/100,show=Math.max(1,r.show||59)/100,set=Math.max(1,r.set||40)/100,contact=Math.max(1,r.contact||22)/100,buffer=1+(r.buffer??2)/100;const appts=Math.ceil(e.goal/(show*sold));const talks=Math.ceil(appts/set),calls=Math.ceil(talks/contact);const monthly={calls:Math.ceil(calls*buffer),talks:Math.ceil(talks*buffer),appts:Math.ceil(appts*buffer),shows:Math.ceil(e.goal/sold),sold:e.goal};return monthly;}
 const fields=[["calls","Calls"],["talks","Real conversations"],["appts","Appointments set"],["shows","Appointments shown"],["sold","Sales"]] as const;
 export function SalesCommanderStats(){
+ const {accessToken}=useSession();
+ const pending=useRef<string|null>(null),sequence=useRef(0);
  const [result,setResult]=useState<Result|null>(null),[error,setError]=useState(""),[org,setOrg]=useState(""),[selected,setSelected]=useState(""),[date,setDate]=useState(()=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Chicago",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()));
  const [view,setView]=useState<"today"|"month">("today");
- const load=useCallback(async()=>{try{const {data}=await getSupabaseBrowserClient().auth.getSession();if(!data.session)throw Error("Sign in required.");const params=new URLSearchParams({date,...(org?{organization:org}:{})});const response=await fetch("/api/manager/sale-commander?"+params.toString(),{headers:{Authorization:`Bearer ${data.session.access_token}`},cache:"no-store"});const body=await response.json();if(!response.ok)throw Error(body.error||"Unable to load statistics.");setResult(body);setError("");}catch(e){setError(e instanceof Error?e.message:"Unable to load statistics.");}},[org,date]);
- useEffect(()=>{void load();const id=window.setInterval(()=>void load(),5000);const refresh=()=>void load();window.addEventListener("focus",refresh);return()=>{window.clearInterval(id);window.removeEventListener("focus",refresh);};},[load]);
+ const invalidate=useCallback(()=>{++sequence.current;pending.current=null;},[]);
+ const load=useCallback(async()=>{
+  const key=`${date}:${org}:${accessToken}`;if(pending.current===key)return;pending.current=key;const ticket=++sequence.current;
+  try{if(!accessToken)throw Error("Sign in required.");const params=new URLSearchParams({date,...(org?{organization:org}:{})});const body=await requestJson<Result>("/api/manager/sale-commander?"+params.toString(),{headers:{Authorization:`Bearer ${accessToken}`}});if(ticket===sequence.current){setResult(body);setError("");}}
+  catch(e){if(ticket===sequence.current)setError(e instanceof Error?e.message:"Unable to load statistics.");}
+  finally{if(ticket===sequence.current)pending.current=null;}
+ },[org,date,accessToken]);
+ useEffect(()=>{setResult(null);void load();const refresh=()=>{if(document.visibilityState==="visible")void load();};const id=window.setInterval(refresh,15000);window.addEventListener("focus",refresh);return()=>{invalidate();window.clearInterval(id);window.removeEventListener("focus",refresh);};},[load,invalidate]);
+
  const entries=(result?.entries||[]).filter(e=>!selected||e.userId===selected);
  const totals=entries.reduce((t,e)=>{for(const [field]of fields)t[field]+=(e[view==="today"?"today":"monthly"][field]||0);return t;},{calls:0,talks:0,appts:0,shows:0,sold:0});
  return <section className={styles.page}>
  <header className={styles.header}><small>MANAGER COACHING</small><h1>Sales Commander Stats</h1><p>Track saved activity and compare each consultant’s progress with their goals.</p></header>
- {error&&<p role="alert" className={styles.error}>{error}</p>}
+ {error&&<div role="alert" className={styles.error}><p>{error}</p><button type="button" onClick={()=>void load()}>Retry statistics</button></div>}
  <div className={styles.filters}>
  <label>Date<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
  {result?.scope==="district"&&<label>Dealership<select value={org} onChange={e=>{setOrg(e.target.value);setSelected("");}}><option value="">All dealerships</option>{result.organizations.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label>}

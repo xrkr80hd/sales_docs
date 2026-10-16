@@ -91,13 +91,18 @@ const sillyWords = [
 ];
 export function moderateChatText(text: string): string {
   const { value, positions } = normalized(text);
+  // Hash the full message once, then extend it for each match. Rehashing the
+  // entire text for every swear word made repeated words quadratic in length.
+  const textHash = [...text].reduce((hash, letter) => (hash * 31 + letter.charCodeAt(0)) >>> 0, 0);
+  const classified = new Map<string, string | undefined>();
   let result = "", cursor = 0;
   for (const match of value.matchAll(matcher)) {
     const start = positions[match.index].start, end = positions[match.index + match[0].length - 1].end;
-    const term = classifiedPatterns.find(entry => entry.pattern.test(match[0]))?.term;
+    if (!classified.has(match[0])) classified.set(match[0], classifiedPatterns.find(entry => entry.pattern.test(match[0]))?.term);
+    const term = classified.get(match[0]);
     let replacement = "****";
     if (term && !hatefulTerms.has(term)) {
-      const index = [...`${text}:${start}:${term}`].reduce((hash, letter) => (hash * 31 + letter.charCodeAt(0)) >>> 0, 0) % sillyWords.length;
+      const index = [...`:${start}:${term}`].reduce((hash, letter) => (hash * 31 + letter.charCodeAt(0)) >>> 0, textHash) % sillyWords.length;
       replacement = sillyWords[index];
     }
     result += text.slice(cursor, start) + replacement;

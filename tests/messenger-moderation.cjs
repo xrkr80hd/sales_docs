@@ -10,3 +10,12 @@ test('replacements vary with context',()=>assert.notEqual(m('fuck today'),m('fuc
 
 test('single-word profanity is replaced, not dependent on a sentence',()=>{for(const v of ['ass','bitch','shit','damn','hell','crap','piss','dick','fuck'])assert.notEqual(m(v),v)});
 test('long input stays responsive',()=>{const start=performance.now();for(let i=0;i<20;i++){m('f'.repeat(4000));m('fuck '.repeat(800));}assert(performance.now()-start<2000)});
+
+test('optimized replacements preserve existing deterministic text',()=>{for(const [input,expected]of [
+ ['fuck','disco-flavored pickle tornado'],
+ ['fuck today','sentient gravy trampoline today'],
+ ['😀 shit tomorrow','😀 Lord Fluffernoodle of Tater Town tomorrow'],
+ ['shit damn hell','spaghetti-powered thunder muffin Count Snickerdoodle Wobblebottom spaghetti-powered thunder muffin'],
+ ['f.u.c.k','disco-flavored pickle tornado'],
+ ['crap crap crap ','glitter-powered tater goblin sentient gravy trampoline intergalactic waffle walrus '],
+])assert.equal(m(input),expected)});

@@ -2,7 +2,8 @@
 import {notifySave} from "@/components/ui/save-toast-host";
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {RoutinePlanner} from "@/components/command-center/routine-planner";
-import {getSupabaseBrowserClient} from "@/lib/supabase-browser";
+import {useSession} from "@/components/auth/supabase-session-gate";
+import {requestJson} from "@/lib/request-json";
 
 type Rates={contact:number;set:number;show:number;sold:number;buffer:number;workdays:number};
 type Counts={calls:number;talks:number;appts:number;shows:number;sold:number};
@@ -33,11 +34,13 @@ const style={panel:{background:"#121a25",border:"1px solid #344152",padding:16,b
 const keys=["calls","talks","appts","shows","sold"] as const;
 const names:{[K in keyof Counts]:string}={calls:"Calls made",talks:"Real conversations",appts:"Appointments set",shows:"Appointments shown",sold:"Vehicles sold"};
 export function SaleCommander(){
+ const {accessToken}=useSession();const [attempt,setAttempt]=useState(0);
  const [state,setState]=useState<State>(defaults);const latest=useRef<State>(defaults);const saving=useRef(false);const pending=useRef(false);const [assignedGoal,setAssignedGoal]=useState<number|null>(null);const [ready,setReady]=useState(false);const [busy,setBusy]=useState(false);const [notice,setNotice]=useState("");const [win,setWin]=useState("");
  const day=new Date().toLocaleDateString("en-CA",{timeZone:"America/Chicago",year:"numeric",month:"2-digit",day:"2-digit"});
  const [month,setMonth]=useState(()=>new Date().toLocaleDateString("en-CA",{timeZone:"America/Chicago",year:"numeric",month:"2-digit"}).slice(0,7));
- const request=useCallback(async(method:"GET"|"PUT",body?:State)=>{const {data}=await getSupabaseBrowserClient().auth.getSession();if(!data.session)throw Error("Sign in to use Sale Commander.");const res=await fetch("/api/me/sale-commander",{method,headers:{Authorization:`Bearer ${data.session.access_token}`,...(body?{"Content-Type":"application/json"}:{})},cache:"no-store",body:body?JSON.stringify(body):undefined});const value=await res.json();if(!res.ok)throw Error(value.error||"Could not load Sale Commander.");if(method==="GET")setAssignedGoal(typeof value.assignedGoal==="number"?value.assignedGoal:null);return normalize(value.commander);},[]);
- useEffect(()=>{let alive=true;request("GET").then(v=>{if(alive){latest.current=v;setState(v);}}).catch(e=>{if(alive)setNotice(e.message);}).finally(()=>{if(alive)setReady(true);});return()=>{alive=false;};},[request]);
+ const request=useCallback(async(method:"GET"|"PUT",body?:State)=>{if(!accessToken)throw Error("Sign in to use Sale Commander.");const value=await requestJson<{commander:unknown;assignedGoal?:number}>("/api/me/sale-commander",{method,headers:{Authorization:`Bearer ${accessToken}`,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined});if(method==="GET")setAssignedGoal(typeof value.assignedGoal==="number"?value.assignedGoal:null);return normalize(value.commander);},[accessToken]);
+ useEffect(()=>{let alive=true;setReady(false);setNotice("");request("GET").then(v=>{if(alive){latest.current=v;setState(v);setReady(true);}}).catch(e=>{if(alive)setNotice(e.message);});return()=>{alive=false;};},[request,attempt]);
+
  const proj=useMemo(()=>projection(state),[state]);const today=state.days[day]||blank();
  const monthTotals=useMemo(()=>Object.entries(state.days).filter(([date])=>date.startsWith(month)).reduce((out,[,v])=>{for(const k of keys)out[k]+=v[k]||0;return out;},blank()),[state.days,month]);
  async function persist(next:State){
@@ -59,8 +62,8 @@ export function SaleCommander(){
  const tile=(key:keyof Counts,target:number)=><div key={key} style={style.panel}><small style={{color:"#aebdcd"}}>{names[key]}</small><h2 style={{margin:"8px 0"}}>{today[key]} <small style={{fontSize:13,color:"#9caabd"}}>/ {target} today</small></h2><div style={{display:"flex",gap:8}}><button type="button" disabled={!ready} style={style.button} onClick={()=>change(s=>({...s,days:{...s.days,[day]:{...(s.days[day]||blank()),[key]:Math.max(0,(s.days[day]?.[key]||0)-1)}}}))}>−</button><button type="button" disabled={busy} style={style.button} onClick={()=>change(s=>({...s,days:{...s.days,[day]:{...(s.days[day]||blank()),[key]:(s.days[day]?.[key]||0)+1}}}))}>+</button></div></div>;
  return <div style={{maxWidth:980,margin:"auto",padding:"16px 14px 90px",color:"#f4f7fa"}}>
   <header><p style={{color:"#fa6969",fontWeight:800,letterSpacing:2}}>WALKER AUTOMOTIVE · CONSULTANT TOOLS</p><h1 style={{fontSize:32,margin:"5px 0"}}>Sale Commander</h1><p style={{color:"#aebdcd"}}>Sales goals converted into measurable daily activity. Projections are estimates, never guaranteed sales.</p></header>
-  {notice&&<p role="status" style={{color:"#f9c06e"}}>{notice}</p>}
-  {!ready?<p>Loading your saved command center…</p>:<>
+  {notice&&<div role="alert" style={{color:"#f9c06e"}}><p>{notice}</p>{!ready&&<button type="button" style={style.button} onClick={()=>setAttempt(value=>value+1)}>Retry saved activity</button>}</div>}
+  {!ready?<p>{notice?"Saved activity is unavailable. Retry before making changes.":"Loading your saved command center…"}</p>:<>
   <section style={{...style.panel,marginBottom:12}}><label htmlFor="sales-goal">Monthly sales objective</label><input id="sales-goal" aria-label="Monthly sales goal" type="number" min={1} max={250} style={{...style.input,fontSize:23,maxWidth:160,display:"block",margin:"9px 0"}} value={state.goal} disabled={busy||assignedGoal!==null} onChange={e=>{const next={...latest.current,goal:number(Number(e.target.value),5,1,250)};latest.current=next;setState(next);}} onBlur={()=>void persist(latest.current)} /><p style={{fontSize:12,color:"#aebdcd"}}>{assignedGoal!==null?"Your manager sets this monthly objective. Sale Commander automatically calculates your required activity.":"Change the target and leave the field to save. All projections update immediately."}</p></section>
   <section style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:9,marginBottom:15}}>{tile("calls",proj.daily.calls)}{tile("talks",proj.daily.talks)}{tile("appts",proj.daily.appts)}{tile("shows",round(proj.adjusted.shows/state.rates.workdays))}{tile("sold",round(state.goal/state.rates.workdays))}</section>
   <section style={style.panel}><h2>Monthly activity required</h2><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(125px,1fr))",gap:10}}>{keys.map(k=><div key={k}><small>{names[k]}</small><h2>{proj.adjusted[k]}</h2></div>)}</div><p style={{color:"#aebdcd"}}>Based on {state.rates.workdays} selling days and a {state.rates.buffer}% activity cushion.</p></section>

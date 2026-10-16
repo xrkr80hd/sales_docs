@@ -1,4 +1,4 @@
-import { organizationBranding } from "@/lib/organization-branding";
+import { organizationBranding, brandingOwner, organizationSettings } from "@/lib/organization-branding";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { emptyBoard,emptyRow,currentBoardMonth,safeBoardNumber,type MonthBoard } from "@/lib/manager-board";
 function record(value:unknown):Record<string,unknown>{return value&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,unknown>:{};}
@@ -7,7 +7,8 @@ async function context(request:Request){
  if(!token)return Response.json({error:"Sign in required."},{status:401});
  const db=getSupabaseServiceClient();const {data:{user},error}=await db.auth.getUser(token);
  if(error||!user)return Response.json({error:"Invalid session."},{status:401});
- const [{data:profile},{data:membership}]=await Promise.all([db.from("profiles").select("role,display_name").eq("id",user.id).single(),db.from("organization_memberships").select("organization_id").eq("user_id",user.id).maybeSingle()]);
+ const [{data:profile,error:profileError},{data:membership,error:membershipError}]=await Promise.all([db.from("profiles").select("role,display_name").eq("id",user.id).single(),db.from("organization_memberships").select("organization_id").eq("user_id",user.id).maybeSingle()]);
+ if(profileError||membershipError)throw new Error("Your board access could not be verified. Please retry.");
  const admin=profile?.role==="admin"||user.email?.toLowerCase()==="xrkr80hd@gmail.com";
  const district=admin||(profile?.role==="sales_manager"&&user.app_metadata?.workspace_role==="district_manager");
  const bdm=profile?.role==="user"&&user.app_metadata?.workspace_role==="bdm";
@@ -18,24 +19,12 @@ async function context(request:Request){
  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return Response.json({error:"Invalid month."},{status:400});
  return {db,user,profile,admin,district,manager,bdm,organizationId,month};
 }
-let ownerLookup: Promise<string> | undefined;
-async function boardOwner(db:ReturnType<typeof getSupabaseServiceClient>){
- if(!ownerLookup)ownerLookup=(async()=>{
-  for(let page=1;page<=50;page++){
-   const {data,error}=await db.auth.admin.listUsers({page,perPage:200});if(error)throw error;
-   const owner=data.users.find(user=>user.email?.toLowerCase()==="xrkr80hd@gmail.com");if(owner)return owner.id;
-   if(data.users.length<200)break;
-  }
-  throw new Error("The Master Admin account could not be found.");
- })().catch(error=>{ownerLookup=undefined;throw error;});
- return ownerLookup;
-}
+const boardOwner = brandingOwner;
 async function boardRecords(db:ReturnType<typeof getSupabaseServiceClient>,organizationId?:string,month?:string){
  // A protected, permanent Master Admin owns shared board records. Reassigning
  // or deleting a manager leaves the organization's objectives and approvals intact.
- const ownerId=await boardOwner(db);
- const {data:row,error}=await db.from("user_settings").select("user_id,dealer_info,updated_at").eq("user_id",ownerId).maybeSingle();
- if(error)throw error;if(!row)return [];
+ const row=await organizationSettings(db);
+ if(!row)return [];
  const boards=record(record(row.dealer_info).managerBoards);
  const saved=organizationId&&month?record(boards[`${organizationId}:${month}`]):{};
  return [{...row,boards,saved:saved.publishedAt?saved as unknown as MonthBoard:undefined}];

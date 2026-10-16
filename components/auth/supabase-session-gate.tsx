@@ -1,6 +1,6 @@
 "use client";
 
-import { BrandSplash } from "./brand-splash";
+import { withDeadline } from "@/lib/request-json";
 import { SoftwareLogo } from "@/components/branding/software-logo";
 import { PasswordRequirement } from "./required-password-change";
 import type { Session } from "@supabase/supabase-js";
@@ -48,7 +48,7 @@ export function SupabaseSessionGate({
   const authDisabled = process.env.NEXT_PUBLIC_DISABLE_AUTH === "1";
 
   const [checking, setChecking] = useState(!authDisabled);
-  const [startupComplete, setStartupComplete] = useState(false);
+  const [sessionAttempt, setSessionAttempt] = useState(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [session, setSession] = useState<Session | null>(null);
@@ -58,10 +58,6 @@ export function SupabaseSessionGate({
   const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setStartupComplete(true), 650);
-    return () => window.clearTimeout(timeout);
-  }, []);
 
   useEffect(() => {
     if (authDisabled || !isSupabaseConfigured()) {
@@ -71,6 +67,11 @@ export function SupabaseSessionGate({
 
     const supabase = getSupabaseBrowserClient();
     let active = true;
+    const timer = window.setTimeout(() => {
+      if (!active) return;
+      setChecking(false);
+      setError("Session verification took too long. Check your connection and retry.");
+    }, 12000);
 
     supabase.auth
       .getSession()
@@ -83,6 +84,7 @@ export function SupabaseSessionGate({
           setError(sessionError.message);
         }
 
+        window.clearTimeout(timer);
         setSession(data.session ?? null);
         setChecking(false);
       })
@@ -91,6 +93,7 @@ export function SupabaseSessionGate({
           return;
         }
 
+        window.clearTimeout(timer);
         setError(
           sessionError instanceof Error
             ? sessionError.message
@@ -106,6 +109,7 @@ export function SupabaseSessionGate({
         return;
       }
 
+      window.clearTimeout(timer);
       setSession(nextSession);
       setChecking(false);
       setError("");
@@ -113,15 +117,16 @@ export function SupabaseSessionGate({
 
     return () => {
       active = false;
+      window.clearTimeout(timer);
       subscription.unsubscribe();
     };
-  }, [authDisabled]);
+  }, [authDisabled, sessionAttempt]);
 
   async function handleAuthSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const trimmedEmail = email.trim().toLowerCase();
-    const trimmedPassword = password.trim();
+    const trimmedPassword = password;
 
     if (!trimmedEmail) {
       setError("Enter your email address.");
@@ -180,10 +185,10 @@ export function SupabaseSessionGate({
         setMode("login");
         setPassword("");
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { error: signInError } = await withDeadline(supabase.auth.signInWithPassword({
           email: trimmedEmail,
           password: trimmedPassword,
-        });
+        }), "Sign-in took too long. Check your connection and retry.", 15000);
 
         if (signInError) {
           setError(signInError.message);
@@ -256,12 +261,11 @@ export function SupabaseSessionGate({
     );
   }
 
-  if (checking || !startupComplete) return <BrandSplash />;
+  if (checking) return <p className="p-6 text-sm" role="status">Checking your session…</p>;
 
   if (!session) {
     return (
       <>
-      {sending && mode === "login" && <div className="hidden md:block"><BrandSplash checkingCredentials /></div>}
       <div className="nxt-ui nxt-auth-screen">
         <div className="nxt-auth-panel">
           {/* Hero header with graphic */}
@@ -383,9 +387,9 @@ export function SupabaseSessionGate({
             ) : null}
 
             {error ? (
-              <p className="mt-4 border border-red-900/20 bg-red-50 px-4 py-3 text-sm font-medium text-red-900">
-                {error}
-              </p>
+              <div className="mt-4 border border-red-900/20 bg-red-50 px-4 py-3 text-sm font-medium text-red-900" role="alert">
+                <p>{error}</p><button type="button" className="min-h-11 underline" onClick={() => { setError(""); setChecking(true); setSessionAttempt(value => value + 1); }}>Retry session check</button>
+              </div>
             ) : null}
           </div>
         </div>
@@ -395,7 +399,7 @@ export function SupabaseSessionGate({
   }
 
   if (surface === "print") {
-    return <><PasswordRequirement session={session}>{children}</PasswordRequirement></>;
+    return <><PasswordRequirement key={session.user.id} session={session}>{children}</PasswordRequirement></>;
   }
 
   const sessionCtx: SessionContextValue = {
@@ -432,7 +436,7 @@ export function SupabaseSessionGate({
           ) : null}
         </div>
       )}
-      <PasswordRequirement session={session}>{children}</PasswordRequirement>
+      <PasswordRequirement key={session.user.id} session={session}>{children}</PasswordRequirement>
     </SessionContext.Provider>
   );
 }

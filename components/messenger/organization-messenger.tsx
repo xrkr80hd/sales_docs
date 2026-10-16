@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronDown, ChevronRight, MessageCircle, Search, Send, Shie
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { OrganizationBadge } from "@/components/command-center/organization-badge";
 import { useSession } from "@/components/auth/supabase-session-gate";
+import { MessageBubble } from "./message-bubble";
 import { messengerRequest } from "@/lib/messenger-request";
 import styles from "./organization-messenger.module.css";
 
@@ -18,6 +19,8 @@ export function OrganizationMessenger() {
   const { accessToken } = useSession();
   const request = useCallback((path?: string, body?: object) => messengerRequest(accessToken, path, body), [accessToken]);
   const loadingDirectory = useRef(false);
+  const historyRequests = useRef(new Map<string, number>());
+  const [historyError, setHistoryError] = useState("");
   const [data, setData] = useState<Payload | null>(null), [error, setError] = useState("");
   const [orgId, setOrgId] = useState<string | null>(null), [activeId, setActiveId] = useState<string | null>(null);
   const [screen, setScreen] = useState("organizations"), [search, setSearch] = useState("");
@@ -25,6 +28,7 @@ export function OrganizationMessenger() {
   const [drafts, setDrafts] = useState<Record<string, string>>({}), [busy, setBusy] = useState(false), [connection, setConnection] = useState("Connecting…");
   const [creating, setCreating] = useState(false), [orgName, setOrgName] = useState("");
   const [editing, setEditing] = useState<Message | null>(null), [editText, setEditText] = useState("");
+  const [actionsId, setActionsId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
   const shell = useRef<HTMLDivElement>(null), list = useRef<HTMLDivElement>(null), activeRef = useRef(activeId), sequence = useRef(0), nearBottom = useRef(true);
   activeRef.current = activeId;
@@ -37,21 +41,25 @@ export function OrganizationMessenger() {
       if (activeRef.current && !payload.conversations.some(c => c.id === activeRef.current)) { setActiveId(null); setMessages([]); setScreen("organizations"); }
     } catch (e) { report(e); } finally { loadingDirectory.current = false; }
   }, [request]);
-  const refreshHistory = useCallback(async (id: string, initial = false) => {
+  const refreshHistory = useCallback(async (id: string, initial = false, force = false) => {
+    if (!initial && !force && historyRequests.current.has(id)) return;
     const ticket = ++sequence.current;
+    historyRequests.current.set(id, ticket);
     if (initial) setLoadingHistory(true);
     try {
       const page: { messages: Message[]; hasMore: boolean } = await request(`/api/messenger?conversationId=${id}`);
       if (activeRef.current !== id || ticket !== sequence.current) return;
       setMessages(previous => initial ? page.messages : [...previous.filter(m => page.messages.length > 0 && m.id < page.messages[0].id), ...page.messages]);
       if (initial) setHasMore(page.hasMore);
+      setHistoryError("");
+      setLoadingHistory(false);
       const latest = page.messages.at(-1);
       if (latest && document.visibilityState === "visible") {
         await request(undefined, { action: "mark-read", conversationId: id, messageId: latest.id });
         if (activeRef.current === id) setData(previous => previous ? { ...previous, conversations: previous.conversations.map(c => c.id === id ? { ...c, unread: 0 } : c) } : previous);
       }
-    } catch (e) { report(e); }
-    finally { if (activeRef.current === id && ticket === sequence.current) setLoadingHistory(false); }
+    } catch (e) { if (activeRef.current === id && ticket === sequence.current) setHistoryError(e instanceof Error ? e.message : "Could not load messages."); }
+    finally { if (historyRequests.current.get(id) === ticket) historyRequests.current.delete(id); if (activeRef.current === id && ticket === sequence.current) setLoadingHistory(false); }
   }, [request]);
   useEffect(() => {
     void load();
@@ -63,7 +71,7 @@ export function OrganizationMessenger() {
     return () => { clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); void client.removeChannel(channel); };
   }, [load, refreshHistory]);
   useEffect(() => {
-    setMessages([]); setHasMore(false); setEditing(null); setDeleting(null); nearBottom.current = true;
+    setMessages([]); setHasMore(false); setEditing(null); setDeleting(null); setActionsId(null); setHistoryError(""); nearBottom.current = true;
     if (activeId) void refreshHistory(activeId, true);
   }, [activeId, refreshHistory]);
   useEffect(() => { if (nearBottom.current && list.current) list.current.scrollTop = list.current.scrollHeight; }, [messages]);
@@ -93,7 +101,7 @@ export function OrganizationMessenger() {
     event.preventDefault(); if (!activeId || busy) return;
     const id = activeId, text = drafts[id]?.trim(); if (!text) return;
     setBusy(true); setError("");
-    try { await request(undefined, { action: "send", conversationId: id, body: text }); setDrafts(d => ({ ...d, [id]: "" })); nearBottom.current = true; await refreshHistory(id); await load(); } catch (e) { report(e); } finally { setBusy(false); }
+    try { await request(undefined, { action: "send", conversationId: id, body: text }); setDrafts(d => ({ ...d, [id]: "" })); nearBottom.current = true; await refreshHistory(id, false, true); await load(); } catch (e) { report(e); } finally { setBusy(false); }
   }
   async function older() {
     if (!activeId || !messages[0] || loadingHistory) return;
@@ -103,7 +111,7 @@ export function OrganizationMessenger() {
   }
   async function changeMessage(action: "edit" | "delete", messageId: number) {
     setBusy(true);
-    try { await request(undefined, { action, messageId, body: editText }); setEditing(null); setDeleting(null); if (activeId) await refreshHistory(activeId, true); } catch (e) { report(e); } finally { setBusy(false); }
+    try { await request(undefined, { action, messageId, body: editText }); setEditing(null); setDeleting(null); setActionsId(null); if (activeId) await refreshHistory(activeId, true); } catch (e) { report(e); } finally { setBusy(false); }
   }
   async function createOrganization(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError("");
@@ -135,11 +143,12 @@ export function OrganizationMessenger() {
       </section>
       <section className={styles.conversation} aria-label="Conversation">
         {active ? <><header className={styles.panelHeader}><button className={styles.back} aria-label="Back to team" onClick={back}><ArrowLeft /></button>{active.kind === "dm" ? <span className={styles.avatar}>{initials(title || "DM")}</span> : active.channel === "management" ? <ShieldCheck className={styles.red} /> : <Users className={styles.red} />}<div className={styles.rowText}><h2>{title}</h2><small>{active.kind === "dm" ? "Private · participants only" : org?.name}</small></div></header>
+          {historyError && <div className={styles.error} role="alert"><span>{historyError}</span><button aria-label="Retry messages" onClick={() => void refreshHistory(active.id, true)}><RefreshCw size={18} /></button></div>}
           <div ref={list} className={styles.messages} onScroll={() => { if (list.current) nearBottom.current = list.current.scrollHeight - list.current.scrollTop - list.current.clientHeight < 100; }}>
             {hasMore && <button className={styles.older} disabled={loadingHistory} onClick={() => void older()}>Load earlier messages</button>}
             {loadingHistory && <p className={styles.notice} role="status">Loading messages…</p>}
-            {!loadingHistory && !messages.length && <div className={styles.empty}><MessageCircle size={32} /><h3>Start the conversation</h3><p>Your messages will be saved here.</p></div>}
-            {messages.map(m => <article key={m.id} className={`${styles.message} ${m.sender_id === data.me ? styles.mine : ""}`}><div className={styles.bubble}><strong>{m.senderName || person(m.sender_id)?.name || "Team member"}</strong><p>{m.body}</p><time dateTime={m.created_at} title={new Date(m.created_at).toLocaleString()}>{new Date(m.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {new Date(m.created_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}{m.edited_at ? " · edited" : ""}</time>{m.sender_id === data.me && <div className={styles.messageActions}><button aria-label={`Edit message ${m.id}`} disabled={busy} onClick={() => { setEditing(m); setEditText(m.body); }}>Edit</button><span aria-hidden="true">|</span><button aria-label={`Delete message ${m.id}`} disabled={busy} onClick={() => setDeleting(m.id)}>Delete</button></div>}{deleting === m.id && <div className={styles.confirm}><span>Delete this message?</span><button disabled={busy} onClick={() => void changeMessage("delete", m.id)}>Delete</button><button onClick={() => setDeleting(null)}>Cancel</button></div>}</div></article>)}
+            {!loadingHistory && !historyError && !messages.length && <div className={styles.empty}><MessageCircle size={32} /><h3>Start the conversation</h3><p>Your messages will be saved here.</p></div>}
+            {messages.map(m => <MessageBubble key={m.id} message={m} own={m.sender_id === data.me} senderName={m.senderName || person(m.sender_id)?.name || "Team member"} expanded={actionsId === m.id} confirmingDelete={deleting === m.id} busy={busy} onToggle={() => { setActionsId(current => current === m.id ? null : m.id); setDeleting(null); }} onEdit={() => { setEditing(m); setEditText(m.body); setActionsId(null); }} onDelete={() => setDeleting(m.id)} onConfirmDelete={() => void changeMessage("delete", m.id)} onCancelDelete={() => setDeleting(null)} />)}
           </div>
           {editing ? <form className={styles.composer} onSubmit={e => { e.preventDefault(); void changeMessage("edit", editing.id); }}><textarea aria-label="Edit message" value={editText} onChange={e => setEditText(e.target.value)} maxLength={4000} rows={2} /><button disabled={busy || !editText.trim()} aria-label="Save edit"><Send size={19} /></button><button type="button" aria-label="Cancel edit" onClick={() => setEditing(null)}><X size={19} /></button></form> : <form className={styles.composer} onSubmit={send}><textarea aria-label="Message" placeholder="Type a message…" value={drafts[activeId!] || ""} onChange={e => setDrafts(d => ({ ...d, [activeId!]: e.target.value }))} maxLength={4000} rows={1} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia("(min-width: 768px)").matches) { e.preventDefault(); e.currentTarget.form?.requestSubmit(); } }} /><button disabled={busy || !drafts[activeId!]?.trim()} aria-label={busy ? "Sending message" : "Send message"}><Send size={19} /></button></form>}
         </> : <div className={styles.empty}><MessageCircle size={40} /><h2>A place for every conversation.</h2><p>Choose a channel or send a private message to your team.</p></div>}
