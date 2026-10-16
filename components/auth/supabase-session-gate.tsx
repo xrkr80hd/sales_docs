@@ -17,6 +17,7 @@ import {
 /* ───── Session Context ───── */
 
 type SessionContextValue = {
+  accessToken?: string;
   sessionLabel: string;
   signOut: () => void;
 };
@@ -398,6 +399,7 @@ export function SupabaseSessionGate({
   }
 
   const sessionCtx: SessionContextValue = {
+    accessToken: session?.access_token,
     sessionLabel: getSessionLabel(session),
     signOut: handleSignOut,
   };

@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { ArrowLeft, ChevronDown, ChevronRight, MessageCircle, Search, Send, ShieldCheck, Users, Plus, X, RefreshCw } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { OrganizationBadge } from "@/components/command-center/organization-badge";
+import { useSession } from "@/components/auth/supabase-session-gate";
+import { messengerRequest } from "@/lib/messenger-request";
 import styles from "./organization-messenger.module.css";
 
 type Organization = { id: string; name: string; iconUrl: string; hideIcon: boolean };
@@ -10,17 +12,12 @@ type Person = { user_id: string; organization_id?: string; name: string; role: s
 type Conversation = { id: string; kind: string; channel: string | null; title: string; organization_id: string; unread: number; messenger_participants: { user_id: string; last_read_at: string }[] };
 type Message = { id: number; sender_id: string; senderName?: string; body: string; created_at: string; edited_at?: string };
 type Payload = { me: string; canCreateOrganization: boolean; canDm: boolean; organizations: Organization[]; people: Person[]; conversations: Conversation[] };
-async function request(path = "/api/messenger", body?: object) {
-  const { data } = await getSupabaseBrowserClient().auth.getSession();
-  if (!data.session) throw new Error("Sign in to use Messenger.");
-  const response = await fetch(path, { method: body ? "POST" : "GET", headers: { Authorization: `Bearer ${data.session.access_token}`, ...(body ? { "Content-Type": "application/json" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}), cache: "no-store" });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || "Request failed. Please retry.");
-  return result;
-}
 function initials(name: string) { return name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase(); }
 function Badge({ count }: { count: number }) { return count > 0 ? <span className={styles.badge} aria-label={`${count} unread`}>{count > 99 ? "99+" : count}</span> : null; }
 export function OrganizationMessenger() {
+  const { accessToken } = useSession();
+  const request = useCallback((path?: string, body?: object) => messengerRequest(accessToken, path, body), [accessToken]);
+  const loadingDirectory = useRef(false);
   const [data, setData] = useState<Payload | null>(null), [error, setError] = useState("");
   const [orgId, setOrgId] = useState<string | null>(null), [activeId, setActiveId] = useState<string | null>(null);
   const [screen, setScreen] = useState("organizations"), [search, setSearch] = useState("");
@@ -33,11 +30,13 @@ export function OrganizationMessenger() {
   activeRef.current = activeId;
   const report = (e: unknown) => setError(e instanceof Error ? e.message : "Please try again.");
   const load = useCallback(async () => {
+    if (loadingDirectory.current) return;
+    loadingDirectory.current = true;
     try {
-      const payload: Payload = await request(); setData(payload);
+      const payload: Payload = await request(); setData(payload); setError("");
       if (activeRef.current && !payload.conversations.some(c => c.id === activeRef.current)) { setActiveId(null); setMessages([]); setScreen("organizations"); }
-    } catch (e) { report(e); }
-  }, []);
+    } catch (e) { report(e); } finally { loadingDirectory.current = false; }
+  }, [request]);
   const refreshHistory = useCallback(async (id: string, initial = false) => {
     const ticket = ++sequence.current;
     if (initial) setLoadingHistory(true);
@@ -53,7 +52,7 @@ export function OrganizationMessenger() {
       }
     } catch (e) { report(e); }
     finally { if (activeRef.current === id && ticket === sequence.current) setLoadingHistory(false); }
-  }, []);
+  }, [request]);
   useEffect(() => {
     void load();
     const refresh = () => { if (document.visibilityState === "visible") { void load(); if (activeRef.current) void refreshHistory(activeRef.current); } };
@@ -128,7 +127,7 @@ export function OrganizationMessenger() {
           </div>)}
           {!data.organizations.length && <p className={styles.empty}>No organizations are available for your account.</p>}
           {data.organizations.length > 0 && !data.organizations.some(o => o.name.toLowerCase().includes(search.toLowerCase())) && <p className={styles.empty}>No organizations match your search.</p>}
-          {data.conversations.some(c => c.kind === "dm") && <><h2 className={styles.sectionLabel}>Your private messages</h2>{data.conversations.filter(c => c.kind === "dm").map(c => <button key={c.id} className={styles.row} onClick={() => { setOrgId(data.organizations.some(o => o.id === c.organization_id) ? c.organization_id : null); open(c.id); }}><span className={styles.avatar}>{initials(dmPerson(c)?.name || "DM")}</span><span className={styles.rowText}><strong>{dmPerson(c)?.name || "Private message"}</strong><small>Participants only</small></span><Badge count={c.unread} /></button>)}</>}
+          {data.conversations.some(c => c.kind === "dm") && <details className={styles.privateMessages}><summary><span>Private messages</span><Badge count={data.conversations.filter(c => c.kind === "dm").reduce((n,c) => n+c.unread,0)} /></summary>{data.conversations.filter(c => c.kind === "dm").map(c => <button key={c.id} className={styles.row} onClick={() => { setOrgId(data.organizations.some(o => o.id === c.organization_id) ? c.organization_id : null); open(c.id); }}><span className={styles.avatar}>{initials(dmPerson(c)?.name || "DM")}</span><span className={styles.rowText}><strong>{dmPerson(c)?.name || "Private message"}</strong><small>Participants only</small></span><Badge count={c.unread} /></button>)}</details>}
         </div>
       </section>
       <section className={styles.directory} aria-label="Channels and people">
