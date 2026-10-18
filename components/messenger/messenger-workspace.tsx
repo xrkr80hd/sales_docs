@@ -484,7 +484,7 @@ export function MessengerWorkspace() {
     return <ChatProvider currentUser={{ id: data?.me || "", name: personName(data?.me || "") }} theme="midnight" className="nxt-chat" onEdit={message => { setEditingMessageId(message.id); setEditDraft(message.text || ""); }} onDelete={id => void deleteMessage(id)}>
       {messages.length === 0 && <p className={styles.empty}>No messages yet. Start the conversation.</p>}
       <ChatMessages messages={chatMessages(messages)} />
-      {edited && <form className={styles.editForm} onSubmit={event => { event.preventDefault(); void editMessage(edited.id); }}><input aria-label="Edit message" value={editDraft} onBlur={() => setEditDraft(maskChatText(editDraft))} onChange={event => setEditDraft(maskCompletedChatWords(event.target.value))} maxLength={4000} autoFocus /><button type="submit">Save</button><button type="button" onClick={() => setEditingMessageId(null)}>Cancel</button></form>}
+      {edited && <form className={styles.editForm} onSubmit={event => { event.preventDefault(); void editMessage(edited.id); }}><input aria-label="Edit message" value={editDraft} onBlur={() => setEditDraft(maskChatText(editDraft))} onChange={event => setEditDraft(maskCompletedChatWords(event.target.value))} maxLength={4000} /><button type="submit">Save</button><button type="button" onClick={() => setEditingMessageId(null)}>Cancel</button></form>}
       <ChatComposer key={conversationId} placeholder={placeholder} transformInput={maskCompletedChatWords} finalizeInput={maskChatText} disabled={!conversationId || !allowed || Boolean(sendingId)} onSend={body => conversationId ? send(conversationId, body, () => {}) : false} />
     </ChatProvider>;
   }
@@ -515,7 +515,7 @@ export function MessengerWorkspace() {
       </header>
 
       {nicknameOpen && <form className={styles.nicknameEditor} onSubmit={saveNickname}>
-        <label>Chat nickname<input value={nicknameDraft} onChange={(event) => setNicknameDraft(event.target.value)} maxLength={32} autoFocus /></label>
+        <label>Chat nickname<input value={nicknameDraft} onChange={(event) => setNicknameDraft(event.target.value)} maxLength={32} /></label>
         <button type="submit" disabled={!nicknameDraft.trim()}>Save</button>
         <button type="button" onClick={() => setNicknameOpen(false)}>Cancel</button>
       </form>}

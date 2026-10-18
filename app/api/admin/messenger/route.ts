@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       })),
     });
   } catch {
-    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
+    if ((process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DISABLE_AUTH === "1")) {
       return Response.json({
         organizations: [{ id: "org-walker", name: "Walker Automotive", slug: "walker-automotive" }],
         memberships: [
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "A user and organization are required." }, { status: 400 });
   }
 
-  if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
+  if ((process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DISABLE_AUTH === "1")) {
     return Response.json({ ok: true });
   }
 

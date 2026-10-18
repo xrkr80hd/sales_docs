@@ -14,13 +14,13 @@ export async function GET(request: Request) {
       .order("created_at", { ascending: false });
 
     if (error) {
-      if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") return Response.json({ invites: [] });
+      if ((process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DISABLE_AUTH === "1")) return Response.json({ invites: [] });
       return Response.json({ error: error.message }, { status: 500 });
     }
 
     return Response.json({ invites: data ?? [] });
   } catch {
-    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
+    if ((process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DISABLE_AUTH === "1")) {
       return Response.json({ invites: [] });
     }
     return Response.json({ error: "Failed to connect to Supabase." }, { status: 500 });

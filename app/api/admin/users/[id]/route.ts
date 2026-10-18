@@ -73,7 +73,7 @@ export async function PATCH(
       .eq("id", id);
 
     if (error) {
-      if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") return Response.json({ ok: true, updates });
+      if ((process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DISABLE_AUTH === "1")) return Response.json({ ok: true, updates });
       return Response.json({ error: error.message }, { status: 500 });
     }
 
@@ -112,7 +112,7 @@ export async function PATCH(
 
     return Response.json({ ok: true, updates, card });
   } catch {
-    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
+    if ((process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DISABLE_AUTH === "1")) {
       return Response.json({ ok: true, updates });
     }
     return Response.json({ error: "Failed to connect to Supabase." }, { status: 500 });

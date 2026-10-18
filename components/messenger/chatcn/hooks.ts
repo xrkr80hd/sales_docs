@@ -185,7 +185,7 @@ export function useAutoResize(opts?: { maxRows?: number }) {
     const el = textareaRef.current
     if (!el) return
     el.style.height = "auto"
-    const lineHeight = parseInt(getComputedStyle(el).lineHeight) || 22
+    const lineHeight = Number.parseInt(getComputedStyle(el).lineHeight, 10) || 22
     const maxHeight = lineHeight * maxRows
     el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`
     el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden"

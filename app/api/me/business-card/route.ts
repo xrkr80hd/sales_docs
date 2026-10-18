@@ -56,7 +56,7 @@ async function ensureConsultantBucket(supabase: NonNullable<ReturnType<typeof ge
 }
 
 export async function GET(request: NextRequest) {
-  const isLocalDev = process.env.NEXT_PUBLIC_DISABLE_AUTH === "1";
+  const isLocalDev = (process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DISABLE_AUTH === "1");
   const token = bearer(request);
   if (!token && !isLocalDev) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -280,7 +280,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const isLocalDev = process.env.NEXT_PUBLIC_DISABLE_AUTH === "1";
+  const isLocalDev = (process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DISABLE_AUTH === "1");
   const token = bearer(request);
   if (!token && !isLocalDev) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -564,7 +564,7 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const isLocalDev = process.env.NEXT_PUBLIC_DISABLE_AUTH === "1";
+  const isLocalDev = (process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DISABLE_AUTH === "1");
   const token = bearer(request);
   if (!token && !isLocalDev) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

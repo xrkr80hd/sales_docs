@@ -1,10 +1,5 @@
 const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const vm=require('node:vm');
-const ts=require('typescript');
 const path=require('node:path');
-const month=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Chicago',year:'numeric',month:'2-digit'}).formatToParts(new Date());
-const period=month.find(p=>p.type==='year').value+'-'+month.find(p=>p.type==='month').value;
 const state={profiles:[{id:'manager',role:'sales_manager',display_name:'Test manager'},{id:'consultant',role:'user',display_name:'Test consultant'},{id:'district',role:'sales_manager',display_name:'Test district manager'},{id:'admin',role:'admin',display_name:'Test admin'}],organizations:[{id:'store-a',name:'Test CDJR',slug:'test-cdjr'},{id:'store-b',name:'Other test store',slug:'other-test'}],organization_memberships:[{user_id:'manager',organization_id:'store-a'},{user_id:'consultant',organization_id:'store-a'},{user_id:'district',organization_id:'store-b'},{user_id:'admin',organization_id:'store-a'}],user_settings:[{user_id:'manager',dealer_info:{street:'Keep this address'},consultant_info:{name:'Keep manager contact'},updated_at:'2020-01-01T00:00:00.000Z'},{user_id:'consultant',dealer_info:{street:'Keep consultant address'},consultant_info:{phone:'Keep this phone'},updated_at:'2020-01-01T00:00:00.000Z'}],consultant_cards:[]};
 const authUsers=Object.fromEntries(state.profiles.map(user=>[user.id,{id:user.id,email:`${user.id}@test.invalid`,app_metadata:{...(user.id==='district'?{workspace_role:'district_manager'}:{})}}]));
 authUsers.admin.email='xrkr80hd@gmail.com';
@@ -33,11 +28,10 @@ class Query {
  }
  single(){return this.run(true);}
  maybeSingle(){return this.run(true);}
- then(resolve,reject){return this.run().then(resolve,reject);}
 }
-const db={from:table=>new Query(table),auth:{getUser:async token=>({data:{user:authUsers[token]||null},error:authUsers[token]?null:{message:'invalid'}}),admin:{listUsers:async()=>({data:{users:Object.values(authUsers)},error:null}),inviteUserByEmail:async email=>{actions.push('invite');const user={id:'new-test-user',email,app_metadata:{}};authUsers[user.id]=user;return {data:{user},error:null};},updateUserById:async(id,value)=>{actions.push('metadata');Object.assign(authUsers[id],value);return {data:{user:authUsers[id]},error:null};}}},storage:{getBucket:async()=>({error:{message:'not found'}}),createBucket:async name=>{actions.push('bucket:'+name);return {error:null};},from:()=>({upload:async()=>({error:null}),getPublicUrl:()=>({data:{publicUrl:'https://test.invalid/photo.jpg'}})})}};
-const cache=new Map();
-function load(file){if(cache.has(file))return cache.get(file);const module={exports:{}};cache.set(file,module.exports);const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;const requireLocal=name=>{if(name==='@/lib/supabase-server')return {getSupabaseServiceClient:()=>db};if(name==='@/lib/require-admin')return {requireAdmin:async request=>request.headers.get('authorization')==='Bearer admin'?{userId:'admin'}:Response.json({error:'Admin required'},{status:403})};if(name.startsWith('@/'))return load(path.resolve(name.slice(2)+'.ts'));return require(name);};vm.runInNewContext(code,{module,exports:module.exports,require:requireLocal,process:{env:{}},Response,Request,URL,File,FormData,Uint8Array,crypto:globalThis.crypto,structuredClone,Intl,Date,console},{filename:file});cache.set(file,module.exports);return module.exports;}
+function query(table){const builder=new Query(table);return Object.assign(builder,{then:(resolve,reject)=>builder.run().then(resolve,reject)});}
+const db={from:query,auth:{getUser:async token=>({data:{user:authUsers[token]||null},error:authUsers[token]?null:{message:'invalid'}}),admin:{listUsers:async()=>({data:{users:Object.values(authUsers)},error:null}),inviteUserByEmail:async email=>{actions.push('invite');const user={id:'new-test-user',email,app_metadata:{}};authUsers[user.id]=user;return {data:{user},error:null};},updateUserById:async(id,value)=>{actions.push('metadata');Object.assign(authUsers[id],value);return {data:{user:authUsers[id]},error:null};}}},storage:{getBucket:async()=>({error:{message:'not found'}}),createBucket:async name=>{actions.push('bucket:'+name);return {error:null};},from:()=>({upload:async()=>({error:null}),getPublicUrl:()=>({data:{publicUrl:'https://test.invalid/photo.jpg'}})})}};
+const load=require('./contract-loader.cjs')({'@/lib/supabase-server':{getSupabaseServiceClient:()=>({...db})},'@/lib/require-admin':{requireAdmin:async request=>request.headers.get('authorization')==='Bearer admin'?{userId:'admin'}:Response.json({error:'Admin required'},{status:403})}});
 
 db.auth.admin.getUserById=async id=>({data:{user:authUsers[id]},error:authUsers[id]?null:{message:'missing'}});
 db.auth.admin.createUser=async value=>{const user={id:'direct-user',...value};authUsers[user.id]=user;return {data:{user},error:null};};
@@ -71,18 +65,22 @@ const target=id=>({params:Promise.resolve({id})});
  assert.equal((await password.POST(req('',{password:'in-memory-fixture-only'}))).status,401);
  assert.equal((await password.POST(req('consultant',{password:'short'}))).status,400);
  assert.equal((await password.POST(req('consultant',{password:'in-memory-fixture-only'}))).status,200);assert.equal(authUsers.consultant.app_metadata.must_change_password,false);
- assert.equal((await workspace.POST(req('admin',{action:'create-user',name:'Fixture BDM',email:'bdm@test.invalid',role:'bdm',organizationId:'store-a',createMode:'direct',password:'in-memory-fixture-only',forceChange:false}))).status,200);
- assert.equal(authUsers['direct-user'].email_confirm,true);assert.equal(authUsers['direct-user'].app_metadata.must_change_password,true);assert.equal(authUsers['direct-user'].app_metadata.workspace_role,'bdm');
- let response=await board.POST(req('manager',{action:'save-board',board:{...empty(),monthlyGross:15000,rows:{consultant:{objective:10,mtd:0,weeklyGoal:2,avg90:3,appointmentsGoal:40,appointmentsSet:12}}},version:''}));assert.equal(response.status,200,await response.clone().text());
+ for(const email of ['missing-at.invalid','a@@test.invalid','a@localhost','a@test.','a@ test.invalid','a'.repeat(100000)+'@test.invalid']){
+  assert.equal((await workspace.POST(req('admin',{action:'create-user',name:'Invalid fixture',email,role:'bdm',organizationId:'store-a'}))).status,400);
+ }
+ assert.equal((await workspace.POST(req('admin',{action:'create-user',name:'Fixture BDM',email:'bdm@test.invalid',role:'bdm',organizationId:'store-a',createMode:'direct',password:'In-memory-fixture-only!',forceChange:false}))).status,200);
+ assert.equal(authUsers['direct-user'].email_confirm,true);assert.equal(authUsers['direct-user'].app_metadata.must_change_password,false);assert.equal(authUsers['direct-user'].app_metadata.workspace_role,'bdm');
+ let response=await board.POST(req('manager',{action:'save-board',board:{...empty(),newGrossGoal:15000,rows:{consultant:{objective:10,mtd:0,weeklyGoal:2,avg90:3,appointmentsGoal:40,appointmentsSet:12}}},version:''}));assert.equal(response.status,200,await response.clone().text());
  let payload=await (await board.GET(req('direct-user',undefined,'GET'))).json();assert.equal(payload.canManage,false);assert.equal(payload.canViewStats,true);assert.equal(payload.board.monthlyGross,15000);assert.equal(payload.board.rows.consultant.appointmentsGoal,40);assert.equal(payload.board.rows.consultant.appointmentsSet,12);
  assert.equal((await board.POST(req('direct-user',{action:'save-board',board:empty(),version:payload.version}))).status,403);
  assert.equal((await board.POST(req('direct-user',{action:'submit-projection',projection:5}))).status,403);
  assert.equal((await board.GET(req('direct-user',undefined,'GET','?district=1'))).status,403);
  payload=await (await board.GET(req('direct-user',undefined,'GET','?organization=store-b'))).json();assert.equal(payload.organization.id,'store-a');
- const guardModule={exports:{}};
- const guardSource=ts.transpileModule(fs.readFileSync('lib/supabase-server.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
- vm.runInNewContext(guardSource,{module:guardModule,exports:guardModule.exports,process:{env:{NEXT_PUBLIC_SUPABASE_URL:'https://fixture.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture-only'}},require:()=>({AuthError:class extends Error{},createClient:()=>({auth:{getUser:async()=>({data:{user:{app_metadata:{must_change_password:true}}},error:null})}})})});
- assert.equal((await guardModule.exports.getSupabaseServiceClient().auth.getUser('fixture')).data.user,null);
- assert.equal((await guardModule.exports.getSupabaseServiceClient({allowPasswordChange:true}).auth.getUser('fixture')).data.user.app_metadata.must_change_password,true);
+ process.env.NEXT_PUBLIC_SUPABASE_URL='https://fixture.invalid';
+ process.env.SUPABASE_SERVICE_ROLE_KEY='fixture-only';
+ const guardLoad=require('./contract-loader.cjs')({'@supabase/supabase-js':{AuthError:class extends Error{},createClient:()=>({auth:{getUser:async()=>({data:{user:{app_metadata:{must_change_password:true}}},error:null})}})}});
+ const guard=guardLoad(path.resolve('lib/supabase-server.ts'));
+ assert.equal((await guard.getSupabaseServiceClient().auth.getUser('fixture')).data.user,null);
+ assert.equal((await guard.getSupabaseServiceClient({allowPasswordChange:true}).auth.getUser('fixture')).data.user.app_metadata.must_change_password,true);
  console.log('PASS: admin-only name/security edits, public/internal identity isolation, internal photo isolation, verification, required password change, direct account creation, BDM read-only scoped stats, and monthly appointment persistence. All users and passwords are isolated in-memory fixtures.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

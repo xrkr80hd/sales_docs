@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     });
     return Response.json({ users: enriched, warnings:[profileWarning&&`Profiles unavailable: ${profileWarning}`,cardWarning&&`Consultant cards unavailable: ${cardWarning}`].filter(Boolean) });
   } catch {
-    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
+    if ((process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DISABLE_AUTH === "1")) {
       return Response.json({
         users: [
           {

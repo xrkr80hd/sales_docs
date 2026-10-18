@@ -11,7 +11,7 @@ export async function requireAdmin(
   const authHeader = request.headers.get("authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();
 
-  if (process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
+  if (process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DISABLE_AUTH === "1") {
     return { userId: "local-admin-xrkr80hd" };
   }
 

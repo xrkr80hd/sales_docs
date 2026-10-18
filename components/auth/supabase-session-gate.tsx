@@ -45,7 +45,7 @@ export function SupabaseSessionGate({
   surface = "app",
   renderBar = true,
 }: SupabaseSessionGateProps) {
-  const authDisabled = process.env.NEXT_PUBLIC_DISABLE_AUTH === "1";
+  const authDisabled = process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DISABLE_AUTH === "1";
 
   const [checking, setChecking] = useState(!authDisabled);
   const [sessionAttempt, setSessionAttempt] = useState(0);
@@ -55,7 +55,7 @@ export function SupabaseSessionGate({
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
-  const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
+  const [mode, setMode] = useState<"login" | "reset">("login");
   const [showPassword, setShowPassword] = useState(false);
 
 
@@ -168,32 +168,13 @@ export function SupabaseSessionGate({
     try {
       const supabase = getSupabaseBrowserClient();
 
-      if (mode === "signup") {
-        const res = await fetch("/api/auth/signup", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ email: trimmedEmail, password: trimmedPassword }),
-        });
-        const data = await res.json();
-
-        if (!res.ok) {
-          setError(data.error ?? "Signup failed.");
-          return;
-        }
-
-        setStatus("Account created. You can now sign in.");
-        setMode("login");
-        setPassword("");
-      } else {
-        const { error: signInError } = await withDeadline(supabase.auth.signInWithPassword({
-          email: trimmedEmail,
-          password: trimmedPassword,
-        }), "Sign-in took too long. Check your connection and retry.", 15000);
-
-        if (signInError) {
-          setError(signInError.message);
-          return;
-        }
+      const { error: signInError } = await withDeadline(supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password: trimmedPassword,
+      }), "Sign-in took too long. Check your connection and retry.", 15000);
+      if (signInError) {
+        setError(signInError.message);
+        return;
       }
     } catch (authError) {
       setError(
@@ -274,7 +255,7 @@ export function SupabaseSessionGate({
             <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} priority className="nxt-auth-dealer" />
             <p className="mt-4 text-xs font-bold uppercase tracking-[0.24em] text-white drop-shadow-sm">WALKER AUTOMOTIVE WORKSPACE</p>
             <h2 className="mt-1 text-2xl font-extrabold text-white drop-shadow-sm sm:text-3xl">
-              {mode === "signup" ? "Create Account" : mode === "reset" ? "Reset Password" : "Sign In"}
+              {mode === "reset" ? "Reset Password" : "Sign In"}
             </h2>
           </div>
 
@@ -306,7 +287,7 @@ export function SupabaseSessionGate({
                       placeholder="••••••••"
                       className="min-h-12 flex-1 border border-white/10 bg-white px-4 text-base !text-[#171719] caret-[#171719] [-webkit-text-fill-color:#171719] [color-scheme:light] outline-none transition placeholder:!text-neutral-500 focus:border-[var(--accent)]"
 
-                      autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                      autoComplete="current-password"
                     />
                     <button
                       type="button"
@@ -333,9 +314,7 @@ export function SupabaseSessionGate({
               >
                 {sending
                   ? "Please wait…"
-                  : mode === "signup"
-                    ? "Create Account"
-                    : mode === "reset"
+                  : mode === "reset"
                       ? "Send Reset Link"
                       : "Sign In"}
               </button>
@@ -351,23 +330,8 @@ export function SupabaseSessionGate({
                   >
                     Forgot your password?
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => { setMode("signup"); setError(""); setStatus(""); }}
-                    className="text-sm font-bold text-[var(--accent)] underline underline-offset-2"
-                  >
-                    Have an invite? Create your account
-                  </button>
+                  <p className="text-sm text-white/60">New account? Use your emailed invitation link or contact your administrator.</p>
                 </>
-              )}
-              {mode === "signup" && (
-                <button
-                  type="button"
-                  onClick={() => { setMode("login"); setError(""); setStatus(""); }}
-                  className="text-sm font-bold text-[var(--accent)] underline underline-offset-2"
-                >
-                  Already have an account? Sign in
-                </button>
               )}
               {mode === "reset" && (
                 <button

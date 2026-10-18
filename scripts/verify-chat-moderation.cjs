@@ -1,6 +1,7 @@
-const assert=require('node:assert/strict');const fs=require('node:fs');const vm=require('node:vm');const ts=require('typescript');
-const moduleFile={exports:{}};vm.runInNewContext(ts.transpileModule(fs.readFileSync('lib/chat-moderation.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{module:moduleFile,exports:moduleFile.exports});
-const {maskChatText,maskCompletedChatWords}=moduleFile.exports;
+const assert=require('node:assert/strict');
+const path=require('node:path');
+const load=require('./contract-loader.cjs')();
+const {maskChatText,maskCompletedChatWords}=load(path.resolve('lib/chat-moderation.ts'));
 for(const input of ['fuck','FUCK','f.u.c.k','f u c k','fuuuuck','fúck','fu\u200bck','fücking','sh!t','sh1t','shit!','goddamn','God damn','Goddamn!','god-damned','cabrón','chingas tu madre','hijo de puta','pendejo','Mierda','coño','maldito Dios','nigger','n1gga','wetback','maricón']){
  const output=maskChatText(input);assert.ok(output.includes('*'),`Not masked: ${input}`);assert.equal(maskChatText(output),output,'Masking must be idempotent');
 }

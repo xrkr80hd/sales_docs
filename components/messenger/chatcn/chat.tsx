@@ -127,7 +127,7 @@ function QuickReactionPicker({
       onMouseLeave={onClose}
     >
       {QUICK_REACTIONS.map((emoji) => (
-        <button
+        <button type="button"
           key={emoji}
           onClick={() => {
             onSelect(emoji)
@@ -163,7 +163,7 @@ function ChatMessageActions({ message, isOutgoing }: ChatMessageActionsProps) {
       )}
     >
       {/* Reply */}
-      {onReply && <button
+      {onReply && <button type="button"
         onClick={() => onReply?.(message)}
         className="flex size-7 items-center justify-center rounded-md text-[var(--chat-text-secondary)] transition-colors hover:bg-[var(--chat-accent-soft)] hover:text-[var(--chat-text-primary)]"
         aria-label="Reply"
@@ -173,7 +173,7 @@ function ChatMessageActions({ message, isOutgoing }: ChatMessageActionsProps) {
 
       {/* React — opens quick picker */}
       {onReactionAdd && <div className="relative">
-        <button
+        <button type="button"
           onClick={() => setShowReactions(!showReactions)}
           className="flex size-7 items-center justify-center rounded-md text-[var(--chat-text-secondary)] transition-colors hover:bg-[var(--chat-accent-soft)] hover:text-[var(--chat-text-primary)]"
           aria-label="Add reaction"
@@ -194,7 +194,7 @@ function ChatMessageActions({ message, isOutgoing }: ChatMessageActionsProps) {
 
       {/* More — dropdown */}
       {((isOutgoing && (onEdit || onDelete)) || onPin) && <div className="relative">
-        <button
+        <button type="button"
           onClick={() => setShowMore(!showMore)}
           className="flex size-7 items-center justify-center rounded-md text-[var(--chat-text-secondary)] transition-colors hover:bg-[var(--chat-accent-soft)] hover:text-[var(--chat-text-primary)]"
           aria-label="More actions"
@@ -210,7 +210,7 @@ function ChatMessageActions({ message, isOutgoing }: ChatMessageActionsProps) {
             onMouseLeave={() => setShowMore(false)}
           >
             {isOutgoing && onEdit && (
-              <button
+              <button type="button"
                 onClick={() => {
                   onEdit?.(message)
                   setShowMore(false)
@@ -221,7 +221,7 @@ function ChatMessageActions({ message, isOutgoing }: ChatMessageActionsProps) {
                 Edit
               </button>
             )}
-            {onPin && <button
+            {onPin && <button type="button"
               onClick={() => {
                 onPin?.(message.id)
                 setShowMore(false)
@@ -232,7 +232,7 @@ function ChatMessageActions({ message, isOutgoing }: ChatMessageActionsProps) {
               {message.isPinned ? "Unpin" : "Pin"}
             </button>}
             {isOutgoing && onDelete && (
-              <button
+              <button type="button"
                 onClick={() => {
                   onDelete?.(message.id)
                   setShowMore(false)
@@ -351,7 +351,7 @@ function ChatVoiceMessage({ voice, isOutgoing }: { voice: NonNullable<ChatMessag
 
   return (
     <div className="mt-1.5 flex items-center gap-3">
-      <button
+      <button type="button"
         onClick={toggle}
         className="flex w-9 h-9 shrink-0 items-center justify-center rounded-full transition-colors"
         style={{ background: isOutgoing ? "rgba(255,255,255,0.20)" : "var(--chat-accent)" }}
@@ -397,6 +397,10 @@ function ChatMessage({
   const { currentUser } = useChatContext()
   const radiusClass = getBubbleRadius(isOutgoing, position)
   const [lightboxImage, setLightboxImage] = React.useState<string | null>(null)
+  const lightboxRef = React.useRef<HTMLDialogElement>(null)
+  React.useEffect(() => {
+    if (lightboxImage) lightboxRef.current?.showModal()
+  }, [lightboxImage])
 
   return (
     <div
@@ -464,9 +468,9 @@ function ChatMessage({
 
             {/* Images */}
             {message.images && message.images.length > 0 && (
-              <div className={cn("mt-1.5 flex flex-wrap gap-1.5", message.images.length === 1 ? "" : "")}>
+              <div className={"mt-1.5 flex flex-wrap gap-1.5"}>
                 {message.images.map((img, idx) => (
-                  <button
+                  <button type="button"
                     key={idx}
                     onClick={() => setLightboxImage(img.url)}
                     className="cursor-pointer rounded-lg overflow-hidden"
@@ -588,11 +592,15 @@ function ChatMessage({
 
       {/* Image lightbox */}
       {lightboxImage && typeof document !== "undefined" && createPortal(
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={() => setLightboxImage(null)}
+        <dialog
+          ref={lightboxRef}
+          aria-label="Image preview"
+          onClose={() => setLightboxImage(null)}
+          className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none bg-transparent p-0 text-white backdrop:bg-black/80 backdrop:backdrop-blur-sm"
         >
-          <button
+          <div className="relative flex h-full w-full items-center justify-center">
+          <button type="button" className="absolute inset-0" aria-label="Close image preview" onClick={() => setLightboxImage(null)} />
+          <button type="button"
             onClick={() => setLightboxImage(null)}
             className="absolute top-4 right-4 flex size-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
             aria-label="Close lightbox"
@@ -602,10 +610,10 @@ function ChatMessage({
           <img
             src={lightboxImage}
             alt=""
-            className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
-            onClick={(e) => e.stopPropagation()}
+            className="relative pointer-events-none max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
           />
-        </div>,
+          </div>
+        </dialog>,
         document.body
       )}
     </div>
@@ -693,7 +701,7 @@ function ChatMessageReactions({
       {reactions.map((r) => {
         const hasReacted = r.userIds.includes(currentUserId)
         return (
-          <button
+          <button type="button"
             key={r.emoji}
             onClick={() => {
               if (hasReacted) {
@@ -725,7 +733,7 @@ function ChatMessageReactions({
         )
       })}
       {/* Add reaction button — visible on hover */}
-      <button
+      <button type="button"
         onClick={() => {
           // Toggle first available reaction for demo; in prod this opens a picker
           onReactionAdd?.(messageId, "\u{1F44D}")
@@ -968,7 +976,7 @@ function ChatReplyPreview({
           {replyingTo.text}
         </span>
       </div>
-      <button
+      <button type="button"
         onClick={onCancel}
         className="flex size-6 shrink-0 items-center justify-center rounded-full text-[var(--chat-text-tertiary)] transition-colors hover:bg-[var(--chat-accent-soft)] hover:text-[var(--chat-text-primary)]"
         aria-label="Cancel reply"
@@ -1052,7 +1060,7 @@ function ChatMessages({
       </div>
 
       {/* Scroll-to-bottom FAB with unread badge */}
-      <button
+      <button type="button"
         onClick={() => scrollToBottom("smooth")}
         className={cn(
           "absolute bottom-4 right-4 z-5 flex size-10 items-center justify-center rounded-full border border-[var(--chat-border-strong)] bg-[var(--chat-bg-main)] shadow-[var(--chat-shadow-md)] transition-all duration-200",
@@ -1120,7 +1128,7 @@ function ChatFilePreview({
         </div>
       )}
       {/* Remove button */}
-      <button
+      <button type="button"
         onClick={onRemove}
         className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full border border-[var(--chat-border-strong)] bg-[var(--chat-bg-sidebar)] text-[var(--chat-text-secondary)] shadow-sm hover:bg-[var(--chat-bg-hover)] hover:text-[var(--chat-text-primary)]"
         aria-label="Remove file"
@@ -1175,7 +1183,7 @@ function ChatComposer({
     const arr = Array.from(newFiles)
     const items: FilePreviewItem[] = arr.map((f) => ({
       file: f,
-      id: `${f.name}-${Date.now()}-${Math.random()}`,
+      id: crypto.randomUUID(),
       progress: undefined,
     }))
 
@@ -1298,7 +1306,7 @@ function ChatComposer({
           <div className="flex items-end gap-2">
             {/* + button with attachment popout */}
             {onFileUpload && <div className="relative">
-              <button
+              <button type="button"
                 onClick={() => setShowAttachMenu(!showAttachMenu)}
                 className={cn(
                   "flex size-9 items-center justify-center rounded-full border border-[var(--chat-border)] bg-[var(--chat-bg-sidebar)] text-[var(--chat-text-tertiary)] transition-all hover:bg-[var(--chat-accent-soft)] hover:text-[var(--chat-text-secondary)]",
@@ -1312,21 +1320,21 @@ function ChatComposer({
               {/* Popout menu */}
               {showAttachMenu && (
                 <div className="chat-toolbar-enter absolute bottom-full left-0 mb-2 w-44 overflow-hidden rounded-xl border border-[var(--chat-border-strong)] bg-[var(--chat-bg-sidebar)] py-1 shadow-[var(--chat-shadow-toolbar)]">
-                  <button
+                  <button type="button"
                     onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false) }}
                     className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--chat-text-secondary)] transition-colors hover:bg-[var(--chat-accent-soft)] hover:text-[var(--chat-text-primary)]"
                   >
                     <Paperclip className="size-4" />
                     Attach file
                   </button>
-                  <button
+                  <button type="button"
                     onClick={() => { imageInputRef.current?.click(); setShowAttachMenu(false) }}
                     className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--chat-text-secondary)] transition-colors hover:bg-[var(--chat-accent-soft)] hover:text-[var(--chat-text-primary)]"
                   >
                     <ImageIcon className="size-4" />
                     Photo or video
                   </button>
-                  <button
+                  <button type="button"
                     onClick={() => setShowAttachMenu(false)}
                     className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--chat-text-secondary)] transition-colors hover:bg-[var(--chat-accent-soft)] hover:text-[var(--chat-text-primary)]"
                   >
@@ -1359,7 +1367,7 @@ function ChatComposer({
               />
 
               {!hasContent && onVoiceRecord ? (
-                <button
+                <button type="button"
                   onClick={onVoiceRecord}
                   disabled={disabled}
                   className="absolute bottom-[6px] right-[6px] flex size-8 items-center justify-center rounded-full text-[var(--chat-text-tertiary)] transition-colors hover:text-[var(--chat-accent)]"
@@ -1368,7 +1376,7 @@ function ChatComposer({
                   <Mic className="size-4" strokeWidth={2.5} />
                 </button>
               ) : (
-                <button
+                <button type="button"
                   onClick={handleSend}
                   disabled={!hasContent || disabled}
                   className={cn(

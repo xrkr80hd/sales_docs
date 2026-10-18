@@ -1,3 +1,4 @@
+import { dealOwnerScope } from "@/lib/deal-access";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
 /**
@@ -27,13 +28,17 @@ export async function GET(request: Request) {
     return Response.json({ error: "Forbidden." }, { status: 403 });
   }
 
-  const { data: deals, error } = await supabase
+  const scope = await dealOwnerScope(supabase, user, profile.role);
+  if (scope && !scope.length) return Response.json({ deals: [] });
+  let query = supabase
     .from("deals")
     .select("id, workflow_data, sm_sent_at, sm_claimed_at, sm_claimed_by, sm_finished_at, deal_number, updated_at, user_id, claimer:profiles!sm_claimed_by(display_name)")
     .eq("sm_ready", true)
     .eq("status", "open")
     .is("sm_finished_at", null)
     .order("sm_sent_at", { ascending: true });
+  if (scope) query = query.in("user_id", scope);
+  const { data: deals, error } = await query;
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 

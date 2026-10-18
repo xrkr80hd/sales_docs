@@ -1,3 +1,4 @@
+import { dealOwnerScope } from "@/lib/deal-access";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
 /**
@@ -33,11 +34,15 @@ export async function POST(
 
   const { id } = await params;
 
-  const { data: deal, error: fetchErr } = await supabase
+  const scope = await dealOwnerScope(supabase, user, profile.role);
+  if (scope && !scope.length) return Response.json({ error: "Organization access required." }, { status: 403 });
+  let query = supabase
     .from("deals")
-    .select("id, sm_ready, sm_claimed_at, status")
+    .select("id, user_id, sm_ready, sm_claimed_at, status")
     .eq("id", id)
-    .single();
+;
+  if (scope) query = query.in("user_id", scope);
+  const { data: deal, error: fetchErr } = await query.single();
 
   if (fetchErr || !deal) return Response.json({ error: "Deal not found." }, { status: 404 });
   if (!deal.sm_ready) return Response.json({ error: "Deal is not in the SM queue." }, { status: 400 });

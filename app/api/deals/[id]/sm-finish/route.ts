@@ -1,3 +1,4 @@
+import { dealOwnerScope } from "@/lib/deal-access";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
 /**
@@ -33,11 +34,15 @@ export async function POST(
 
   const { id } = await params;
 
-  const { data: deal, error: fetchErr } = await supabase
+  const scope = await dealOwnerScope(supabase, user, profile.role);
+  if (scope && !scope.length) return Response.json({ error: "Organization access required." }, { status: 403 });
+  let query = supabase
     .from("deals")
-    .select("id, sm_claimed_by, sm_finished_at, deal_number, workflow_data")
+    .select("id, user_id, sm_claimed_by, sm_finished_at, deal_number, workflow_data")
     .eq("id", id)
-    .single();
+;
+  if (scope) query = query.in("user_id", scope);
+  const { data: deal, error: fetchErr } = await query.single();
 
   if (fetchErr || !deal) return Response.json({ error: "Deal not found." }, { status: 404 });
   if (deal.sm_claimed_by !== user.id) return Response.json({ error: "Only the claimer can finish." }, { status: 403 });
@@ -49,7 +54,7 @@ export async function POST(
   const { error: updateErr } = await supabase
     .from("deals")
     .update({ sm_finished_at: now, fni_ready: true, fni_sent_at: now })
-    .eq("id", id);
+    .eq("id", id).eq("user_id", deal.user_id);
 
   if (updateErr) return Response.json({ error: updateErr.message }, { status: 500 });
 
