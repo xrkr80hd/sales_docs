@@ -13,6 +13,7 @@ import {
 import { SettingsDrawer } from "@/components/workflow/settings-drawer";
 import { fetchServerSettings, saveConsultant, saveDealer } from "@/lib/dealer-consultant";
 import { WorkspaceProvider } from "@/components/command-center/workspace-context";
+import { MessengerUnreadProvider } from "@/components/messenger/unread-context";
 import { WorkspaceShell } from "@/components/command-center/workspace-shell";
 
 function SessionSettingsSync() {
@@ -55,7 +56,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <SupabaseSessionGate surface="app" renderBar={false}>
       <SessionSettingsSync />
       <DisclosureGate>
-        <div className="nxt-ui"><WorkspaceProvider>
+        <div className="nxt-ui"><WorkspaceProvider><MessengerUnreadProvider>
           <WorkspaceShell onSettings={() => setSettingsOpen(true)} onDocuments={() => setDrawerOpen(true)}>
             {children}
           </WorkspaceShell>
@@ -63,7 +64,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <DocumentDrawer dealType={drawerDealType} open={drawerOpen} onClose={() => setDrawerOpen(false)} />
           )}
           {settingsOpen && <SettingsDrawer onClose={() => setSettingsOpen(false)} />}
-        </WorkspaceProvider></div>
+        </MessengerUnreadProvider></WorkspaceProvider></div>
       </DisclosureGate>
       <SaveToastHost />
       <NotificationPrompt />

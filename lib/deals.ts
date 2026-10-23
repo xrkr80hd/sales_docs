@@ -1,5 +1,5 @@
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase-browser";
-import type { SignatureStore, WorkflowData } from "@/lib/walker-workflow";
+import { normalizeWorkflowData, stripSsnFields, type SignatureStore, type WorkflowData } from "@/lib/walker-workflow";
 
 const DEAL_ID_KEY = "walker.deal.id.v1";
 const START_FRESH_DEAL_TYPE_KEY = "walker.deal.start-fresh.v1";
@@ -68,7 +68,7 @@ export async function listMyDeals(): Promise<DealSummary[]> {
   if (!res.ok) return [];
 
   const json = await res.json();
-  return json.deals ?? [];
+  return (json.deals ?? []).map((deal: DealSummary) => ({ ...deal, workflow_data: normalizeWorkflowData(deal.workflow_data) }));
 }
 
 export async function loadDealFromServer(dealId: string): Promise<DealSummary | null> {
@@ -81,7 +81,7 @@ export async function loadDealFromServer(dealId: string): Promise<DealSummary | 
   if (!res.ok) return null;
 
   const json = await res.json();
-  return json.deal ?? null;
+  return json.deal ? { ...json.deal, workflow_data: normalizeWorkflowData(json.deal.workflow_data) } : null;
 }
 
 export async function saveDealToServer(
@@ -92,7 +92,7 @@ export async function saveDealToServer(
   const token = await getAuthToken();
   if (!token) return null;
 
-  const body: Record<string, unknown> = { workflowData, signatures };
+  const body: Record<string, unknown> = { workflowData: normalizeWorkflowData(workflowData), signatures: stripSsnFields(signatures) };
   if (dealId) body.id = dealId;
 
   const res = await fetch("/api/deals", {

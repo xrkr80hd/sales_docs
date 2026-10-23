@@ -1,3 +1,4 @@
+import { normalizeWorkflowData, stripSsnFields } from "@/lib/walker-workflow";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
 /**
@@ -30,7 +31,7 @@ export async function GET(
 
   if (error || !deal) return Response.json({ error: "Deal not found." }, { status: 404 });
 
-  return Response.json({ deal });
+  return Response.json({ deal: { ...deal, signatures: stripSsnFields(deal.signatures), workflow_data: normalizeWorkflowData(deal.workflow_data) } }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 /**

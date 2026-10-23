@@ -29,7 +29,7 @@ export function PasswordRequirement({ session, children }: { session: Session; c
       } catch (failure) { if (active) setError(failure instanceof Error ? failure.message : "Could not verify access."); }
       finally { pending = false; }
     };
-    void check(); const timer = window.setInterval(check, 30000);
+    void check(); const timer = window.setInterval(() => { if (document.visibilityState === "visible") void check(); }, 60000);
     return () => { active = false; window.clearInterval(timer); };
   }, [session.access_token, attempt]);
   if (required === false && account) return <VerifiedAccountContext.Provider value={account}>{children}</VerifiedAccountContext.Provider>;

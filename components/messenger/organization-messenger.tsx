@@ -5,6 +5,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { OrganizationBadge } from "@/components/command-center/organization-badge";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { MessageBubble } from "./message-bubble";
+import { useMessengerUnread } from "./unread-context";
 import { messengerRequest } from "@/lib/messenger-request";
 import styles from "./organization-messenger.module.css";
 
@@ -17,8 +18,11 @@ function initials(name: string) { return name.split(/\s+/).slice(0, 2).map(w => 
 function Badge({ count }: { count: number }) { return count > 0 ? <span className={styles.badge} aria-label={`${count} unread`}>{count > 99 ? "99+" : count}</span> : null; }
 export function OrganizationMessenger() {
   const { accessToken } = useSession();
+  const {counts:unreadCounts,markRead}=useMessengerUnread();
+  const unreadRef=useRef(unreadCounts);unreadRef.current=unreadCounts;
   const request = useCallback((path?: string, body?: object) => messengerRequest(accessToken, path, body), [accessToken]);
   const loadingDirectory = useRef(false);
+  const lastRead = useRef(new Map<string, number>());
   const historyRequests = useRef(new Map<string, number>());
   const [historyError, setHistoryError] = useState("");
   const [data, setData] = useState<Payload | null>(null), [error, setError] = useState("");
@@ -37,12 +41,13 @@ export function OrganizationMessenger() {
     if (loadingDirectory.current) return;
     loadingDirectory.current = true;
     try {
-      const payload: Payload = await request(); setData(payload); setError("");
+      const payload: Payload = await request(); setData({ ...payload, conversations: payload.conversations.map(c => ({ ...c, unread: unreadRef.current[c.id] || 0 })) }); setError("");
       if (activeRef.current && !payload.conversations.some(c => c.id === activeRef.current)) { setActiveId(null); setMessages([]); setScreen("organizations"); }
     } catch (e) { report(e); } finally { loadingDirectory.current = false; }
   }, [request]);
+  useEffect(()=>{setData(previous=>previous?{...previous,conversations:previous.conversations.map(c=>({...c,unread:unreadCounts[c.id]||0}))}:previous);},[unreadCounts]);
   const refreshHistory = useCallback(async (id: string, initial = false, force = false) => {
-    if (!initial && !force && historyRequests.current.has(id)) return;
+    if (!force && historyRequests.current.has(id)) return;
     const ticket = ++sequence.current;
     historyRequests.current.set(id, ticket);
     if (initial) setLoadingHistory(true);
@@ -54,22 +59,32 @@ export function OrganizationMessenger() {
       setHistoryError("");
       setLoadingHistory(false);
       const latest = page.messages.at(-1);
-      if (latest && document.visibilityState === "visible") {
+      if (latest && lastRead.current.get(id) !== latest.id && document.visibilityState === "visible") {
         await request(undefined, { action: "mark-read", conversationId: id, messageId: latest.id });
+        lastRead.current.set(id, latest.id);
+        markRead(id);
         if (activeRef.current === id) setData(previous => previous ? { ...previous, conversations: previous.conversations.map(c => c.id === id ? { ...c, unread: 0 } : c) } : previous);
       }
     } catch (e) { if (activeRef.current === id && ticket === sequence.current) setHistoryError(e instanceof Error ? e.message : "Could not load messages."); }
     finally { if (historyRequests.current.get(id) === ticket) historyRequests.current.delete(id); if (activeRef.current === id && ticket === sequence.current) setLoadingHistory(false); }
-  }, [request]);
+  }, [request,markRead]);
   useEffect(() => {
     void load();
-    const refresh = () => { if (document.visibilityState === "visible") { void load(); if (activeRef.current) void refreshHistory(activeRef.current); } };
-    const timer = window.setInterval(refresh, 15000);
-    window.addEventListener("focus", refresh); document.addEventListener("visibilitychange", refresh);
-    const client = getSupabaseBrowserClient();
-    const channel = client.channel("messenger-authorized-changes").on("postgres_changes", { event: "*", schema: "public", table: "messenger_messages" }, refresh).subscribe(status => setConnection(status === "SUBSCRIBED" ? "Live" : "Reconnecting · automatic refresh"));
-    return () => { clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); void client.removeChannel(channel); };
+    // Refresh directory on focus, rather than polling every organization/person.
+    const refresh = () => { if (document.visibilityState === "visible" && activeRef.current) void refreshHistory(activeRef.current); };
+    const focus = () => { if (document.visibilityState === "visible") { void load(); refresh(); } };
+    window.addEventListener("focus", focus); document.addEventListener("visibilitychange", focus);
+    return () => { window.removeEventListener("focus", focus); document.removeEventListener("visibilitychange", focus); };
   }, [load, refreshHistory]);
+  useEffect(() => {
+    if (!activeId) { setConnection("Ready"); return; }
+    // Subscribe only to the open room; don't reload every directory on any message.
+    const client = getSupabaseBrowserClient();
+    const refresh = () => { if (document.visibilityState === "visible") void refreshHistory(activeId); };
+    const channel = client.channel(`messenger-${activeId}`).on("postgres_changes", { event: "*", schema: "public", table: "messenger_messages", filter: `conversation_id=eq.${activeId}` }, refresh).subscribe(status => setConnection(status === "SUBSCRIBED" ? "Live" : "Automatic refresh"));
+    const timer = window.setInterval(refresh, 15000);
+    return () => { clearInterval(timer); void client.removeChannel(channel); };
+  }, [activeId, refreshHistory]);
   useEffect(() => {
     setMessages([]); setHasMore(false); setEditing(null); setDeleting(null); setActionsId(null); setHistoryError(""); nearBottom.current = true;
     if (activeId) void refreshHistory(activeId, true);
@@ -95,13 +110,13 @@ export function OrganizationMessenger() {
     const existing = data?.conversations.find(c => c.kind === "dm" && c.messenger_participants.some(m => m.user_id === p.user_id));
     if (existing) return open(existing.id);
     setBusy(true);
-    try { const result = await request(undefined, { action: "start-dm", userId: p.user_id }); await load(); open(result.conversationId); } catch (e) { report(e); } finally { setBusy(false); }
+    try { const result = await request(undefined, { action: "start-dm", userId: p.user_id }); setData(previous => previous ? { ...previous, conversations: previous.conversations.some(c => c.id === result.conversationId) ? previous.conversations : [...previous.conversations, { id: result.conversationId, kind: "dm", channel: null, title: "", organization_id: orgId || "", unread: 0, messenger_participants: [{ user_id: previous.me, last_read_at: "" }, { user_id: p.user_id, last_read_at: "" }] }] } : previous); open(result.conversationId); } catch (e) { report(e); } finally { setBusy(false); }
   }
   async function send(event: FormEvent) {
     event.preventDefault(); if (!activeId || busy) return;
     const id = activeId, text = drafts[id]?.trim(); if (!text) return;
     setBusy(true); setError("");
-    try { await request(undefined, { action: "send", conversationId: id, body: text }); setDrafts(d => ({ ...d, [id]: "" })); nearBottom.current = true; await refreshHistory(id, false, true); await load(); } catch (e) { report(e); } finally { setBusy(false); }
+    try { const result = await request(undefined, { action: "send", conversationId: id, body: text }); setDrafts(d => ({ ...d, [id]: d[id]?.trim() === text ? "" : d[id] })); nearBottom.current = true; if (activeRef.current === id && result.message) setMessages(previous => [...previous.filter(m => m.id !== result.message.id), result.message].sort((a, b) => a.id - b.id)); } catch (e) { report(e); } finally { setBusy(false); }
   }
   async function older() {
     if (!activeId || !messages[0] || loadingHistory) return;

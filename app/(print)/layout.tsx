@@ -6,7 +6,7 @@ import { SupabaseSessionGate } from "@/components/auth/supabase-session-gate";
 export default function PrintLayout({ children }: { children: ReactNode }) {
   return (
     <SupabaseSessionGate surface="print">
-      <DisclosureGate>{children}</DisclosureGate>
+      <DisclosureGate><div className="nxt-print-preview">{children}</div></DisclosureGate>
     </SupabaseSessionGate>
   );
 }

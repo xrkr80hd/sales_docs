@@ -37,13 +37,13 @@ export async function GET(request:Request){
  if(membersErr)throw membersErr;
  const roster=(members||[]).filter(m=>(m.profiles as unknown as {role?:string})?.role==="user");
  const ids=roster.map(r=>r.user_id);
- const {data:settings,error:settingsErr}=ids.length?await db.from("user_settings").select("user_id,consultant_info,updated_at").in("user_id",ids):{data:[],error:null};
+ const {data:settings,error:settingsErr}=ids.length?await db.from("user_settings").select("user_id,commander:consultant_info->saleCommander,updated_at").in("user_id",ids):{data:[],error:null};
  if(settingsErr)throw settingsErr;
  const ownerSettings=await organizationSettings(db);
  const boards=ownerSettings?.dealer_info?.managerBoards||{};
  const lookup=new Map((settings||[]).map(r=>[r.user_id,r]));
  const entries=roster.map(m=>{
- const row=lookup.get(m.user_id),commander=(row?.consultant_info as {saleCommander?:CommanderData}|null)?.saleCommander||{};
+ const row=lookup.get(m.user_id),commander=(row?.commander as CommanderData|null)||{};
  const todayCounts=commander.days?.[day]||{};
  const month=day.slice(0,7);
  const monthly=Object.entries(commander.days||{}).filter(([key])=>key.startsWith(month)).reduce((total,[,counts])=>{const c=counts as Record<string,number>;for(const key of ["calls","talks","appts","shows","sold"] as const)total[key]+=(Number(c?.[key])||0);return total;},{calls:0,talks:0,appts:0,shows:0,sold:0});

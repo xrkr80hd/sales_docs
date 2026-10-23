@@ -20,7 +20,7 @@ export function SalesCommanderStats(){
   catch(e){if(ticket===sequence.current)setError(e instanceof Error?e.message:"Unable to load statistics.");}
   finally{if(ticket===sequence.current)pending.current=null;}
  },[org,date,accessToken]);
- useEffect(()=>{setResult(null);void load();const refresh=()=>{if(document.visibilityState==="visible")void load();};const id=window.setInterval(refresh,15000);window.addEventListener("focus",refresh);return()=>{invalidate();window.clearInterval(id);window.removeEventListener("focus",refresh);};},[load,invalidate]);
+ useEffect(()=>{setResult(null);void load();const refresh=()=>{if(document.visibilityState==="visible")void load();};const id=window.setInterval(refresh,60000);window.addEventListener("focus",refresh);return()=>{invalidate();window.clearInterval(id);window.removeEventListener("focus",refresh);};},[load,invalidate]);
 
  const entries=(result?.entries||[]).filter(e=>!selected||e.userId===selected);
  const totals=entries.reduce((t,e)=>{for(const [field]of fields)t[field]+=(e[view==="today"?"today":"monthly"][field]||0);return t;},{calls:0,talks:0,appts:0,shows:0,sold:0});

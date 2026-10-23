@@ -23,12 +23,12 @@ export async function GET(request:Request) {
     const ctx=await context(request);if(ctx instanceof Response)return ctx;
     const {db,user,admin,organization}=ctx;
     const [{data:own,error:ownError},{data:shared,error:sharedError}]=await Promise.all([
-      db.from("user_settings").select("dealer_info").eq("user_id",user.id).maybeSingle(),
-      db.from("user_settings").select("dealer_info,profiles!inner(role)").eq("profiles.role","admin"),
+      db.from("user_settings").select("linkSets:dealer_info->consultantLinksByOrganization").eq("user_id",user.id).maybeSingle(),
+      db.from("user_settings").select("linkSets:dealer_info->consultantLinksByOrganization,profiles!inner(role)").eq("profiles.role","admin"),
     ]);
     if(ownError||sharedError)return Response.json({error:(ownError||sharedError)?.message},{status:500});
-    const ownSet=record(record(own?.dealer_info).consultantLinksByOrganization)[organization.id] as LinkSet | undefined;
-    const sets=(shared||[]).map(row=>record(record(row.dealer_info).consultantLinksByOrganization)[organization.id] as LinkSet|undefined).filter((set):set is LinkSet=>Boolean(set&&Array.isArray(set.links))).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+    const ownSet=record(own?.linkSets)[organization.id] as LinkSet | undefined;
+    const sets=(shared||[]).map(row=>record(row.linkSets)[organization.id] as LinkSet|undefined).filter((set):set is LinkSet=>Boolean(set&&Array.isArray(set.links))).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
     const selected=admin?sets[0]||ownSet:ownSet||sets[0];
     const links=selected?.links || (/cdjr|chrysler|dodge|jeep|ram\b/i.test(organization.name)?CDJR_LINKS:[]);
     return Response.json({links,organization,shared:admin || !ownSet},{headers:{"Cache-Control":"private, no-store"}});

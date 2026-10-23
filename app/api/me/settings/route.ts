@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   if (userError || !user) return Response.json({ error: "Invalid session." }, { status: 401 });
 
   const [{ data, error }, { data: profile }] = await Promise.all([
-    supabase.from("user_settings").select("dealer_info, consultant_info, updated_at").eq("user_id", user.id).maybeSingle(),
+    supabase.from("user_settings").select("dealershipName:dealer_info->>dealershipName, street:dealer_info->>street, city:dealer_info->>city, state:dealer_info->>state, zip:dealer_info->>zip, name:consultant_info->>name, salespersonNumber:consultant_info->>salespersonNumber, phone:consultant_info->>phone, email:consultant_info->>email, updated_at").eq("user_id", user.id).maybeSingle(),
     supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
   ]);
 
@@ -39,8 +39,8 @@ export async function GET(request: Request) {
   const organization=membership?.organizations as unknown as {name?:string}|null;
   const branded=membership?.organization_id?(await organizationBranding(supabase))[membership.organization_id]:undefined;
   const assignedDealer=organization?.name?{dealershipName:organization.name,...(branded?.address||{street:"",city:"",state:"",zip:""})}:null;
-  const dealerInfo = {...asRecord(data?.dealer_info),...(assignedDealer||{})};
-  const consultantInfo = asRecord(data?.consultant_info);
+  const dealerInfo = {dealershipName:data?.dealershipName,street:data?.street,city:data?.city,state:data?.state,zip:data?.zip,...(assignedDealer||{})};
+  const consultantInfo = {name:data?.name, salespersonNumber:data?.salespersonNumber, phone:data?.phone, email:data?.email};
 
   return Response.json({
     dealer_info: {

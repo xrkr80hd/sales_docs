@@ -41,11 +41,11 @@ export async function GET(request: Request) {
 
     stage = "appearance";
     const [settingsResult, brands] = await Promise.all([
-      supabase.from("user_settings").select("consultant_info").eq("user_id", user.id).maybeSingle(),
+      supabase.from("user_settings").select("profileImageUrl:consultant_info->>profileImageUrl").eq("user_id", user.id).maybeSingle(),
       membership?.organization_id ? organizationBranding(supabase) : Promise.resolve({} as Record<string, OrganizationBranding>),
     ]);
     if (settingsResult.error) throw new Error("Profile settings lookup failed");
-    const info = settingsResult.data?.consultant_info as { profileImageUrl?: string } | null;
+    const info = settingsResult.data;
     const branding = brands[membership?.organization_id || ""];
     return Response.json({ ...identity, profileImageUrl: info?.profileImageUrl || "", organizationHideIcon: branding?.hideIcon || false, organizationIconUrl: branding?.iconUrl || "", organizationTheme: branding?.theme || "", organizationAddress: branding?.address || { street: "", city: "", state: "", zip: "" } }, { headers });
   } catch {

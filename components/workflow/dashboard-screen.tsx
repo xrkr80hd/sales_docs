@@ -17,7 +17,7 @@ import {
   type DealSummary
 } from "@/lib/deals";
 import { useSession } from "@/components/auth/supabase-session-gate";
-import { messengerRequest } from "@/lib/messenger-request";
+import { useMessengerUnread } from "@/components/messenger/unread-context";
 import { isSupabaseConfigured } from "@/lib/supabase-browser";
 import {
   clearWorkflowSession,
@@ -33,7 +33,7 @@ export function DashboardScreen() {
   const [lastDeal, setLastDeal] = useState<DealSummary | null>(null);
   const [allDeals, setAllDeals] = useState<DealSummary[]>([]);
   const [showPicker, setShowPicker] = useState(false);
-  const [messengerUnread, setMessengerUnread] = useState(0);
+  const {total:messengerUnread}=useMessengerUnread();
   const [localResume] = useState<{ name: string; dealType: "new" | "used" } | null>(() => {
     const wf = loadWorkflow();
     if (!wf.customerName && !wf.vin && !wf.dealNumber) {
@@ -67,24 +67,6 @@ export function DashboardScreen() {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-    let cancelled = false;
-    let pending = false;
-    async function loadUnread() {
-      if (pending || !accessToken) return;
-      pending = true;
-      try {
-        const payload = await messengerRequest(accessToken);
-        const unread = (payload.conversations ?? []).reduce((total: number, conversation: { unread: number }) => total + (conversation.unread || 0), 0);
-        if (!cancelled) setMessengerUnread(unread);
-      } catch { /* Messenger displays detailed request failures when opened. */ }
-      finally { pending = false; }
-    }
-    void loadUnread();
-    const timer = window.setInterval(() => { if (document.visibilityState === "visible") void loadUnread(); }, 15000);
-    return () => { cancelled = true; window.clearInterval(timer); };
-  }, [accessToken]);
 
   function startFreshDeal(dealType: "new" | "used") {
     clearWorkflowSession();

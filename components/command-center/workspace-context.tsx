@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { organizationTheme, organizationThemeStyle } from "@/lib/organization-theme";
 import { useVerifiedAccount } from "@/components/auth/required-password-change";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { requestJson } from "@/lib/request-json";
@@ -15,8 +14,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const verifiedAccount = useVerifiedAccount();
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
-  const [boardOrganization,setBoardOrganization]=useState<{name:string;theme?:string}|null>(null);
-  useEffect(()=>{const update=(event:Event)=>setBoardOrganization((event as CustomEvent<{name:string;theme?:string}|null>).detail);window.addEventListener("organization-theme",update);return()=>window.removeEventListener("organization-theme",update);},[]);
   const [identity, setIdentity] = useState<WorkspaceIdentity | null>(() => process.env.NEXT_PUBLIC_DISABLE_AUTH === "1"
     ? { id: "local-preview", displayName: "Local interface preview", role: "admin", email: "" }
     : verifiedAccount);
@@ -43,5 +40,5 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return () => { active = false; window.removeEventListener("consultant-profile-updated", refresh); };
   }, [accessToken, attempt, verifiedAccount]);
   if (!identity) return <section role="status" className="p-6"><p>{error || "Loading your workspace…"}</p>{error && <button type="button" className="min-h-11 underline" onClick={() => { setError(""); setAttempt(value => value + 1); }}>Retry workspace</button>}</section>;
-  return <WorkspaceContext.Provider value={identity}><div className="organization-theme" data-mode={organizationTheme(boardOrganization?.name||identity?.dealership,boardOrganization?boardOrganization.theme:identity?.organizationTheme).mode} style={organizationThemeStyle(boardOrganization?.name||identity?.dealership,boardOrganization?boardOrganization.theme:identity?.organizationTheme)}>{children}</div></WorkspaceContext.Provider>;
+  return <WorkspaceContext.Provider value={identity}><div className="organization-theme" data-mode="dark">{children}</div></WorkspaceContext.Provider>;
 }

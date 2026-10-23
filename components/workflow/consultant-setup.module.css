@@ -27,7 +27,7 @@
 .fields input:focus { border-color: var(--accent-strong); box-shadow: 0 0 0 2px #ee233633; }
 .help { color: var(--muted); font-size: 14px; line-height: 1.5; margin: 20px 0; }
 .save { width: 100%; background: var(--accent); border: 1px solid var(--accent-strong); padding: 14px; border-radius: 5px; font-size: 16px; font-weight: 700; cursor: pointer; }
-.save:disabled, fieldset:disabled { opacity: .6; }
+.save:disabled, .drawer fieldset:disabled { opacity: .6; }
 .status, .error { margin-bottom: 18px; padding: 12px; font-size: 14px; border-left: 3px solid; }
 .status { background: #173529; color: #98ecc0; border-color: #40c985; }
 .error { background: #421c23; color: #ffb6bf; border-color: #ee2336; }

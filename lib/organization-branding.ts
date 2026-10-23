@@ -17,9 +17,18 @@ export function organizationSettings(db:ReturnType<typeof getSupabaseServiceClie
   if(!request){request=readOrganizationSettings(db).catch(error=>{settingsRequests.delete(db);throw error;});settingsRequests.set(db,request);}
   return request;
 }
-export async function organizationBranding(db:ReturnType<typeof getSupabaseServiceClient>){
-  const data=await organizationSettings(db);
-  return (data?.dealer_info?.organizationBranding||{}) as Record<string,OrganizationBranding>;
+async function readOrganizationBranding(db:ReturnType<typeof getSupabaseServiceClient>){
+  // Read only branding, never all manager boards and embedded profile content.
+  const id=await brandingOwner(db);
+  const {data,error}=await db.from("user_settings").select("branding:dealer_info->organizationBranding").eq("user_id",id).maybeSingle();
+  if(error)throw error;
+  return (data?.branding||{}) as Record<string,OrganizationBranding>;
+}
+const brandingRequests=new WeakMap<ReturnType<typeof getSupabaseServiceClient>,ReturnType<typeof readOrganizationBranding>>();
+export function organizationBranding(db:ReturnType<typeof getSupabaseServiceClient>){
+  let request=brandingRequests.get(db);
+  if(!request){request=readOrganizationBranding(db).catch(error=>{brandingRequests.delete(db);throw error;});brandingRequests.set(db,request);}
+  return request;
 }
 export async function updateOrganizationBranding(db:ReturnType<typeof getSupabaseServiceClient>,id:string,value:OrganizationBranding){
   const ownerId=await brandingOwner(db);const {data:settings,error}=await db.from("user_settings").select("dealer_info,updated_at").eq("user_id",ownerId).maybeSingle();if(error)throw error;
@@ -28,4 +37,5 @@ export async function updateOrganizationBranding(db:ReturnType<typeof getSupabas
   if(settings){const {data:saved,error}=await db.from("user_settings").update(update).eq("user_id",ownerId).eq("updated_at",settings.updated_at).select("user_id");if(error)throw error;if(!saved?.length)throw new Error("Organization data changed. Try again.");}
   else {const {error}=await db.from("user_settings").insert({user_id:ownerId,...update});if(error)throw error;}
   settingsRequests.delete(db);
+  brandingRequests.delete(db);
 }

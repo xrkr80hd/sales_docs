@@ -1,17 +1,6 @@
 @import "tailwindcss";
 
-:root {
-  --background: #0d0e10;
-  --foreground: #f7f7f7;
-  --panel: #17191d;
-  --panel-strong: #22252a;
-  --border: #2e3035;
-  --muted: #9aa0a6;
-  --accent: #be1717;
-  --accent-strong: #df1c1c;
-  --success: #163d25;
-  --warn: #8b5600;
-}
+
 
 @theme inline {
   --color-background: var(--background);
@@ -128,6 +117,12 @@ select.bg-white option {
   --muted: #aebbc4;
   --accent: #c41024;
   --accent-strong: #f32135;
+  --field: #0e161a;
+  --accent-text: #ff7180;
+  --accent-soft: #391a23;
+  --on-accent: #ffffff;
+  --success: #82d9a0;
+  --warn: #f9c06e;
 }
 html, body { background: var(--background); }
 @media screen {
@@ -179,11 +174,10 @@ html, body { background: var(--background); }
 .nxt-auth-wordmark { display: flex; justify-content: center; }
 
 .nxt-auth-dealer { width: min(100%, 340px); height: 96px; }
-/* Organization skin changes screen chrome only; document paper keeps its own styles. */
+/* One shared screen palette for every organization. Document paper keeps its own styles. */
 @media screen {
  .organization-theme { min-height:100dvh; background:var(--background); color:var(--foreground); }
  .organization-theme .nxt-ui { color-scheme:dark; }
- .organization-theme[data-mode="light"] .nxt-ui { color-scheme:light; }
  .organization-theme .nxt-ui [class*="__shell"], .organization-theme .nxt-ui [class*="__main"] { color:var(--foreground); }
  .organization-theme .nxt-ui :is([class*="__header"],[class*="__sidebar"],[class*="__panel"],[class*="__drawer"],[class*="__member"],[class*="__storeCard"],[class*="__accountMenu"]) { background:var(--panel); color:var(--foreground); border-color:var(--border); }
  .organization-theme .nxt-ui :is([class*="__table"],[class*="__stat"],[class*="__kpi"],[class*="__total"],[class*="__tool"],[class*="__vehicleButton"],[class*="__navLink"],[class*="__navButton"]) { color:var(--foreground); border-color:var(--border); }
@@ -195,12 +189,24 @@ html, body { background: var(--background); }
  .organization-theme .nxt-ui [class*="__active"] { background:var(--accent-soft); border-left-color:var(--accent); }
  .organization-theme .nxt-ui [class*="__storeCard"] { border-top:3px solid var(--accent); }
  .organization-theme .nxt-ui :is([class*="__textLink"],[class*="__panelHeader"] svg,[class*="__tool"] > svg:first-child,[class*="__storeCard"] > svg:first-child) { color:var(--accent-text); }
- .organization-theme[data-mode="light"] .nxt-ui [class*="__table"] th { background:var(--panel-strong); }
- .organization-theme[data-mode="light"] .nxt-ui [class*="__kpi"] { background:var(--panel); }
- .organization-theme[data-mode="light"] .nxt-ui [class*="__total"] { background:var(--panel-strong); }
- .organization-theme[data-mode="light"] .nxt-ui :is(input,select,textarea).bg-white:not([class*="sheet_"] *) { background:var(--field); color:var(--foreground) !important; -webkit-text-fill-color:var(--foreground) !important; color-scheme:light; }
 }
 
 .organization-badge { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; flex-shrink:0; border:0; border-radius:0; background:transparent; padding:0; }
 .organization-badge img { width:100%; height:100%; object-fit:contain; }
 @media(max-width:680px) { .organization-badge { width:20px; height:20px; } }
+
+/* Shared screen controls, including print preview navigation. Never style the paper. */
+.nxt-print-preview { display: contents; }
+@media screen {
+  .nxt-ui :is(a,button).bg-white {
+    background: var(--panel-strong); color: var(--foreground);
+    border-color: var(--border);
+  }
+  .nxt-ui :is(a,button)[class~="bg-[var(--foreground)]"] {
+    background: var(--accent); color: var(--on-accent); border-color: var(--accent);
+  }
+  .nxt-print-preview [class~="print:hidden"] {
+    --foreground: #171d23; --muted: #535f69;
+    color: #171d23; color-scheme: light;
+  }
+}

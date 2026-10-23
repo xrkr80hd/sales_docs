@@ -1,5 +1,19 @@
+// Coalesce simultaneous identical reads only. Nothing is cached after settlement;
+// include authorization/options so accounts and organization scopes never share data.
+const pendingReads = new Map<string, Promise<unknown>>();
+export function requestJson<T = Record<string, unknown>>(path: string, init: RequestInit = {}, timeoutMs = 12000): Promise<T> {
+  if ((init.method || "GET").toUpperCase() !== "GET" || init.signal) return performJsonRequest<T>(path, init, timeoutMs);
+  const headers = new Headers(init.headers);
+  const key = JSON.stringify([path, [...headers.entries()].sort(), init.credentials, timeoutMs]);
+  const pending = pendingReads.get(key);
+  if (pending) return pending as Promise<T>;
+  const request = performJsonRequest<T>(path, init, timeoutMs).finally(() => { pendingReads.delete(key); });
+  pendingReads.set(key, request);
+  return request;
+}
+
 /** Bound both the network request and body decoding; never retry a mutation implicitly. */
-export async function requestJson<T = Record<string, unknown>>(path: string, init: RequestInit = {}, timeoutMs = 12000): Promise<T> {
+async function performJsonRequest<T = Record<string, unknown>>(path: string, init: RequestInit = {}, timeoutMs = 12000): Promise<T> {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {

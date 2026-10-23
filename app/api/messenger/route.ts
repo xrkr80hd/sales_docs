@@ -45,12 +45,27 @@ export async function GET(request: Request) {
       await conversation(ctx, id);
       const before = url.searchParams.get("before");
       if (before && !/^\d+$/.test(before)) throw new ApiError("Invalid history cursor.", 400);
-      let query = scoped.from("messenger_messages").select("id,conversation_id,sender_id,body,created_at,edited_at").eq("conversation_id", id).is("deleted_at", null).order("id", { ascending: false }).limit(51);
+      let query = db.from("messenger_messages").select("id,conversation_id,sender_id,body,created_at,edited_at").eq("conversation_id", id).is("deleted_at", null).order("id", { ascending: false }).limit(51);
       if (before) query = query.lt("id", before);
       const rows = checked(await query) || [], more = rows.length > 50, page = rows.slice(0, 50);
       const senderIds = [...new Set(page.map(m => m.sender_id))];
       const senders = senderIds.length ? checked(await db.from("profiles").select("id,display_name").in("id", senderIds)) || [] : [];
       return Response.json({ messages: page.reverse().map(m => ({ ...m, body: moderateChatText(m.body), senderName: senders.find(p => p.id === m.sender_id)?.display_name || "Team member" })), hasMore: more }, { headers: { "Cache-Control": "no-store" } });
+    }
+    if (url.searchParams.get("summary") === "1") {
+      // Authorize IDs once as the caller. Count only those IDs server-side, avoiding
+      // expensive per-message RLS re-evaluation. No bodies or other rooms are read.
+      const conversations = checked(await scoped.from("messenger_conversations").select("id,kind,channel,title,organization_id,messenger_participants(user_id,last_read_at)")) || [];
+    const counts = [];
+    for (let offset = 0; offset < conversations.length; offset += 4) {
+      counts.push(...await Promise.all(conversations.slice(offset, offset + 4).map(async c => {
+      const since = c.messenger_participants.find(p => p.user_id === user.id)?.last_read_at || "1970-01-01T00:00:00Z";
+      const result = await db.from("messenger_messages").select("id", { count: "exact", head: true }).eq("conversation_id", c.id).neq("sender_id", user.id).is("deleted_at", null).gt("created_at", since);
+      if (result.error) throw new ApiError("Unread counts could not be loaded.");
+      return { ...c, title: c.kind === "organization" ? c.channel === "management" ? "Management Chat" : "Consultant Chat" : c.title, unread: result.count || 0 };
+    })));
+    }
+      return Response.json({ conversations: counts.map(c => ({ id: c.id, unread: c.unread })) }, { headers: { "Cache-Control": "private, no-store" } });
     }
     const allowedIds: string[] = checked(await scoped.rpc("messenger_accessible_organizations")) || [];
     const [branding, organizations, members, conversations] = await Promise.all([
@@ -65,13 +80,7 @@ export async function GET(request: Request) {
       const member = members.find(m => m.user_id === p.id);
       return { user_id: p.id, organization_id: member?.organization_id, name: member?.chat_nickname || p.display_name || "Team member", role: p.role, can_dm: member?.can_dm === true };
     });
-    const counts = await Promise.all(conversations.map(async c => {
-      const since = c.messenger_participants.find(p => p.user_id === user.id)?.last_read_at || "1970-01-01T00:00:00Z";
-      const result = await scoped.from("messenger_messages").select("id", { count: "exact", head: true }).eq("conversation_id", c.id).neq("sender_id", user.id).is("deleted_at", null).gt("created_at", since);
-      if (result.error) throw new ApiError("Unread counts could not be loaded.");
-      return { ...c, title: c.kind === "organization" ? c.channel === "management" ? "Management Chat" : "Consultant Chat" : c.title, unread: result.count || 0 };
-    }));
-    return Response.json({ me: user.id, canCreateOrganization: admin, canDm: admin || membership?.can_dm === true, organizations: organizations.filter(o => !branding[o.id]?.deletedAt).map(o => ({ ...o, iconUrl: branding[o.id]?.iconUrl || "", hideIcon: branding[o.id]?.hideIcon === true })), people, conversations: counts }, { headers: { "Cache-Control": "no-store" } });
+    return Response.json({ me: user.id, canCreateOrganization: admin, canDm: admin || membership?.can_dm === true, organizations: organizations.filter(o => !branding[o.id]?.deletedAt).map(o => ({ ...o, iconUrl: branding[o.id]?.iconUrl || "", hideIcon: branding[o.id]?.hideIcon === true })), people, conversations: conversations.map(c => ({ ...c, title: c.kind === "organization" ? c.channel === "management" ? "Management Chat" : "Consultant Chat" : c.title, unread: 0 })) }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return failure(error); }
 }
 export async function POST(request: Request) {
@@ -100,9 +109,11 @@ export async function POST(request: Request) {
       if (body.action === "edit") {
         checked(await db.from("messenger_messages").update({ body: text, edited_at: new Date().toISOString() }).eq("id", target!.id).eq("sender_id", user.id));
       } else {
-        const message = checked(await db.from("messenger_messages").insert({ conversation_id: room.id, sender_id: user.id, body: text }).select("id,created_at").single());
+        const message = checked(await db.from("messenger_messages").insert({ conversation_id: room.id, sender_id: user.id, body: text }).select("id,conversation_id,sender_id,body,created_at").single());
         // Ordering failure must not turn a successful send into a duplicate on retry.
-        await db.from("messenger_conversations").update({ updated_at: message!.created_at }).eq("id", room.id);
+        try {
+          await db.from("messenger_conversations").update({ updated_at: message!.created_at }).eq("id", room.id).abortSignal(AbortSignal.timeout(1500));
+        } catch { /* A saved message must still be acknowledged if ordering fails. */ }
         return Response.json({ ok: true, message });
       }
     } else if (body.action === "mark-read") {

@@ -191,3 +191,11 @@
 .messengerMain{padding:12px!important;min-width:0;}
 @media(max-width:680px){.messengerMain{padding:0!important;}.shell:has(.messengerMain) .header{position:relative;}}
 .displayActions{display:flex;align-items:center;gap:12px;min-width:0}.exitDisplay{display:flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;min-width:44px;min-height:44px;padding:0 10px;border:1px solid #65747c;border-radius:8px;color:#fff;text-decoration:none;background:#202c32}.exitDisplay:focus-visible{outline:2px solid #fff;outline-offset:3px}@media(max-width:680px){.displayActions .displayLabel{display:none}.exitDisplay span{display:none}}
+
+.messageIndicator { display:inline-flex; position:relative; align-items:center; justify-content:center; min-width:44px; min-height:44px; margin-left:auto; flex-shrink:0; color:var(--foreground); border:1px solid var(--border); border-radius:5px; }
+.messageIndicator span { position:absolute; top:-7px; right:-7px; min-width:21px; height:21px; padding:0 5px; display:grid; place-items:center; border-radius:12px; background:var(--accent); color:var(--on-accent); font-size:11px; font-weight:800; }
+@media(max-width:680px) { .messageIndicator { min-width:38px; min-height:38px; } }
+@media(max-width:680px) {
+  .dealerLogo { width:clamp(86px,calc(100vw - 274px),152px); object-fit:contain; }
+  .identity { margin-left:0; flex-shrink:0; }
+}

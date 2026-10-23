@@ -243,7 +243,6 @@ export type WorkflowData = {
   payoffToday: string;
   accountNumber: string;
   perDiem: string;
-  socialSecurityNumber: string;
   representativeName: string;
   repDate: string;
   verifiedBy: string;
@@ -311,6 +310,18 @@ function ensureWorkflowCreatedAt(storage: Storage) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+/** Remove obsolete SSN property aliases without inspecting or logging their values.
+ * Free-text values remain users' responsibility; this is structural sanitization.
+ */
+export function stripSsnFields<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(item => stripSsnFields(item)) as T;
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).filter(([key]) => {
+    const normalized = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+    return !normalized.includes("socialsecurity") && !normalized.includes("ssn");
+  }).map(([key, item]) => [key, stripSsnFields(item)])) as T;
 }
 
 export function safeTrim(value: unknown) {
@@ -422,7 +433,6 @@ export function createDefaultWorkflowData(): WorkflowData {
     payoffToday: "",
     accountNumber: "",
     perDiem: "",
-    socialSecurityNumber: "",
     representativeName: "",
     repDate: "",
     verifiedBy: "",
@@ -452,6 +462,7 @@ export function createDefaultWorkflowData(): WorkflowData {
 }
 
 export function normalizeWorkflowData(value: unknown): WorkflowData {
+  value = stripSsnFields(value);
   const base = createDefaultWorkflowData();
   if (!isRecord(value)) {
     return base;
@@ -519,7 +530,6 @@ export function normalizeWorkflowData(value: unknown): WorkflowData {
     payoffToday: safeTrim(value.payoffToday),
     accountNumber: safeTrim(value.accountNumber),
     perDiem: safeTrim(value.perDiem),
-    socialSecurityNumber: safeTrim(value.socialSecurityNumber),
     representativeName: safeTrim(value.representativeName),
     repDate: safeTrim(value.repDate),
     verifiedBy: safeTrim(value.verifiedBy),
@@ -611,7 +621,11 @@ export function loadWorkflow() {
   clearExpiredWorkflowSession(storage);
 
   try {
-    return normalizeWorkflowData(JSON.parse(storage.getItem(WORKFLOW_STORAGE_KEY) || "{}"));
+    const raw = storage.getItem(WORKFLOW_STORAGE_KEY);
+    const next = normalizeWorkflowData(JSON.parse(raw || "{}"));
+    // Scrub obsolete properties from an existing session without extending its age.
+    if (raw) storage.setItem(WORKFLOW_STORAGE_KEY, JSON.stringify(next));
+    return next;
   } catch {
     return createDefaultWorkflowData();
   }
@@ -636,7 +650,7 @@ export function loadSignatures() {
   clearExpiredWorkflowSession(storage);
 
   try {
-    return JSON.parse(storage.getItem(SIGNATURE_STORAGE_KEY) || "{}");
+    return stripSsnFields(JSON.parse(storage.getItem(SIGNATURE_STORAGE_KEY) || "{}"));
   } catch {
     return {};
   }
@@ -646,9 +660,9 @@ export function saveSignatures(store: SignatureStore) {
   const storage = getBrowserStorage();
   if (storage) {
     ensureWorkflowCreatedAt(storage);
-    storage.setItem(SIGNATURE_STORAGE_KEY, JSON.stringify(store));
+    storage.setItem(SIGNATURE_STORAGE_KEY, JSON.stringify(stripSsnFields(store)));
   }
-  return store;
+  return stripSsnFields(store);
 }
 
 export function signatureIdFor(
@@ -668,9 +682,9 @@ export function loadDeliveryChecklistNotes() {
   clearExpiredWorkflowSession(storage);
 
   try {
-    return JSON.parse(
+    return stripSsnFields(JSON.parse(
       storage.getItem(DELIVERY_CHECKLIST_NOTES_STORAGE_KEY) || "{}",
-    ) as DeliveryChecklistNotes;
+    )) as DeliveryChecklistNotes;
   } catch {
     return {};
   }
@@ -678,7 +692,7 @@ export function loadDeliveryChecklistNotes() {
 
 export function saveDeliveryChecklistNotes(notes: DeliveryChecklistNotes) {
   const next = Object.fromEntries(
-    Object.entries(notes).filter(([, value]) => cleanSingleLine(value)),
+    Object.entries(stripSsnFields(notes)).filter(([, value]) => cleanSingleLine(value)),
   ) as DeliveryChecklistNotes;
 
   const storage = getBrowserStorage();

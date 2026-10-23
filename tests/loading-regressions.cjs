@@ -6,7 +6,7 @@ const ts = require('typescript');
 function load(path, dependencies = {}, globals = {}) {
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  vm.runInNewContext(source, { exports, require: name => { if (name in dependencies) return dependencies[name]; return require(name); }, Request, Response, URL, AbortController, setTimeout, clearTimeout, console, ...globals });
+  vm.runInNewContext(source, { exports, require: name => { if (name in dependencies) return dependencies[name]; return require(name); }, Request, Response, Headers, URL, AbortController, setTimeout, clearTimeout, console, ...globals });
   return exports;
 }
 function account({ user = { id: 'member', email: 'member@example.test', app_metadata: {} }, authError = null, profileError = null, memberError = null, profile = { role: 'user', display_name: 'Member' }, brandingFails = false } = {}) {
@@ -84,15 +84,23 @@ test('own message controls start hidden and reveal on tap without adding a sende
 function brandingHarness() {
   const module = load('lib/organization-branding.ts', { '@/lib/supabase-server': {} });
   function client(deleted = false, failFirst = false) {
-    let reads = 0;
+    let reads = 0; const selections = [];
     const db = { auth: { admin: { listUsers: async () => ({ data: { users: [{ id: 'owner', email: 'xrkr80hd@gmail.com' }] }, error: null }) } }, from() {
-      const q = { select: () => q, eq: () => q, maybeSingle: () => q, then(resolve, reject) { reads++; return Promise.resolve({ data: { user_id: 'owner', dealer_info: { organizationBranding: { org: deleted ? { deletedAt: '2026-10-16' } : {} } } }, error: failFirst && reads === 1 ? Error('temporary') : null }).then(resolve, reject); } }; return q;
-    } }; return { db, reads: () => reads };
+      const q = { select: value => { selections.push(value); return q; }, eq: () => q, maybeSingle: () => q, then(resolve, reject) { reads++; return Promise.resolve({ data: { branding: { org: deleted ? { deletedAt: '2026-10-16' } : {} }, user_id: 'owner', dealer_info: { organizationBranding: { org: deleted ? { deletedAt: '2026-10-16' } : {} } } }, error: failFirst && reads === 1 ? Error('temporary') : null }).then(resolve, reject); } }; return q;
+    } }; return { db, reads: () => reads, selections };
   }
   return { ...module, client };
 }
-test('branding and board share one settings read per request, without stale deletion flags on the next request', async () => {
-  const h = brandingHarness(); const first = h.client(); await Promise.all([h.organizationBranding(first.db), h.organizationSettings(first.db)]); assert.equal(first.reads(), 1);
+test('branding reads a narrow projection and observes current deletion flags on the next request', async () => {
+  const h = brandingHarness(); const first = h.client(); await h.organizationBranding(first.db); assert.equal(first.reads(), 1); assert.deepEqual(first.selections, ['branding:dealer_info->organizationBranding']);
   const next = h.client(true); const brands = await h.organizationBranding(next.db); assert.equal(next.reads(), 1); assert.equal(brands.org.deletedAt, '2026-10-16');
 });
 test('a failed settings lookup can be retried on the same client', async () => { const h = brandingHarness(), c = h.client(false, true); await assert.rejects(h.organizationSettings(c.db), /temporary/); await h.organizationSettings(c.db); assert.equal(c.reads(), 2); });
+
+test('simultaneous reads coalesce but different tokens, paths and post-settlement reads stay isolated', async () => {
+ let calls=0, release;const h=json(async()=>{calls++;await new Promise(r=>release=r);return {ok:true,json:async()=>({ok:true})};});
+ const first=h.requestJson('/api/manager-board',{headers:{Authorization:'Bearer one'}});const second=h.requestJson('/api/manager-board',{headers:{Authorization:'Bearer one'}});assert.equal(calls,1);release();await Promise.all([first,second]);
+ const next=h.requestJson('/api/manager-board',{headers:{Authorization:'Bearer one'}});assert.equal(calls,2);release();await next;
+ const other=h.requestJson('/api/manager-board',{headers:{Authorization:'Bearer two'}});assert.equal(calls,3);release();await other;
+ const different=h.requestJson('/api/manager-board?organization=other',{headers:{Authorization:'Bearer one'}});assert.equal(calls,4);release();await different;
+});

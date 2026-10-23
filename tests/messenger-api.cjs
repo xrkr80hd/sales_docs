@@ -6,9 +6,9 @@ const vm=require('node:vm');
 const C='00000000-0000-4000-8000-000000000001',H='00000000-0000-4000-8000-000000000002',O='00000000-0000-4000-8000-000000000003';
 function harness({admin=false,authorized=true}={}){
  const tables={profiles:[{id:'me',role:admin?'admin':'user'}],organization_memberships:[{user_id:'me',organization_id:O,chat_enabled:true,can_dm:true,can_org_chat:true}],organizations:[{id:O,name:'Test organization'}],messenger_conversations:[{id:C,kind:'dm',organization_id:O,messenger_participants:[{user_id:'me',last_read_at:'2000-01-01'}]},{id:H,kind:'dm',organization_id:O,messenger_participants:[{user_id:'other'}]}],messenger_messages:[{id:1,conversation_id:C,sender_id:'me',body:'Existing',created_at:'2026-01-01',deleted_at:null},{id:2,conversation_id:H,sender_id:'other',body:'Private',created_at:'2026-01-02',deleted_at:null}],messenger_participants:[]};
- let writes=0;
+ let writes=0, countReads=0;
  function from(name,scoped){let filters=[],one=false,mode='read',payload,head=false,count=false,limit=Infinity,order;const q={
- select(s,opts){head=opts?.head;count=opts?.count;return q},eq(k,v){filters.push(r=>String(r[k])===String(v));return q},neq(k,v){filters.push(r=>r[k]!==v);return q},is(k,v){filters.push(r=>(r[k]??null)===v);return q},in(k,v){filters.push(r=>v.includes(r[k]));return q},gt(k,v){filters.push(r=>r[k]>v);return q},lt(k,v){filters.push(r=>r[k]<v);return q},order(k,o){order=[k,o?.ascending];return q},limit(n){limit=n;return q},single(){one=true;return q},maybeSingle(){one=true;return q},insert(p){mode='insert';payload=p;return q},upsert(p){mode='insert';payload=p;return q},update(p){mode='update';payload=p;return q},then(resolve,reject){try{
+ select(s,opts){if(opts?.count)countReads++;head=opts?.head;count=opts?.count;return q},eq(k,v){filters.push(r=>String(r[k])===String(v));return q},neq(k,v){filters.push(r=>r[k]!==v);return q},is(k,v){filters.push(r=>(r[k]??null)===v);return q},in(k,v){filters.push(r=>v.includes(r[k]));return q},gt(k,v){filters.push(r=>r[k]>v);return q},lt(k,v){filters.push(r=>r[k]<v);return q},order(k,o){order=[k,o?.ascending];return q},limit(n){limit=n;return q},single(){one=true;return q},maybeSingle(){one=true;return q},insert(p){mode='insert';payload=p;return q},upsert(p){mode='insert';payload=p;return q},update(p){mode='update';payload=p;return q},then(resolve,reject){try{
  let rows=tables[name]||[];
  if(scoped){if(name==='messenger_conversations')rows=rows.filter(r=>r.id===C);if(name==='messenger_messages')rows=rows.filter(r=>r.conversation_id===C);}
  rows=rows.filter(r=>filters.every(f=>f(r)));
@@ -22,8 +22,8 @@ function harness({admin=false,authorized=true}={}){
  const moderation={};vm.runInNewContext(ts.transpileModule(fs.readFileSync('lib/chat-moderation.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:moderation});
  const output={exports:{}};
  const source=ts.transpileModule(fs.readFileSync('app/api/messenger/route.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
- vm.runInNewContext(source,{exports:output.exports,require:n=>n==='@supabase/supabase-js'?{createClient:()=>scoped}:n==='@/lib/supabase-server'?{getSupabaseServiceClient:()=>db}:n==='@/lib/organization-branding'?{organizationBranding:async()=>({})}:moderation,process:{env:{}},Response,Request,URL,console});
- return {...output.exports,tables,writes:()=>writes};
+ vm.runInNewContext(source,{exports:output.exports,require:n=>n==='@supabase/supabase-js'?{createClient:()=>scoped}:n==='@/lib/supabase-server'?{getSupabaseServiceClient:()=>db}:n==='@/lib/organization-branding'?{organizationBranding:async()=>({})}:moderation,process:{env:{}},Response,Request,URL,AbortSignal,console});
+ return {...output.exports,tables,writes:()=>writes,countReads:()=>countReads};
 }
 const req=(body,query='',auth=true)=>new Request('http://localhost/api/messenger'+query,{method:body?'POST':'GET',headers:auth?{authorization:'Bearer test'}:{},...(body?{body:JSON.stringify(body)}:{})});
 test('missing and invalid authentication rejected',async()=>{const h=harness();assert.equal((await h.GET(req(null,'',false))).status,401);assert.equal((await harness({authorized:false}).POST(req({action:'send'}))).status,401)});
@@ -38,3 +38,7 @@ test('own edit and delete work after authorization',async()=>{const h=harness();
 test('DM creation denied by database cannot be bypassed',async()=>{const h=harness();assert.equal((await h.POST(req({action:'start-dm',userId:H}))).status,403)});
 
 test('server stores only moderated profanity and slurs on send and edit',async()=>{const h=harness();const response=await h.POST(req({action:'send',conversationId:C,body:'fuck nigger'}));assert.equal(response.status,200);const stored=h.tables.messenger_messages.at(-1).body;assert(!stored.includes('fuck'));assert(!stored.includes('nigger'));assert(stored.includes('****'));await h.POST(req({action:'edit',messageId:1,body:'shit'}));assert.notEqual(h.tables.messenger_messages[0].body,'shit')});
+
+test('directory opens without counting empty or unopened conversations',async()=>{const h=harness();assert.equal((await h.GET(req())).status,200);assert.equal(h.countReads(),0);});
+test('summary counts only caller-authorized rooms, with no inaccessible DM leakage',async()=>{const h=harness();h.tables.messenger_messages.push({id:3,conversation_id:C,sender_id:'peer',created_at:'2026-02-01',body:'Test',deleted_at:null});const response=await h.GET(req(null,'?summary=1'));assert.equal(response.status,200);const data=await response.json();assert.equal(data.conversations.length,1);assert.equal(data.conversations[0].id,C);assert.equal(data.conversations[0].unread,1);assert.equal(h.countReads(),1);});
+test('send acknowledges saved message even when conversation ordering update throws',async()=>{const h=harness();const response=await h.POST(req({action:'send',conversationId:C,body:'Immediate success'}));assert.equal(response.status,200);const data=await response.json();assert.equal(data.message.body,'Immediate success');assert.equal(data.message.sender_id,'me');});

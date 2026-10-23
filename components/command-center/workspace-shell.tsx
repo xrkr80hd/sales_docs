@@ -11,6 +11,7 @@ import { useWorkspaceIdentity } from "./workspace-context";
 import { ROLE_LABELS } from "@/lib/workspace-roles";
 import { OrganizationBadge } from "./organization-badge";
 import { ConsultantLinksNav } from "@/components/consultant-links/links-nav";
+import { useMessengerUnread } from "@/components/messenger/unread-context";
 import { requestJson } from "@/lib/request-json";
 import styles from "./workspace.module.css";
 
@@ -19,14 +20,20 @@ function subscribeMobile(callback:()=>void){const media=window.matchMedia("(max-
 function mobileSnapshot(){return window.matchMedia("(max-width: 680px)").matches;}
 function serverMobileSnapshot(){return false;}
 
+function WorkspaceClock() {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => { setNow(new Date()); const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, []);
+  return <div className={styles.clock}><small>{now?.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "America/Chicago" }) || ""}</small><strong>{now?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" }) || ""}</strong></div>;
+}
+
 export function WorkspaceShell({ children, onSettings, onDocuments }: { children: ReactNode; onSettings: () => void; onDocuments: () => void }) {
   const pathname = usePathname();
+  const {total:messageUnread}=useMessengerUnread();
   const mobile = useSyncExternalStore(subscribeMobile,mobileSnapshot,serverMobileSnapshot);
   const identity = useWorkspaceIdentity();
   const session = useSession();
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [districtUnread, setDistrictUnread] = useState(0);
-  const [now, setNow] = useState<Date | null>(null);
   const manager = identity?.workspaceRole === "bdm" || identity?.role === "sales_manager" || identity?.role === "admin" || identity?.email.toLowerCase() === "xrkr80hd@gmail.com";
   const admin = identity?.role === "admin" || identity?.email.toLowerCase() === "xrkr80hd@gmail.com";
   const display = pathname === "/office-display";
@@ -40,14 +47,13 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
         if (active) setDistrictUnread(response.notifications?.length || 0);
       } catch { /* The role view provides detailed errors. */ }
     }
-    const refresh = () => { void loadNotifications(); };
+    const refresh = () => { if (document.visibilityState === "visible") void loadNotifications(); };
     refresh();
-    const timer = window.setInterval(refresh, 30000);
+    const timer = window.setInterval(refresh, 60000);
     window.addEventListener("manager-board-updated", refresh);
     return () => { active = false; window.clearInterval(timer); window.removeEventListener("manager-board-updated", refresh); };
   }, [admin, identity?.workspaceRole, session.accessToken]);
 
-  useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, []);
   const links = manager ? [
     { label: "Home", href: "/dashboard", icon: Home },
     { label: "Manager Board", href: "/manager-board", icon: Table2 },
@@ -67,9 +73,10 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
         <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} className={styles.dealerLogo} priority />
       </div>
       {display ? <div className={styles.displayActions}><div className={styles.displayLabel}><Monitor /><div>Office Display Board<small>Read only · Live updates</small></div></div><Link href="/manager-board" className={styles.exitDisplay} aria-label="Close Office Display and return to Manager Board"><X size={22}/><span>Close</span></Link></div> : <>
+        <Link href="/messenger" className={styles.messageIndicator} aria-label={messageUnread ? `${messageUnread} unread messages. Open Messenger` : "Open Messenger. No unread messages"}><MessageCircle aria-hidden="true"/>{messageUnread>0&&<span aria-hidden="true">{messageUnread>99?"99+":messageUnread}</span>}</Link>
         <div className={styles.identity}>
           <details><summary><span className={styles.profilePhoto}><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span>{identity?.dealership&&<OrganizationBadge name={identity.dealership} iconUrl={identity.organizationIconUrl} hidden={identity.organizationHideIcon}/>}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div><ChevronDown size={18} /></summary><div className={styles.accountMenu}><button onClick={onSettings}>Consultant Setup</button><button onClick={session.signOut}>Sign Out</button></div></details>
-          <div className={styles.clock}><small>{now?.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "America/Chicago" }) || ""}</small><strong>{now?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" }) || ""}</strong></div>
+          <WorkspaceClock />
         </div>
         <button className={styles.menuButton} aria-label="Open navigation" aria-expanded={navigationOpen} onClick={() => setNavigationOpen(true)}><Menu /></button>
       </>}

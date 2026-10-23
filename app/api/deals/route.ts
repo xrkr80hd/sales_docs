@@ -1,3 +1,4 @@
+import { normalizeWorkflowData, stripSsnFields } from "@/lib/walker-workflow";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
 /**
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  return Response.json({ deals });
+  return Response.json({ deals: (deals ?? []).map(deal => ({ ...deal, signatures: stripSsnFields(deal.signatures), workflow_data: normalizeWorkflowData(deal.workflow_data) })) }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 export async function POST(request: Request) {
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
     signatures?: Record<string, string>;
   };
 
-  if (!workflowData || typeof workflowData !== "object") {
+  if (!workflowData || typeof workflowData !== "object" || Array.isArray(workflowData)) {
     return Response.json({ error: "workflowData is required." }, { status: 400 });
   }
 
@@ -57,8 +58,8 @@ export async function POST(request: Request) {
     const { data: deal, error } = await supabase
       .from("deals")
       .update({
-        workflow_data: workflowData,
-        signatures: signatures ?? {},
+        workflow_data: normalizeWorkflowData(workflowData),
+        signatures: stripSsnFields(signatures ?? {}),
       })
       .eq("id", id)
       .eq("user_id", user.id)
@@ -74,8 +75,8 @@ export async function POST(request: Request) {
     .from("deals")
     .insert({
       user_id: user.id,
-      workflow_data: workflowData,
-      signatures: signatures ?? {},
+      workflow_data: normalizeWorkflowData(workflowData),
+      signatures: stripSsnFields(signatures ?? {}),
     })
     .select("id, updated_at")
     .single();

@@ -1,3 +1,4 @@
+import { normalizeWorkflowData } from "@/lib/walker-workflow";
 import { dealOwnerScope } from "@/lib/deal-access";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
@@ -44,5 +45,5 @@ export async function GET(request: Request) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  return Response.json({ deals: deals ?? [] });
+  return Response.json({ deals: (deals ?? []).map(deal => ({ ...deal, workflow_data: normalizeWorkflowData(deal.workflow_data) })) }, { headers: { "Cache-Control": "private, no-store" } });
 }

@@ -6,7 +6,7 @@ authUsers.admin.email='xrkr80hd@gmail.com';
 const actions=[];
 class Query {
  constructor(table){this.table=table;this.filters=[];this.operation='read';}
- select(){return this;}
+ select(columns){this.columns=columns;return this;}
  eq(key,value){this.filters.push(row=>key==='profiles.role'?(row.profiles||{}).role===value:row[key]===value);return this;}
  in(key,values){this.filters.push(row=>values.includes(key==='profiles.role'?(row.profiles||{}).role:row[key]));return this;}
  order(){return this;}
@@ -15,7 +15,7 @@ class Query {
  update(value){this.operation='update';this.value=value;return this;}
  insert(value){this.operation='insert';this.value=value;return this;}
  upsert(value){this.operation='upsert';this.value=value;return this;}
- attach(row){return {...row,profiles:state.profiles.find(profile=>profile.id===(row.user_id||row.id))};}
+ attach(row){const aliases={};for(const field of (this.columns||'').split(',')){const match=field.trim().match(/^(\w+):(\w+)((?:->.*)?)$/);if(!match)continue;const parts=[match[2],...match[3].split(/->>?/).filter(Boolean).map(p=>p.replace(/^"|"$/g,''))];aliases[match[1]]=parts.reduce((value,key)=>value?.[key],row);}return {...row,...aliases,profiles:state.profiles.find(profile=>profile.id===(row.user_id||row.id))};}
  async run(single=false){
   const rows=state[this.table]||(state[this.table]=[]);
   let selected=rows.filter(row=>this.filters.every(filter=>filter(this.attach(row))));

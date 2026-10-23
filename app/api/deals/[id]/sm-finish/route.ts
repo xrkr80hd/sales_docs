@@ -38,7 +38,7 @@ export async function POST(
   if (scope && !scope.length) return Response.json({ error: "Organization access required." }, { status: 403 });
   let query = supabase
     .from("deals")
-    .select("id, user_id, sm_claimed_by, sm_finished_at, deal_number, workflow_data")
+    .select("id, user_id, sm_claimed_by, sm_finished_at, deal_number")
     .eq("id", id)
 ;
   if (scope) query = query.in("user_id", scope);
@@ -59,15 +59,13 @@ export async function POST(
   if (updateErr) return Response.json({ error: updateErr.message }, { status: 500 });
 
   // Build notification
-  const wd = deal.workflow_data as Record<string, string> | null;
-  const customer = wd?.customerName || "Unknown customer";
-  const vehicle = [wd?.vehicleYear, wd?.vehicleMake, wd?.vehicleModel].filter(Boolean).join(" ") || "No vehicle";
+
   const smName = profile.display_name || user.email?.split("@")[0] || "Sales Manager";
 
   await supabase.from("notifications").insert({
     recipient_role: "fni",
     deal_id: id,
-    message: `${customer} — ${vehicle} · Deal #${deal.deal_number} · Approved by ${smName}`,
+    message: `Paperwork approved for F&I · Deal #${deal.deal_number} · Approved by ${smName}`,
   });
 
   return Response.json({ finished: true, sm_finished_at: now, fni_sent_at: now });

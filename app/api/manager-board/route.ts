@@ -55,9 +55,9 @@ export async function GET(request:Request){
   const board=latest&&"saved"in latest?latest.saved as MonthBoard:annualDefault(records,organizationId,month);
   const roster=(members||[]).filter(member=>(member.profiles as unknown as {role:string})?.role==="user").map(member=>({id:member.user_id,name:(member.profiles as unknown as {display_name:string})?.display_name||"Unnamed consultant"}));
   const ids=roster.map(person=>person.id);
-  const {data:settings,error:settingsError}=ids.length?await db.from("user_settings").select("user_id,consultant_info").in("user_id",ids):{data:[],error:null};
+  const {data:settings,error:settingsError}=ids.length?await db.from("user_settings").select("user_id,projections:consultant_info->monthlyProjections").in("user_id",ids):{data:[],error:null};
   if(settingsError)throw settingsError;
-  const proposals=Object.fromEntries((settings||[]).map(row=>[row.user_id,record(record(row.consultant_info).monthlyProjections)[`${organizationId}:${month}`]]));
+  const proposals=Object.fromEntries((settings||[]).map(row=>[row.user_id,record(row.projections)[`${organizationId}:${month}`]]));
   const grossYtd=Object.entries(records[0]?.boards||{}).filter(([key])=>key.startsWith(`${organizationId}:${month.slice(0,4)}-`)&&key.slice(-7)<=month).reduce((total,[,value])=>{const saved=value as MonthBoard;return total+Object.values(saved.rows||{}).reduce((sum,row)=>sum+(Number(row.newGrossActual)||0)+(Number(row.usedGrossActual)||0),0);},0);
   const publicBoard={newGoal:board.newGoal,usedGoal:board.usedGoal,rows:board.rows,schedule:board.schedule,weeklyUpdate:board.weeklyUpdate,publishedAt:board.publishedAt};
   const branding=(await organizationBranding(db))[organizationId];

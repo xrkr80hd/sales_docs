@@ -94,9 +94,10 @@ export function AllPrintScreen() {
           <button
             type="button"
             onClick={handleAction}
+            disabled={!settingsReady}
             className="inline-flex min-h-10 items-center justify-center border border-black bg-black px-4 text-sm font-bold text-white transition hover:bg-neutral-800"
           >
-            {"Print All Forms"}
+            {settingsReady ? "Print All Forms" : "Preparing forms…"}
           </button>
         </div>
 

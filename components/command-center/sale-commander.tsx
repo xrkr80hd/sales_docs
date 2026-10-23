@@ -4,14 +4,15 @@ import {notifySave} from "@/components/ui/save-toast-host";
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {RoutinePlanner} from "@/components/command-center/routine-planner";
 import {useSession} from "@/components/auth/supabase-session-gate";
+import {normalizeEarlyDays,type EarlyDays} from "@/lib/routine-schedule";
 import {requestJson} from "@/lib/request-json";
 
 type Rates={contact:number;set:number;show:number;sold:number;buffer:number;workdays:number};
 type Counts={calls:number;talks:number;appts:number;shows:number;sold:number};
 type RoutineItem={id:string;time:string;name:string;done?:boolean};
 type PlanDay={kind:"short"|"long"|"friday"|"off";items:RoutineItem[]};
-type State={goal:number;rates:Rates;days:Record<string,Counts>;wins:string[];weekendAnchor:string;schedule:Record<string,PlanDay>};
-const defaults:State={goal:5,rates:{contact:22,set:40,show:59,sold:40,buffer:2,workdays:22},days:{},wins:[],weekendAnchor:"2026-08-08",schedule:{}};
+type State={goal:number;rates:Rates;days:Record<string,Counts>;wins:string[];weekendAnchor:string;earlyDays:EarlyDays;schedule:Record<string,PlanDay>};
+const defaults:State={goal:5,rates:{contact:22,set:40,show:59,sold:40,buffer:2,workdays:22},days:{},wins:[],weekendAnchor:"2026-08-08",earlyDays:"mon-wed",schedule:{}};
 const blank=():Counts=>({calls:0,talks:0,appts:0,shows:0,sold:0});
 const round=(n:number)=>Math.ceil(n-1e-9);
 const number=(value:unknown,fallback:number,min:number,max:number)=>typeof value==="number"&&Number.isFinite(value)?Math.min(max,Math.max(min,value)):fallback;
@@ -20,7 +21,7 @@ function normalize(value:unknown):State{
  const r=v.rates||defaults.rates;
  const days:Record<string,Counts>={};
  if(v.days&&typeof v.days==="object")for(const [date,counts] of Object.entries(v.days)){if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!counts||typeof counts!=="object")continue;days[date]=Object.fromEntries((Object.keys(blank()) as (keyof Counts)[]).map(k=>[k,number(counts[k],0,0,100000)])) as unknown as Counts;}
- return {goal:number(v.goal,5,1,250),rates:{contact:number(r.contact,22,1,100),set:number(r.set,40,1,100),show:number(r.show,59,1,100),sold:number(r.sold,40,1,100),buffer:number(r.buffer,2,0,50),workdays:number(r.workdays,22,1,31)},days,wins:Array.isArray(v.wins)?v.wins.filter(x=>typeof x==="string").slice(-100):[],weekendAnchor:typeof v.weekendAnchor==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(v.weekendAnchor)?v.weekendAnchor:"2026-08-08",schedule:v.schedule&&typeof v.schedule==="object"?v.schedule:{}};
+ return {goal:number(v.goal,5,1,250),rates:{contact:number(r.contact,22,1,100),set:number(r.set,40,1,100),show:number(r.show,59,1,100),sold:number(r.sold,40,1,100),buffer:number(r.buffer,2,0,50),workdays:number(r.workdays,22,1,31)},days,wins:Array.isArray(v.wins)?v.wins.filter(x=>typeof x==="string").slice(-100):[],weekendAnchor:typeof v.weekendAnchor==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(v.weekendAnchor)?v.weekendAnchor:"2026-08-08",earlyDays:normalizeEarlyDays(v.earlyDays),schedule:v.schedule&&typeof v.schedule==="object"?v.schedule:{}};
 }
 function projection(s:State){
  const {contact,set,show,sold,buffer,workdays}=s.rates;
@@ -68,7 +69,7 @@ export function SaleCommander(){
   <section style={{...style.panel,marginBottom:12}}><label htmlFor="sales-goal">Monthly sales objective</label><NumberInput id="sales-goal" aria-label="Monthly sales goal" type="number" min={1} max={250} style={{...style.input,fontSize:23,maxWidth:160,display:"block",margin:"9px 0"}} value={state.goal} disabled={busy||assignedGoal!==null} onChange={e=>{const next={...latest.current,goal:number(Number(e.target.value),5,1,250)};latest.current=next;setState(next);}} onBlur={()=>void persist(latest.current)} /><p style={{fontSize:12,color:"#aebdcd"}}>{assignedGoal!==null?"Your manager sets this monthly objective. Sale Commander automatically calculates your required activity.":"Change the target and leave the field to save. All projections update immediately."}</p></section>
   <section style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:9,marginBottom:15}}>{tile("calls",proj.daily.calls)}{tile("talks",proj.daily.talks)}{tile("appts",proj.daily.appts)}{tile("shows",round(proj.adjusted.shows/state.rates.workdays))}{tile("sold",round(state.goal/state.rates.workdays))}</section>
   <section style={style.panel}><h2>Monthly activity required</h2><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(125px,1fr))",gap:10}}>{keys.map(k=><div key={k}><small>{names[k]}</small><h2>{proj.adjusted[k]}</h2></div>)}</div><p style={{color:"#aebdcd"}}>Based on {state.rates.workdays} selling days and a {state.rates.buffer}% activity cushion.</p></section>
-  <RoutinePlanner schedule={state.schedule} weekendAnchor={state.weekendAnchor} onWeekendAnchor={weekendAnchor=>change(current=>({...current,weekendAnchor}))} disabled={busy} onSave={schedule=>change(current=>({...current,schedule}))}/>
+  <RoutinePlanner earlyDays={state.earlyDays} onEarlyDays={earlyDays=>change(current=>({...current,earlyDays}))} schedule={state.schedule} weekendAnchor={state.weekendAnchor} onWeekendAnchor={weekendAnchor=>change(current=>({...current,weekendAnchor}))} disabled={busy} onSave={schedule=>change(current=>({...current,schedule}))}/>
   <section style={{...style.panel,marginTop:12}}><h2>Monthly scoreboard</h2><label>Month <input type="month" style={{...style.input,maxWidth:210,marginLeft:8}} value={month} onChange={e=>setMonth(e.target.value)} /></label><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8,marginTop:15}}>{keys.map(k=><div key={k}><small>{names[k]}</small><h2>{monthTotals[k]}</h2></div>)}</div></section>
   <section style={{...style.panel,marginTop:12}}><h2>Win log</h2><form onSubmit={e=>{e.preventDefault();if(!win.trim())return;change(s=>({...s,wins:[...s.wins,`${day}: ${win.trim()}`].slice(-100)}));setWin("");}} style={{display:"flex",gap:8}}><input aria-label="Record a win" style={style.input} value={win} onChange={e=>setWin(e.target.value)} placeholder="Appointment, customer follow-up, delivery…" /><button disabled={busy} style={style.button}>Add</button></form>{state.wins.slice().reverse().map((w,i)=><p key={i} style={{borderBottom:"1px solid #344152",paddingBottom:8}}>{w}</p>)}</section>
   </>}

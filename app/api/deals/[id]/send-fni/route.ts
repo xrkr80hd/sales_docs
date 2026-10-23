@@ -25,7 +25,7 @@ export async function POST(
   // Fetch the deal (owner only) to get display info for notification
   const { data: deal, error: fetchErr } = await supabase
     .from("deals")
-    .select("id, user_id, workflow_data, fni_ready")
+    .select("id, user_id, fni_ready")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
@@ -46,9 +46,7 @@ export async function POST(
   if (updateErr) return Response.json({ error: updateErr.message }, { status: 500 });
 
   // Build notification message
-  const wd = deal.workflow_data as Record<string, string> | null;
-  const customer = wd?.customerName || "Unknown customer";
-  const vehicle = [wd?.vehicleYear, wd?.vehicleMake, wd?.vehicleModel].filter(Boolean).join(" ") || "No vehicle";
+
 
   // Get sender display name
   const { data: profile } = await supabase
@@ -62,7 +60,7 @@ export async function POST(
   await supabase.from("notifications").insert({
     recipient_role: "fni",
     deal_id: id,
-    message: `${customer} — ${vehicle} · Sent by ${senderName}`,
+    message: `Paperwork ready for review · Sent by ${senderName}`,
   });
 
   return Response.json({ sent: true, fni_sent_at: now });

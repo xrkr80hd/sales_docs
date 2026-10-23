@@ -139,10 +139,7 @@ export function PayoffFormSheet({ workflow }: Props) {
           <span className={css.fieldLabel}>per Diem</span>
           <span className={css.fieldLine} contentEditable suppressContentEditableWarning onKeyDown={blockEnter}>{workflow.perDiem}</span>
         </div>
-        <div className={css.fieldRow}>
-          <span className={css.fieldLabel}>Social Security Number:</span>
-          <span className={css.fieldLine} contentEditable suppressContentEditableWarning onKeyDown={blockEnter}>{workflow.socialSecurityNumber}</span>
-        </div>
+        <div aria-hidden="true" />
       </div>
 
       <div className={css.spacerSm} />

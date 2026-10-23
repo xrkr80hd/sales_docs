@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
-import { Barlow, IBM_Plex_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
-
-const barlow = Barlow({
-  variable: "--font-barlow",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-});
-
-const plexMono = IBM_Plex_Mono({
-  variable: "--font-plex-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
+const barlow = localFont({variable:"--font-barlow",display:"swap",src:[
+  {path:"../public/fonts/barlow-400.woff2",weight:"400",style:"normal"},
+  {path:"../public/fonts/barlow-500.woff2",weight:"500",style:"normal"},
+  {path:"../public/fonts/barlow-600.woff2",weight:"600",style:"normal"},
+  {path:"../public/fonts/barlow-700.woff2",weight:"700",style:"normal"},
+  {path:"../public/fonts/barlow-800.woff2",weight:"800",style:"normal"},
+]});
+const plexMono = localFont({variable:"--font-plex-mono",display:"swap",src:[
+  {path:"../public/fonts/ibm-plex-mono-400.woff2",weight:"400",style:"normal"},
+  {path:"../public/fonts/ibm-plex-mono-500.woff2",weight:"500",style:"normal"},
+  {path:"../public/fonts/ibm-plex-mono-600.woff2",weight:"600",style:"normal"},
+  {path:"../public/fonts/ibm-plex-mono-700.woff2",weight:"700",style:"normal"},
+]});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://nextdocs.xrkr80hd.studio"),
