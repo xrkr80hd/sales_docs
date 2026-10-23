@@ -6,6 +6,7 @@ import { OrganizationBadge } from "@/components/command-center/organization-badg
 import { ORGANIZATION_THEMES } from "@/lib/organization-theme";
 import { Building2, Plus, Search, Users, ChevronDown, Eye, EyeOff, Copy } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+import { requestJson, withDeadline } from "@/lib/request-json";
 import { ROLE_LABELS, WORKSPACE_ROLES, type WorkspaceRole } from "@/lib/workspace-roles";
 import styles from "./team-management.module.css";
 
@@ -15,13 +16,11 @@ type Organization = { id: string; name: string; iconUrl?:string; theme?:string; 
 type User = { id: string; display_name: string; email: string; role: string; workspace_role?: WorkspaceRole; card_enabled?: boolean; card_slug?: string; email_verified?: boolean; must_change_password?: boolean };
 type Membership = { user_id: string; organization_id: string; chat_enabled: boolean; can_dm: boolean; can_org_chat: boolean };
 type Invite = { id: string; email: string; role: string; accepted_at?: string };
+type TeamResponse = { users?: User[]; organizations?: Organization[]; memberships?: Membership[]; invites?: Invite[]; warnings?: string[]; organization: Organization };
 async function api(path: string, init?: RequestInit) {
   let token = "";
-  try { token = (await getSupabaseBrowserClient().auth.getSession()).data.session?.access_token || ""; } catch { /* The server owns authorization. */ }
-  const response = await fetch(path, { ...init, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers } });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || "Request failed.");
-  return result;
+  token = (await withDeadline(getSupabaseBrowserClient().auth.getSession(), "Your session took too long to load. Please retry.")).data.session?.access_token || "";
+  return requestJson<TeamResponse>(path, { ...init, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers } });
 }
 async function saveBranding(organizationId:string,theme:string,file?:File|null,removeIcon=false,address?:Address){
  const form=new FormData();form.set("organizationId",organizationId);form.set("theme",theme);if(file)form.set("file",file);if(removeIcon)form.set("removeIcon","1");if(address)for(const [key,value] of Object.entries(address))form.set(key,value);
@@ -43,6 +42,7 @@ export function TeamManagement() {
   const [status,setStatus] = useState("");
   const [busy,setBusy] = useState(false);
   const [loading,setLoading] = useState(true);
+  const [directoryReady,setDirectoryReady] = useState(false);
   const [newOrgFile,setNewOrgFile]=useState<File|null>(null);
   const [newOrgTheme,setNewOrgTheme]=useState("");
   const [newOrg,setNewOrg] = useState("");
@@ -50,9 +50,11 @@ export function TeamManagement() {
   const [showNewPassword,setShowNewPassword] = useState(false);
   const [newUser,setNewUser] = useState({ name: "", email: "", role: "user" as WorkspaceRole, organizationId: "", cardEnabled: true, chatEnabled: true, canDm: true, canOrgChat: true, createMode: "direct", password: "", forceChange: true });
   const load = useCallback(async () => {
+    setLoading(true);
     const [team,directory,invitations] = await Promise.allSettled([api("/api/admin/users"),api("/api/workspace/directory"),api("/api/admin/invites")]);
     const errors:string[]=[];
-    if(team.status==="fulfilled")setUsers(team.value.users||[]);else errors.push("Registered user accounts: "+String(team.reason instanceof Error?team.reason.message:team.reason));
+    if(team.status==="fulfilled"){setUsers(team.value.users||[]);errors.push(...(team.value.warnings||[]));}else errors.push("Registered user accounts: "+String(team.reason instanceof Error?team.reason.message:team.reason));
+    setDirectoryReady(directory.status==="fulfilled");
     if(directory.status==="fulfilled"){setOrganizations(directory.value.organizations||[]);setMemberships(directory.value.memberships||[]);}else errors.push("Dealership directory: "+String(directory.reason instanceof Error?directory.reason.message:directory.reason));
     if(invitations.status==="fulfilled")setInvites(invitations.value.invites||[]);else errors.push("Invitations: "+String(invitations.reason instanceof Error?invitations.reason.message:invitations.reason));
     setError(errors.join(" | "));setLoading(false);
@@ -66,9 +68,10 @@ export function TeamManagement() {
     finally { setBusy(false); }
   }
   const shown = users.filter(user => `${user.display_name} ${user.email}`.toLowerCase().includes(search.toLowerCase()) && (!organization || memberships.some(member => member.user_id === user.id && member.organization_id === organization)));
+  const unassigned = shown.filter(user => !memberships.some(member => member.user_id === user.id && organizations.some(org => org.id === member.organization_id)));
   return <div className={styles.page}>
     <header className={styles.heading}><p>MASTER ADMIN</p><h1>People & Organizations</h1><span>Manage your team, access, and dealership assignments.</span></header>
-    {error && <p className={styles.error} role="alert">{error}</p>}{status && <p className={styles.status} role="status">{status}</p>}
+    {error && <div className={styles.error} role="alert"><p>{error}</p><button type="button" disabled={loading || busy} onClick={()=>void load().catch(()=>{})}>{loading ? "Reloading…" : "Retry loading team & organizations"}</button></div>}{status && <p className={styles.status} role="status">{status}</p>}
     <div className={styles.topGrid}>
       <details className={styles.panel}><summary><Users size={20} />Add a user<Plus size={18} /></summary><form onSubmit={(event: FormEvent) => { event.preventDefault(); void perform(async () => { await api("/api/admin/workspace", { method: "POST", body: JSON.stringify({ action: "create-user", ...newUser }) }); setNewUser(current => ({ ...current, name: "", email: "", password: "" })); }, "Account created. Invitation sent only when email invitation was selected."); }}>
         <label>Name<input required value={newUser.name} onChange={event => setNewUser(current => ({ ...current,name:event.target.value }))} /></label>
@@ -76,9 +79,9 @@ export function TeamManagement() {
         <label>Account setup<select value={newUser.createMode} onChange={event=>setNewUser(current=>({...current,createMode:event.target.value,password:""}))}><option value="direct">Create & verify in app</option><option value="invite">Send email invitation</option></select></label>
         {newUser.createMode === "direct" && <><label>Temporary password<PasswordControl value={newUser.password} onChange={value=>setNewUser(current=>({...current,password:value}))} visible={showNewPassword} onToggle={()=>setShowNewPassword(v=>!v)}/></label><p>Minimum 8 characters, one uppercase letter, and one special character. The user can sign in immediately.</p></>}
         <label>Role<select value={newUser.role} onChange={event => setNewUser(current => ({ ...current,role:event.target.value as WorkspaceRole }))}>{WORKSPACE_ROLES.map(role => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label>
-        <label>Organization<select required value={newUser.organizationId} onChange={event => setNewUser(current => ({ ...current,organizationId:event.target.value }))}><option value="">Choose a dealership</option>{organizations.map(org => <option key={org.id} value={org.id}>{org.name}</option>)}</select></label>
+        <label>Organization<select required disabled={loading || !directoryReady} value={newUser.organizationId} onChange={event => setNewUser(current => ({ ...current,organizationId:event.target.value }))}><option value="">{loading ? "Loading dealerships…" : directoryReady ? "Choose a dealership" : "Dealerships unavailable — retry above"}</option>{organizations.map(org => <option key={org.id} value={org.id}>{org.name}</option>)}</select></label>
         {([['cardEnabled','Consultant card'],['chatEnabled','Messenger'],['canDm','Direct messages'],['canOrgChat','Team chat']] as const).map(([field,label]) => <label className={styles.check} key={field}><input type="checkbox" checked={newUser[field]} onChange={event => setNewUser(current => ({ ...current,[field]:event.target.checked }))} />{label}</label>)}
-        <p>Direct creation verifies the email administratively without sending an invitation. Use this for users whose identity you have confirmed.</p><button type="submit" disabled={busy} className={styles.primary}>{newUser.createMode === "direct" ? "Create verified user" : "Add user & send invitation"}</button>
+        <p>Direct creation verifies the email administratively without sending an invitation. Use this for users whose identity you have confirmed.</p><button type="submit" disabled={busy || loading || !directoryReady || !newUser.organizationId} className={styles.primary}>{newUser.createMode === "direct" ? "Create verified user" : "Add user & send invitation"}</button>
       </form></details>
       <details className={styles.panel}><summary><Building2 size={20} />Add an organization<Plus size={18} /></summary><form onSubmit={event => { event.preventDefault(); void perform(async () => { const result=await api("/api/admin/workspace", { method: "POST",body:JSON.stringify({action:"create-organization",name:newOrg}) }); setNewOrg("");try {await saveBranding(result.organization.id,newOrgTheme,newOrgFile,false,newOrgAddress);setNewOrgFile(null);setNewOrgAddress(emptyAddress());}catch(failure){throw new Error(`Organization created; branding needs attention. Use Organization branding below. ${failure instanceof Error?failure.message:""}`);} }, "Organization created."); }}><label>Organization name<input required value={newOrg} onChange={event => setNewOrg(event.target.value)} /></label><AddressFields value={newOrgAddress} onChange={setNewOrgAddress}/><label>Color scheme<select value={newOrgTheme} onChange={event=>setNewOrgTheme(event.target.value)}><ThemeChoices/></select></label><label>Organization icon<input aria-label="New organization icon" type="file" accept="image/png,image/webp" onChange={event=>setNewOrgFile(event.target.files?.[0]||null)}/></label><p>Transparent PNG or WebP, up to 3 MB. Recommended: 512 × 512. Displays as a 24 px badge.</p><button type="submit" className={styles.primary} disabled={busy}>Create organization</button></form></details>
     </div>
@@ -112,6 +115,7 @@ export function TeamManagement() {
 
       {group.length===0&&<p className={styles.empty}>No matching personnel.</p>}</div></details>;})}
       </div>}
+      {unassigned.length > 0 && <section aria-label="Accounts awaiting organization assignment"><h3>{directoryReady ? "Unassigned accounts" : "Accounts — organization assignments unavailable"}</h3>{unassigned.map(user => <Member key={user.id} user={user} organizations={organizations} busy={busy || loading || !directoryReady} onSave={(role,cardEnabled,member,displayName)=>perform(async()=>{await api(`/api/admin/users/${user.id}`,{method:"PATCH",body:JSON.stringify({...(user.email.toLowerCase()==="xrkr80hd@gmail.com" || role===(user.workspace_role||user.role)?{}:{role}),card_enabled:cardEnabled,display_name:displayName})});await api("/api/admin/messenger",{method:"POST",body:JSON.stringify({userId:user.id,organizationId:member.organization_id,chatEnabled:member.chat_enabled,canDm:member.can_dm,canOrgChat:member.can_org_chat})});},"Role, permissions, and organization saved.")} onRemove={()=>{if(window.confirm(`Remove ${user.email}? This deletes their account.`))void perform(()=>api(`/api/admin/users/${user.id}`,{method:"DELETE"}),"Account removed.");}} />)}</section>}
       {!loading && shown.length === 0 && <p className={styles.empty}>No matching users.</p>}
     </section>
     <details className={styles.panel}><summary>Invitations<ChevronDown size={18} /></summary><div className={styles.invites}>{invites.map(invite => <div key={invite.id}><span>{invite.email}</span><small>{invite.accepted_at ? "Accepted" : "Pending"}</small>{!invite.accepted_at && <button type="button" disabled={busy} onClick={() => { if (window.confirm(`Revoke ${invite.email}'s invitation?`)) void perform(() => api(`/api/admin/invites/${invite.id}`,{method:"DELETE"}),"Invitation revoked."); }}>Revoke</button>}</div>)}{invites.length === 0 && <p>No invitations.</p>}</div></details>
