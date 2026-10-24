@@ -1,5 +1,6 @@
 "use client";
 
+import {ConsultantTour} from "./consultant-tour";
 import {PageAccordions} from "@/components/ui/page-accordions";
 import {requestWorkspaceExit} from "@/lib/workspace-exit";
 import { SalesTargetReminder } from "./sales-target-reminder";
@@ -8,7 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap } from "lucide-react";
+import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap, CircleHelp } from "lucide-react";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { useWorkspaceIdentity } from "./workspace-context";
 import { ROLE_LABELS, validWorkspaceRole } from "@/lib/workspace-roles";
@@ -50,6 +51,8 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
   const session = useSession();
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
+  const [tourOpen,setTourOpen]=useState(false);
+  const [tourNavigationWasOpen,setTourNavigationWasOpen]=useState(false);
   const manager = identity?.workspaceRole === "bdm" || identity?.role === "sales_manager" || identity?.role === "admin" || identity?.email.toLowerCase() === "xrkr80hd@gmail.com";
   const admin = identity?.role === "admin" || identity?.email.toLowerCase() === "xrkr80hd@gmail.com";
   const floorManager = !admin && identity?.workspaceRole === "floor_manager";
@@ -102,24 +105,25 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
           <nav>
             {consultantView && <>
             <div role="group" aria-label="Sales Commander">
-              <Link prefetch={false} href="/dashboard" onClick={close} className={`${styles.navLink} ${pathname === "/dashboard" || pathname === "/role-views/user" ? styles.active : ""}`}><Home />Sales Commander</Link>
+              <Link prefetch={false} data-consultant-tour="commander" href="/dashboard" onClick={close} className={`${styles.navLink} ${pathname === "/dashboard" || pathname === "/role-views/user" ? styles.active : ""}`}><Home />Sales Commander</Link>
               <div className={styles.subnav}>
-                <Link prefetch={false} href="/consultant-setup" onClick={close} aria-current={pathname === "/consultant-setup" ? "page" : undefined}>Consultant Set Up</Link>
+                <Link prefetch={false} data-consultant-tour="setup" href="/consultant-setup" onClick={close} aria-current={pathname === "/consultant-setup" ? "page" : undefined}>Consultant Set Up</Link>
                 <ConsultantLinksNav onNavigate={close}/>
               </div>
             </div>
-            <Link prefetch={false} href="/deal-commander" onClick={close} className={`${styles.navLink} ${pathname === "/deal-commander" ? styles.active : ""}`}><FilePlus2 />Start a Deal</Link>
-            <Link prefetch={false} href="/deals" onClick={close} className={`${styles.navLink} ${pathname === "/deals" ? styles.active : ""}`}><Files />Resume Deal</Link>
+            <Link prefetch={false} data-consultant-tour="start-deal" href="/deal-commander" onClick={close} className={`${styles.navLink} ${pathname === "/deal-commander" ? styles.active : ""}`}><FilePlus2 />Start a Deal</Link>
+            <Link prefetch={false} data-consultant-tour="resume-deal" href="/deals" onClick={close} className={`${styles.navLink} ${pathname === "/deals" ? styles.active : ""}`}><Files />Resume Deal</Link>
             <CustomerCopyPanel/>
-            <details open={pathname === "/business-card" || pathname === "/vehicle-collage" || pathname === "/sale-commander/fun-facts"}><summary><Wrench />Consultant Tools</summary><div className={styles.subnav}>{[["Business Card", "/business-card"], ["Vehicle Collage", "/vehicle-collage"], ["Fun Facts · Sales Numbers", "/sale-commander/fun-facts"]].map(([label, href]) => <Link prefetch={false} key={href} href={href} onClick={close}>{label}</Link>)}</div></details>
+            <details open={pathname === "/business-card" || pathname === "/vehicle-collage" || pathname === "/sale-commander/fun-facts"}><summary data-consultant-tour="tools"><Wrench />Consultant Tools</summary><div className={styles.subnav}>{[["Business Card", "/business-card"], ["Vehicle Collage", "/vehicle-collage"], ["Fun Facts · Sales Numbers", "/sale-commander/fun-facts"]].map(([label, href]) => <Link prefetch={false} key={href} href={href} onClick={close}>{label}</Link>)}</div></details>
             <Link prefetch={false} href="/training" onClick={close} className={`${styles.navLink} ${pathname === "/training" ? styles.active : ""}`}><GraduationCap />Training</Link>
             </>}
             {floorManager && <Link prefetch={false} href="/role-views/floor_manager" onClick={close} className={`${styles.navLink} ${pathname === "/role-views/floor_manager" ? styles.active : ""}`}><Table2 />FM View</Link>}
             {managementView && <><Link prefetch={false} href={`/role-views/${activeView}`} onClick={close} className={styles.navLink}><Home />{validWorkspaceRole(activeView) ? ROLE_LABELS[activeView] : "Workspace"}</Link>{activeView !== "district_manager" && <details open={pathname.startsWith("/manager-board")}><summary><Table2 />Manager Board</summary><div className={styles.subnav}>{!readOnlyBoard&&<Link prefetch={false} href="/manager-board/setup" onClick={close}>Manager Board Set Up</Link>}<Link prefetch={false} href="/manager-board/display" onClick={close}>Performance Display</Link><Link prefetch={false} href="/manager-board/sale-commander" onClick={close}>Sales Commander Stats</Link>{!readOnlyBoard&&<Link prefetch={false} href="/manager-board/schedule" onClick={close}>Team Schedule</Link>}</div></details>}</>}
             {activeView === "fni" && <Link prefetch={false} href="/role-views/fni" onClick={close} className={styles.navLink}><Home />F&amp;I</Link>}
-            <Link prefetch={false} href="/messenger" onClick={close} className={`${styles.navLink} ${pathname === "/messenger" ? styles.active : ""}`}><MessageCircle />Messenger</Link>
+            <Link prefetch={false} data-consultant-tour="messenger" href="/messenger" onClick={close} className={`${styles.navLink} ${pathname === "/messenger" ? styles.active : ""}`}><MessageCircle />Messenger</Link>
             {!pathname.startsWith("/deal-sheet")&&<Link prefetch={false} href="/documents" onClick={close} className={`${styles.navLink} ${pathname === "/documents" ? styles.active : ""}`}><Files />Documents</Link>}
             {pathname.startsWith("/deal-sheet") && <button onClick={() => { close(); onDocuments(); }} className={styles.navButton}><FilePlus2 />Deal Documents</button>}
+            <>{consultantView&&<button type="button" className={styles.navButton} onClick={()=>{setTourNavigationWasOpen(navigationOpen);setNavigationOpen(true);setSidebarCollapsed(false);setTourOpen(true);}}><CircleHelp />Quick Tour</button>}</>
             <button onClick={() => { close(); session.signOut(); }} className={styles.navButton}><LogOut />Sign Out</button>
             {admin && activeView === "admin" && <details open><summary><Shield />Administration</summary><div className={styles.subnav}><Link prefetch={false} href="/admin" onClick={close}>People &amp; Organizations</Link><Link prefetch={false} href="/admin/messenger" onClick={close}>Messenger Permissions</Link></div></details>}
           </nav>
@@ -127,5 +131,6 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
       </>}
       <main className={`${styles.main} ${embeddedTool ? styles.browserMain : ""} ${pathname === "/messenger" ? styles.messengerMain : ""} ${pathname === "/manager-board/display" ? styles.performanceMain : ""} ${pathname.startsWith("/documents") || pathname.startsWith("/deal-sheet") ? styles.formMain : ""}`}><PageAccordions>{children}</PageAccordions></main>
     </div>
+    {tourOpen&&<ConsultantTour onClose={()=>{setTourOpen(false);setNavigationOpen(tourNavigationWasOpen);}}/>}
   </div>;
 }

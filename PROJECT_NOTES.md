@@ -10,3 +10,7 @@
 - An explicit instruction to document or update this protocol during TD authorizes only that documentation change; it does not resume implementation or publishing.
 
 Current status: TD ended with “rptpls and fin”; the user subsequently explicitly authorized implementation, tests, and push. See docs/review/NEXTDOX-test-dump-follow-up.md for reconciliation and verification.
+
+## Consultant Quick Tour
+
+An on-demand Quick Tour in the consultant sidebar highlights eight existing controls: Sales Commander, Consultant Set Up, Command Center, Start a Deal, Resume Deal, Customer Information, Consultant Tools, and Messenger. Next/Back, Skip, Done, and Escape are supported; reopening starts from the beginning. It does not navigate, submit forms, or write business data. Phone (390px) and laptop (1336px) browser fixtures verify all steps, visible highlights, viewport bounds, restart, and zero writes. TypeScript and targeted ESLint pass. TypeScript, targeted ESLint, and the production build passed. Trav explicitly authorized pushing this tour.
