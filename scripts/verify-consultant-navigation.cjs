@@ -27,6 +27,7 @@ const version = fs.readFileSync('lib/disclosure.ts', 'utf8').match(/DISCLOSURE_V
    else if(url.pathname==='/api/manager-board')body={stores:{},notifications:[],month:'2026-10'};
    await route.fulfill({contentType:'application/json',body:JSON.stringify(body)});
   });
+  await page.route('https://example.test/**', route => route.fulfill({contentType:'text/html',body:'<html><body style="margin:0"><h1>Synthetic business tool</h1></body></html>'}));
   const main=page.getByRole('main'), nav=page.getByRole('complementary',{name:'Application navigation'});
   async function openNav(){if(width<680)await page.getByRole('button',{name:'Open navigation',exact:true}).click();}
   await page.goto((process.env.NEXTDOX_TEST_URL || 'http://127.0.0.1:3100') + '/dashboard');
@@ -43,6 +44,17 @@ const version = fs.readFileSync('lib/disclosure.ts', 'utf8').match(/DISCLOSURE_V
   await group.getByText('Setup',{exact:true}).click();
   await group.getByText('Command Center',{exact:true}).click();
   await group.getByRole('link',{name:'Saved test tool',exact:true}).waitFor();
+  await group.getByRole('link',{name:'Saved test tool',exact:true}).click();
+  await page.frameLocator('iframe').getByRole('heading',{name:'Synthetic business tool'}).waitFor();
+  assert.equal(await main.getByRole('heading').count(),0);
+  assert.equal(await main.getByText('WALKER BROWSER',{exact:true}).count(),0);
+  const frame=await page.locator('iframe').boundingBox(), header=await page.locator('header').first().boundingBox();
+  assert(Math.abs(frame.y-(header.y+header.height))<=1, 'embedded site must start immediately below app header');
+  assert(Math.abs(frame.y+frame.height-900)<=1, 'embedded site must fill remaining screen height');
+  assert(Math.abs(frame.x+frame.width-width)<=1, 'embedded site must fill workspace width');
+  if(width>680){const before=frame.width;await page.getByRole('button',{name:'Collapse navigation',exact:true}).click();assert((await page.locator('iframe').boundingBox()).width>before);await page.getByRole('button',{name:'Expand navigation',exact:true}).click();}
+  assert.equal(await page.locator('iframe').count(),1);
+  await openNav();
   await nav.getByRole('link',{name:'Start a Deal',exact:true}).click();
   await main.getByRole('heading',{name:'Start a Deal',exact:true}).waitFor();
   assert(await main.getByRole('button',{name:'New Vehicle',exact:true}).isVisible());

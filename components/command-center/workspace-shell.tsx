@@ -50,6 +50,7 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
   const manager = identity?.workspaceRole === "bdm" || identity?.role === "sales_manager" || identity?.role === "admin" || identity?.email.toLowerCase() === "xrkr80hd@gmail.com";
   const admin = identity?.role === "admin" || identity?.email.toLowerCase() === "xrkr80hd@gmail.com";
   const display = pathname === "/office-display";
+  const embeddedTool = pathname.startsWith("/consultant-links/") && pathname !== "/consultant-links/settings";
   const viewKey = `nextdocs.workspace-view.v1:${identity?.id || ""}`;
   const storedView = useSyncExternalStore(subscribeView, () => readView(viewKey), () => "user");
   const routeRole = pathname.startsWith("/role-views/") ? pathname.split("/")[2] : null;
@@ -117,7 +118,7 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
           </nav>
         </aside>
       </>}
-      <main className={`${styles.main} ${pathname === "/messenger" ? styles.messengerMain : ""} ${pathname === "/manager-board/display" ? styles.performanceMain : ""} ${pathname.startsWith("/documents") || pathname.startsWith("/deal-sheet") ? styles.formMain : ""}`}>{children}</main>
+      <main className={`${styles.main} ${embeddedTool ? styles.browserMain : ""} ${pathname === "/messenger" ? styles.messengerMain : ""} ${pathname === "/manager-board/display" ? styles.performanceMain : ""} ${pathname.startsWith("/documents") || pathname.startsWith("/deal-sheet") ? styles.formMain : ""}`}>{children}</main>
     </div>
   </div>;
 }
