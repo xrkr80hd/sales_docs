@@ -3,6 +3,8 @@ import { clearCustomerCopy } from "@/lib/customer-copy";
 
 import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
 import { browserSessionExpired, recordBrowserActivity } from "@/lib/browser-activity";
+import { clearMessengerCache } from "@/lib/messenger-cache";
+import { clearLinksCache } from "@/lib/consultant-links-cache";
 import { clearResourceCache } from "@/lib/client-resource-cache";
 import { createSupabaseFetch } from "@/lib/supabase-fetch";
 
@@ -79,6 +81,8 @@ export function forgetBrowserSession() {
   clearCustomerCopy();
   persistentBrowserStorage.removeItem(AUTH_STORAGE_KEY);
   clearResourceCache();
+  clearLinksCache();
+  clearMessengerCache();
 }
 function expireStoredBrowserSession() {
   if(typeof window === "undefined")return;

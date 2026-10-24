@@ -2,30 +2,38 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, ChevronDown, ChevronRight, MessageCircle, Search, Send, ShieldCheck, Users, Plus, X, RefreshCw } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+import {useWorkspaceIdentity} from "@/components/command-center/workspace-context";
+import {readMessengerCache,cacheMessengerDirectory,cacheMessengerMessages,clearMessengerCache} from "@/lib/messenger-cache";
 import { OrganizationBadge } from "@/components/command-center/organization-badge";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { MessageBubble } from "./message-bubble";
 import { useMessengerUnread } from "./unread-context";
 import { messengerRequest } from "@/lib/messenger-request";
+import {cachedResource,loadResource,primeResource,invalidateResource} from "@/lib/client-resource-cache";
+import {moderateChatText} from "@/lib/chat-moderation";
 import styles from "./organization-messenger.module.css";
 
 type Organization = { id: string; name: string; iconUrl: string; hideIcon: boolean };
 type Person = { user_id: string; organization_id?: string; name: string; role: string; can_dm: boolean };
 type Conversation = { id: string; kind: string; channel: string | null; title: string; organization_id: string; unread: number; messenger_participants: { user_id: string; last_read_at: string }[] };
-type Message = { id: number; sender_id: string; senderName?: string; body: string; created_at: string; edited_at?: string };
-type Payload = { me: string; canCreateOrganization: boolean; canDm: boolean; organizations: Organization[]; people: Person[]; conversations: Conversation[] };
+export type Message = { id: number; sender_id: string; senderName?: string; body: string; created_at: string; edited_at?: string };
+export type Payload = { me: string; canCreateOrganization: boolean; canDm: boolean; organizations: Organization[]; people: Person[]; conversations: Conversation[] };
 function initials(name: string) { return name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase(); }
 function Badge({ count }: { count: number }) { return count > 0 ? <span className={styles.badge} aria-label={`${count} unread`}>{count > 99 ? "99+" : count}</span> : null; }
 export function OrganizationMessenger() {
   const { accessToken } = useSession();
+  const identity=useWorkspaceIdentity();
+  const cacheScope=identity?`${identity.id}:${identity.organizationId||""}:${identity.role}:${identity.workspaceRole||""}`:"";
+  const historyRevision=useRef(0);
   const {counts:unreadCounts,markRead}=useMessengerUnread();
   const unreadRef=useRef(unreadCounts);unreadRef.current=unreadCounts;
   const request = useCallback((path?: string, body?: object) => messengerRequest(accessToken, path, body), [accessToken]);
+  const tokenRef=useRef(accessToken);tokenRef.current=accessToken;
   const loadingDirectory = useRef(false);
   const lastRead = useRef(new Map<string, number>());
   const historyRequests = useRef(new Map<string, number>());
   const [historyError, setHistoryError] = useState("");
-  const [data, setData] = useState<Payload | null>(null), [error, setError] = useState("");
+  const [data, setData] = useState<Payload | null>(()=>accessToken?cachedResource<Payload>(accessToken,"messenger-directory")||readMessengerCache(cacheScope)?.directory||null:null), [error, setError] = useState("");
   const [orgId, setOrgId] = useState<string | null>(null), [activeId, setActiveId] = useState<string | null>(null);
   const [screen, setScreen] = useState("organizations"), [search, setSearch] = useState("");
   const [messages, setMessages] = useState<Message[]>([]), [hasMore, setHasMore] = useState(false), [loadingHistory, setLoadingHistory] = useState(false);
@@ -41,20 +49,24 @@ export function OrganizationMessenger() {
     if (loadingDirectory.current) return;
     loadingDirectory.current = true;
     try {
-      const payload: Payload = await request(); setData({ ...payload, conversations: payload.conversations.map(c => ({ ...c, unread: unreadRef.current[c.id] || 0 })) }); setError("");
+      const payload: Payload = await loadResource(accessToken||"","messenger-directory",()=>request(),300000); if(tokenRef.current!==accessToken)return;cacheMessengerDirectory(cacheScope,payload);setData({ ...payload, conversations: payload.conversations.map(c => ({ ...c, unread: unreadRef.current[c.id] || 0 })) }); setError("");
       if (activeRef.current && !payload.conversations.some(c => c.id === activeRef.current)) { setActiveId(null); setMessages([]); setScreen("organizations"); }
-    } catch (e) { report(e); } finally { loadingDirectory.current = false; }
-  }, [request]);
+    } catch (e) { if(e instanceof Error&&"status" in e&&[401,403].includes(Number(e.status))){clearMessengerCache(cacheScope);setData(null);setMessages([]);}report(e); } finally { loadingDirectory.current = false; }
+  }, [request,accessToken,cacheScope]);
   useEffect(()=>{setData(previous=>previous?{...previous,conversations:previous.conversations.map(c=>({...c,unread:unreadCounts[c.id]||0}))}:previous);},[unreadCounts]);
   const refreshHistory = useCallback(async (id: string, initial = false, force = false) => {
     if (!force && historyRequests.current.has(id)) return;
     const ticket = ++sequence.current;
+    const revision=historyRevision.current;
     historyRequests.current.set(id, ticket);
-    if (initial) setLoadingHistory(true);
+    if (initial) setLoadingHistory(!cachedResource<Message[]>(accessToken||"",`messenger-history:${id}`));
     try {
       const page: { messages: Message[]; hasMore: boolean } = await request(`/api/messenger?conversationId=${id}`);
-      if (activeRef.current !== id || ticket !== sequence.current) return;
-      setMessages(previous => initial ? page.messages : [...previous.filter(m => page.messages.length > 0 && m.id < page.messages[0].id), ...page.messages]);
+      if (activeRef.current !== id || ticket !== sequence.current || revision!==historyRevision.current) return;
+      setMessages(previous => {
+        const next=initial?page.messages:[...previous.filter(m=>page.messages.length>0&&m.id<page.messages[0].id),...page.messages];
+        primeResource(accessToken||"",`messenger-history:${id}`,next,300000);cacheMessengerMessages(cacheScope,id,next);return next;
+      });
       if (initial) setHasMore(page.hasMore);
       setHistoryError("");
       setLoadingHistory(false);
@@ -65,9 +77,9 @@ export function OrganizationMessenger() {
         markRead(id);
         if (activeRef.current === id) setData(previous => previous ? { ...previous, conversations: previous.conversations.map(c => c.id === id ? { ...c, unread: 0 } : c) } : previous);
       }
-    } catch (e) { if (activeRef.current === id && ticket === sequence.current) setHistoryError(e instanceof Error ? e.message : "Could not load messages."); }
+    } catch (e) { if(e instanceof Error&&"status" in e&&[401,403].includes(Number(e.status))){clearMessengerCache(cacheScope);invalidateResource(accessToken||"",`messenger-history:${id}`);setMessages([]);}if (activeRef.current === id && ticket === sequence.current) setHistoryError(e instanceof Error ? e.message : "Could not load messages."); }
     finally { if (historyRequests.current.get(id) === ticket) historyRequests.current.delete(id); if (activeRef.current === id && ticket === sequence.current) setLoadingHistory(false); }
-  }, [request,markRead]);
+  }, [request,markRead,accessToken,cacheScope]);
   useEffect(() => {
     void load();
     // Refresh directory on focus, rather than polling every organization/person.
@@ -80,15 +92,33 @@ export function OrganizationMessenger() {
     if (!activeId) { setConnection("Ready"); return; }
     // Subscribe only to the open room; don't reload every directory on any message.
     const client = getSupabaseBrowserClient();
+    let live=false;
     const refresh = () => { if (document.visibilityState === "visible") void refreshHistory(activeId); };
-    const channel = client.channel(`messenger-${activeId}`).on("postgres_changes", { event: "*", schema: "public", table: "messenger_messages", filter: `conversation_id=eq.${activeId}` }, refresh).subscribe(status => setConnection(status === "SUBSCRIBED" ? "Live" : "Automatic refresh"));
-    const timer = window.setInterval(refresh, 15000);
+    const channel = client.channel(`messenger-${activeId}`).on("postgres_changes", { event: "*", schema: "public", table: "messenger_messages", filter: `conversation_id=eq.${activeId}` }, payload=>{
+      if(activeRef.current!==activeId||tokenRef.current!==accessToken)return;
+      historyRevision.current++;
+      const row=payload.new as Record<string,unknown>,old=payload.old as Record<string,unknown>;
+      const id=Number(row.id||old.id);if(!Number.isSafeInteger(id))return;
+      if(payload.eventType==='DELETE'||row.deleted_at){
+        setMessages(previous=>{const next=previous.filter(message=>message.id!==id);primeResource(accessToken||"",`messenger-history:${activeId}`,next,300000);cacheMessengerMessages(cacheScope,activeId,next);return next;});return;
+      }
+      if(row.conversation_id!==activeId||typeof row.body!=='string'||typeof row.sender_id!=='string'||typeof row.created_at!=='string')return;
+      const message:Message={id,sender_id:row.sender_id,body:moderateChatText(row.body),created_at:row.created_at,edited_at:typeof row.edited_at==='string'?row.edited_at:undefined};
+      setMessages(previous=>{const existing=previous.find(m=>m.id===id);const next=[...previous.filter(m=>m.id!==id),{...message,senderName:existing?.senderName}].sort((a,b)=>a.id-b.id);primeResource(accessToken||"",`messenger-history:${activeId}`,next,300000);cacheMessengerMessages(cacheScope,activeId,next);return next;});
+      if(document.visibilityState==='visible'&&lastRead.current.get(activeId)!==id){
+        lastRead.current.set(activeId,id);
+        void request(undefined,{action:'mark-read',conversationId:activeId,messageId:id}).then(()=>markRead(activeId)).catch(()=>lastRead.current.delete(activeId));
+      }
+    }).subscribe(status=>{live=status==='SUBSCRIBED';setConnection(live?'Live':'Reconnecting…');if(live)refresh();});
+    // REST is a fallback while realtime is disconnected, not a second live transport.
+    const timer = window.setInterval(()=>{if(!live)refresh();},30000);
     return () => { clearInterval(timer); void client.removeChannel(channel); };
-  }, [activeId, refreshHistory]);
+  }, [activeId, refreshHistory,accessToken,request,markRead,cacheScope]);
   useEffect(() => {
-    setMessages([]); setHasMore(false); setEditing(null); setDeleting(null); setActionsId(null); setHistoryError(""); nearBottom.current = true;
+    const cached=activeId&&accessToken?cachedResource<Message[]>(accessToken,`messenger-history:${activeId}`)||readMessengerCache(cacheScope)?.rooms[activeId]:undefined;
+    setMessages(cached||[]); setHasMore(false); setEditing(null); setDeleting(null); setActionsId(null); setHistoryError(""); nearBottom.current = true;
     if (activeId) void refreshHistory(activeId, true);
-  }, [activeId, refreshHistory]);
+  }, [activeId, refreshHistory,accessToken,cacheScope]);
   useEffect(() => { if (nearBottom.current && list.current) list.current.scrollTop = list.current.scrollHeight; }, [messages]);
   useEffect(() => {
     // visualViewport shrinks with the software keyboard on iOS and Android.
@@ -109,6 +139,7 @@ export function OrganizationMessenger() {
   async function dm(p: Person) {
     const existing = data?.conversations.find(c => c.kind === "dm" && c.messenger_participants.some(m => m.user_id === p.user_id));
     if (existing) return open(existing.id);
+    invalidateResource(accessToken||"","messenger-directory");
     setBusy(true);
     try { const result = await request(undefined, { action: "start-dm", userId: p.user_id }); setData(previous => previous ? { ...previous, conversations: previous.conversations.some(c => c.id === result.conversationId) ? previous.conversations : [...previous.conversations, { id: result.conversationId, kind: "dm", channel: null, title: "", organization_id: orgId || "", unread: 0, messenger_participants: [{ user_id: previous.me, last_read_at: "" }, { user_id: p.user_id, last_read_at: "" }] }] } : previous); open(result.conversationId); } catch (e) { report(e); } finally { setBusy(false); }
   }
@@ -116,7 +147,7 @@ export function OrganizationMessenger() {
     event.preventDefault(); if (!activeId || busy) return;
     const id = activeId, text = drafts[id]?.trim(); if (!text) return;
     setBusy(true); setError("");
-    try { const result = await request(undefined, { action: "send", conversationId: id, body: text }); setDrafts(d => ({ ...d, [id]: d[id]?.trim() === text ? "" : d[id] })); nearBottom.current = true; if (activeRef.current === id && result.message) setMessages(previous => [...previous.filter(m => m.id !== result.message.id), result.message].sort((a, b) => a.id - b.id)); } catch (e) { report(e); } finally { setBusy(false); }
+    try { const result = await request(undefined, { action: "send", conversationId: id, body: text }); setDrafts(d => ({ ...d, [id]: d[id]?.trim() === text ? "" : d[id] })); nearBottom.current = true; if(result.message)historyRevision.current++;if (activeRef.current === id && result.message) setMessages(previous => {const next=[...previous.filter(m=>m.id!==result.message.id),result.message].sort((a,b)=>a.id-b.id);primeResource(accessToken||"",`messenger-history:${id}`,next,300000);cacheMessengerMessages(cacheScope,id,next);return next;}); } catch (e) { report(e); } finally { setBusy(false); }
   }
   async function older() {
     if (!activeId || !messages[0] || loadingHistory) return;

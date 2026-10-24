@@ -19,12 +19,13 @@ const labels: Record<string, string> = {
 };
 
 export function ProfileAnalyticsPanel() {
+  const [open,setOpen]=useState(false);
   const [data, setData] = useState<AnalyticsData | null>(null);
-  const [message, setMessage] = useState("Loading private analytics…");
+  const [message, setMessage] = useState(()=>isSupabaseConfigured()?"Loading private analytics…":"Analytics become available when connected.");
 
   useEffect(() => {
+    if(!open||data)return;
     if (!isSupabaseConfigured()) {
-      setMessage("Analytics become available when connected.");
       return;
     }
     void getSupabaseBrowserClient().auth.getSession().then(async ({ data: sessionData }) => {
@@ -42,10 +43,10 @@ export function ProfileAnalyticsPanel() {
       setData(result);
       setMessage("");
     }).catch(() => setMessage("Analytics are being prepared."));
-  }, []);
+  }, [open,data]);
 
   return (
-    <details className="mb-4 overflow-hidden rounded-2xl border border-white/10 bg-[#171719] text-white">
+    <details onToggle={event=>setOpen(event.currentTarget.open)} className="mb-4 overflow-hidden rounded-2xl border border-white/10 bg-[#171719] text-white">
       <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between px-4 font-black [&::-webkit-details-marker]:hidden">
         <span>Private analytics</span>
         <span className="text-xs font-semibold text-white/45">Only visible after login</span>

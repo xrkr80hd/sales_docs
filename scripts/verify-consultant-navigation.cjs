@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const version = fs.readFileSync('lib/disclosure.ts', 'utf8').match(/DISCLOSURE_VERSION = "([^"]+)"/)[1];
 (async () => {
  const browser = await chromium.launch({headless:true,executablePath:process.env.NEXTDOX_TEST_CHROMIUM,args:['--no-sandbox','--disable-dev-shm-usage']});
- try { for (const width of [390,1440]) {
+ try { for (const width of [390,1336,1440]) {
   const context = await browser.newContext({viewport:{width,height:900}});
   await context.addInitScript(version => {
    localStorage.setItem('walker-docs-next.auth.session',JSON.stringify({access_token:'synthetic.token.fixture',refresh_token:'synthetic',expires_at:Math.floor(Date.now()/1000)+3600,expires_in:3600,token_type:'bearer',user:{id:'fixture-user',email:'fixture@example.test',aud:'authenticated',app_metadata:{},user_metadata:{}}}));
@@ -18,7 +18,7 @@ const version = fs.readFileSync('lib/disclosure.ts', 'utf8').match(/DISCLOSURE_V
   page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/api/**',async route=>{
    const url = new URL(route.request().url()); requests.push(url.pathname+url.search);let body={};
-   if(url.pathname==='/api/me')body={id:'fixture-user',email:'fixture@example.test',displayName:'Test admin',role:'admin',workspaceRole:'admin',organizationId:'test-org',mustChangePassword:false};
+   if(url.pathname==='/api/me')body={id:'fixture-user',email:'fixture@example.test',displayName:'Travis Wilkinson',role:'admin',workspaceRole:'admin',organizationId:'test-org',mustChangePassword:false};
    else if(url.pathname==='/api/me/sale-commander')body={commander:{},assignedGoal:null};
    else if(url.pathname==='/api/messenger')body={me:'fixture-user',conversations:[],organizations:[],people:[],canDm:true,canCreateOrganization:false};
    else if(url.pathname==='/api/consultant-links')body={links:[{id:'one',name:'Saved test tool',url:'https://example.test'}],version:'v1',organization:{id:'test-org',name:'Test organization'}};
@@ -34,16 +34,31 @@ const version = fs.readFileSync('lib/disclosure.ts', 'utf8').match(/DISCLOSURE_V
   await main.getByRole('heading',{name:'Sales Commander',exact:true}).waitFor().catch(async error=>{console.log((await page.locator('body').innerText()).slice(0,1600),requests,errors);throw error;});
   await main.getByLabel('Monthly sales goal',{exact:true}).waitFor();
   assert(!requests.some(path=>/manager-board|workspace\/directory|api\/deals/.test(path)));
+  assert.equal(requests.filter(path=>path==='/api/me/sale-commander').length,1);
+  if(width>900){
+    const targets=page.locator('dl[aria-label="Daily activity targets"]');
+    await targets.waitFor({state:'visible'});
+    assert.equal(await targets.locator('dt').allTextContents().then(values=>values.join(',')),'Calls,Convos,Appts,Sales');
+    const bounds=await targets.boundingBox(),brand=await page.locator('header img[alt="Walker Automotive"]').boundingBox(),profile=await page.locator('header details').first().boundingBox();
+    assert(bounds.x>=brand.x+brand.width && bounds.x+bounds.width<=profile.x);
+    assert(await targets.evaluate(el=>el.scrollWidth<=el.clientWidth));
+    for(const item of await targets.locator('dd').all())assert(await item.evaluate(el=>el.scrollWidth<=el.clientWidth));
+  }
+
   await openNav();
   assert.equal(await nav.getByRole('link').first().innerText(),'Sales Commander');
   assert.equal(await nav.getByText('Manager Board',{exact:true}).count(),0);
   assert.equal(await nav.getByText('Administration',{exact:true}).count(),0);
   const group=nav.getByRole('group',{name:'Sales Commander',exact:true});
-  await group.getByText('Setup',{exact:true}).click();
-  assert(await group.getByRole('link',{name:'Command Center Settings',exact:true}).isVisible());
-  await group.getByText('Setup',{exact:true}).click();
+  assert.equal(await group.getByText('Setup',{exact:true}).count(),0);
+  await group.getByRole('link',{name:'Consultant Set Up',exact:true}).click();
+  await main.getByRole('heading',{name:'Consultant Set Up',exact:true}).waitFor();
+  await main.getByRole('button',{name:'Close Consultant Set Up and return to Sales Commander',exact:true}).click();
+  await main.getByRole('heading',{name:'Sales Commander',exact:true}).waitFor();
+  await openNav();
   await group.getByText('Command Center',{exact:true}).click();
   await group.getByRole('link',{name:'Saved test tool',exact:true}).waitFor();
+  assert.equal(await nav.getByRole('link',{name:'Command Center Settings',exact:true}).count(),1);
   await group.getByRole('link',{name:'Saved test tool',exact:true}).click();
   await page.frameLocator('iframe').getByRole('heading',{name:'Synthetic business tool'}).waitFor();
   assert.equal(await main.getByRole('heading').count(),0);
@@ -59,6 +74,13 @@ const version = fs.readFileSync('lib/disclosure.ts', 'utf8').match(/DISCLOSURE_V
   await main.getByRole('heading',{name:'Start a Deal',exact:true}).waitFor();
   assert(await main.getByRole('button',{name:'New Vehicle',exact:true}).isVisible());
   assert(await main.getByRole('button',{name:'Used Vehicle',exact:true}).isVisible());
+  await main.getByRole('button',{name:'New Vehicle',exact:true}).click();
+  const dealHeader=main.getByRole('region',{name:'Deal header',exact:true});
+  await dealHeader.getByRole('heading',{name:'New Vehicle',exact:true}).waitFor();
+  assert((await dealHeader.boundingBox()).height<=100);
+  assert(await dealHeader.evaluate(el=>el.scrollWidth<=el.clientWidth));
+  assert.equal(await dealHeader.getByRole('link').count(),0);
+
   await openNav();await nav.getByRole('link',{name:'Resume Deal',exact:true}).click();
   await main.getByRole('heading',{name:'Resume Deal',exact:true}).waitFor();
   assert.equal(await main.getByText(/Start a (New )?Deal/).count(),0);

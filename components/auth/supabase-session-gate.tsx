@@ -1,11 +1,12 @@
 "use client";
 
+import {requestWorkspaceExit} from "@/lib/workspace-exit";
 import { SoftwareLogo } from "@/components/branding/software-logo";
 import { PasswordRequirement } from "./required-password-change";
 import type { Session } from "@supabase/supabase-js";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { BROWSER_IDLE_MS, browserLastActiveAt, browserSessionExpired, recordBrowserActivity } from "@/lib/browser-activity";
+import { BROWSER_IDLE_MS, staySignedInEnabled,preferredStaySignedIn,setStaySignedIn, browserLastActiveAt, browserSessionExpired, recordBrowserActivity } from "@/lib/browser-activity";
 import { clearCustomerCopy } from "@/lib/customer-copy";
 import { clearResourceCache } from "@/lib/client-resource-cache";
 import { createContext, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
@@ -64,6 +65,7 @@ export function SupabaseSessionGate({
   const submitting = useRef(false);
   const [mode, setMode] = useState<"login" | "reset">("login");
   const [showPassword, setShowPassword] = useState(false);
+  const [staySignedIn,setStaySignedInChoice]=useState(()=>preferredStaySignedIn?.()??true);
 
 
   useEffect(() => {
@@ -121,7 +123,7 @@ export function SupabaseSessionGate({
       if(nextSession && browserSessionExpired(nextSession.user.id)) {
         forgetBrowserSession();window.clearTimeout(timer);authChanged=true;setSession(null);setChecking(false);return;
       }
-      if(_event === "SIGNED_OUT"){clearResourceCache();clearCustomerCopy();}
+      if(_event === "SIGNED_OUT"){forgetBrowserSession();clearCustomerCopy();}
       window.clearTimeout(timer);
       authChanged = true;
       setSession(nextSession);
@@ -145,7 +147,7 @@ export function SupabaseSessionGate({
       forgetBrowserSession();void getSupabaseBrowserClient().auth.stopAutoRefresh();
       setSession(null);setError("Your session ended after eight hours of inactivity in this browser. Sign in again.");
     };
-    const check=()=>{if(browserSessionExpired(userId)||Date.now()-Math.max(lastActive,browserLastActiveAt(userId)||0)>=BROWSER_IDLE_MS){expire();return false;}return !expired;};
+    const check=()=>{if(staySignedInEnabled())return true;if(browserSessionExpired(userId)||Date.now()-Math.max(lastActive,browserLastActiveAt(userId)||0)>=BROWSER_IDLE_MS){expire();return false;}return !expired;};
     const activity=()=>{if(Date.now()-lastEvent<1000)return;lastEvent=Date.now();if(!check())return;lastActive=Date.now();recordBrowserActivity(userId);};
     const visible=()=>{if(document.visibilityState==="visible")activity();};
     if(check())recordBrowserActivity(userId);
@@ -158,6 +160,9 @@ export function SupabaseSessionGate({
   async function handleAuthSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting.current) return;
+
+    const panel=event.currentTarget?.closest<HTMLElement>(".nxt-auth-panel");
+    if(panel)document.documentElement.style.setProperty("--nxt-auth-panel-height",`${panel.getBoundingClientRect().height}px`);
 
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedPassword = password;
@@ -197,6 +202,7 @@ export function SupabaseSessionGate({
       return;
     }
 
+    setStaySignedIn?.(staySignedIn);
     setSending(true);
     submitting.current = true;
     setStatus("");
@@ -230,6 +236,7 @@ export function SupabaseSessionGate({
   }
 
   async function handleSignOut() {
+    if(!await requestWorkspaceExit())return;
     setError("");
     setStatus("");
 
@@ -350,6 +357,8 @@ export function SupabaseSessionGate({
                 </p>
               )}
 
+              {mode==='login'&&<label className="nxt-stay-signed-in"><input type="checkbox" checked={staySignedIn} onChange={event=>setStaySignedInChoice(event.target.checked)}/><span>Stay signed in<small>Keep this device connected for faster return visits.</small></span></label>}
+
               <button
                 type="submit"
                 disabled={sending}
@@ -387,6 +396,7 @@ export function SupabaseSessionGate({
               )}
             </div>
 
+            <div className="nxt-auth-feedback" aria-live="polite">
             {status ? (
               <p className="mt-4 border border-emerald-800/20 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
                 {status}
@@ -398,6 +408,7 @@ export function SupabaseSessionGate({
                 <p>{error}</p><button type="button" className="min-h-11 underline" onClick={() => { setError(""); setChecking(true); setSessionAttempt(value => value + 1); }}>Retry session check</button>
               </div>
             ) : null}
+            </div>
           </div>
         </div>
       </div>

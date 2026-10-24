@@ -210,3 +210,14 @@ html, body { background: var(--background); }
     color: #171d23; color-scheme: light;
   }
 }
+
+/* Preserve the submitted sign-in card's exact dimensions through account verification. */
+.nxt-auth-panel { height: var(--nxt-auth-panel-height,auto); max-height: calc(100dvh - 40px); display: flex; flex-direction: column; }
+.nxt-auth-header { flex-shrink: 0; }
+.nxt-auth-form { flex: 1; min-height: 0; overflow-y: auto; }
+.nxt-auth-feedback { min-height: 86px; max-height: 140px; overflow-y: auto; }
+.nxt-auth-feedback > :first-child { margin-top: 12px; }
+
+.nxt-stay-signed-in {display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#e5ebef;}
+.nxt-stay-signed-in input {width:16px;height:16px;min-height:0;margin-top:2px;accent-color:var(--accent-strong);}
+.nxt-stay-signed-in small {display:block;font-size:11px;line-height:1.4;color:#b5c1ca;margin-top:3px;}

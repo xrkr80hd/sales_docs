@@ -1,0 +1,58 @@
+// Read/write requests are intercepted with synthetic records; no production data.
+const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs');
+const version=fs.readFileSync('lib/disclosure.ts','utf8').match(/DISCLOSURE_VERSION = "([^"]+)"/)[1];
+const room='00000000-0000-4000-8000-000000000001',base=process.env.NEXTDOX_TEST_URL||'http://127.0.0.1:3100';
+const session=()=>({access_token:'synthetic.token.fixture',refresh_token:'synthetic-refresh',expires_at:Math.floor(Date.now()/1000)+3600,expires_in:3600,token_type:'bearer',user:{id:'fixture-user',email:'fixture@example.test',aud:'authenticated',app_metadata:{},user_metadata:{}}});
+(async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.NEXTDOX_TEST_CHROMIUM,args:['--no-sandbox','--disable-dev-shm-usage']});try{
+for(const width of [390,1440]){
+ const context=await browser.newContext({viewport:{width,height:1000}}),page=await context.newPage();page.setDefaultTimeout(15000);const requests=[],errors=[],sockets=[];let cardName='Saved Consultant',commander={goal:12};
+ page.on('pageerror',e=>errors.push(e.message));
+ await context.addInitScript(({session,version})=>{if(!localStorage.getItem('fixture-seeded')){localStorage.setItem('walker-docs-next.auth.session',JSON.stringify(session));localStorage.setItem('fixture-seeded','1');}localStorage.setItem('walker.disclosure.accepted',JSON.stringify({version,acceptedAt:Date.now()}));localStorage.setItem('walker.notifications.dismissed','1');},{session:session(),version});
+ await page.routeWebSocket('**/realtime/v1/websocket*',ws=>{sockets.push(ws);ws.onMessage(raw=>{
+  const value=JSON.parse(raw);const m=Array.isArray(value)?{join_ref:value[0],ref:value[1],topic:value[2],event:value[3],payload:value[4]}:value;
+  if(m.event==='phx_join')ws.send(JSON.stringify([m.join_ref,m.ref,m.topic,'phx_reply',{status:'ok',response:{postgres_changes:(m.payload.config?.postgres_changes||[]).map((rule,i)=>({...rule,id:i+1}))}}]));
+  else if(m.event==='heartbeat')ws.send(JSON.stringify([m.join_ref,m.ref,m.topic,'phx_reply',{status:'ok',response:{}}]));
+ });});
+ await page.route('**/api/**',async route=>{const req=route.request(),url=new URL(req.url());requests.push(url.pathname+url.search+' '+req.method());let value={};
+ if(url.pathname==='/api/me')value={id:'fixture-user',email:'fixture@example.test',displayName:'Travis Wilkinson',role:'admin',workspaceRole:'admin',organizationId:'org',mustChangePassword:false};
+ else if(url.pathname==='/api/me/settings')value={dealer_info:{dealershipName:'Walker Honda'},consultant_info:{name:'Synthetic consultant'}};
+ else if(url.pathname==='/api/me/sale-commander'){if(req.method()==='PUT')commander=req.postDataJSON();value={commander,assignedGoal:null};}
+ else if(url.pathname==='/api/consultant-links')value={links:[{id:'one',name:'Saved shortcut',url:'https://example.test/'}],organization:{id:'org',name:'Walker Honda'},version:'v1'};
+ else if(url.pathname==='/api/messenger'){
+  if(req.method()==='POST'){const body=req.postDataJSON();value=body.action==='send'?{ok:true,message:{id:2,sender_id:'fixture-user',body:body.body,created_at:new Date().toISOString()}}:{ok:true};}
+  else if(url.searchParams.has('summary'))value={conversations:[{id:room,unread:0}]};
+  else if(url.searchParams.has('conversationId'))value={messages:[{id:1,sender_id:'peer',body:'Saved chat history',created_at:'2026-10-24T12:00:00Z'}],hasMore:false};
+  else value={me:'fixture-user',canCreateOrganization:false,canDm:true,organizations:[{id:'org',name:'Walker Honda'}],people:[{user_id:'peer',name:'Synthetic peer',role:'user',can_dm:true}],conversations:[{id:room,kind:'organization',channel:'consultant',title:'Consultant Chat',organization_id:'org',unread:0,messenger_participants:[]}]};
+ }else if(url.pathname==='/api/me/business-card'){
+  if(req.method()==='PUT'){const body=req.postDataJSON();cardName=body.draft.identity.displayName;value={card:{slug:'synthetic',draft:body.draft,publishedAt:new Date().toISOString()}};}
+  else value={permitted:true,isAdmin:true,card:{slug:'synthetic',publishedAt:null,draft:{identity:{displayName:cardName},content:{},contact:{},vehicles:[],reviews:[],soldGallery:[],videos:[],socialLinks:[]}}};
+ }else if(url.pathname==='/api/analytics')value={summary:{},videos:[]};else if(url.pathname==='/api/deals')value={deals:[]};
+ await route.fulfill({contentType:'application/json',body:JSON.stringify(value)});
+ });
+ const main=page.getByRole('main'),nav=page.getByRole('complementary',{name:'Application navigation'});
+ const openNav=async()=>{if(width<680&&await page.getByRole('button',{name:'Open navigation',exact:true}).getAttribute('aria-expanded')!=='true')await page.getByRole('button',{name:'Open navigation',exact:true}).click();};
+ await page.goto(base+'/dashboard');await main.getByRole('heading',{name:'Sales Commander',exact:true}).waitFor();
+ const objective=main.getByRole('spinbutton',{name:'Monthly sales goal',exact:true});await objective.waitFor();await objective.fill('18');await objective.blur();assert.equal(requests.filter(x=>x==='/api/me/sale-commander PUT').length,0);
+ await openNav();await nav.getByRole('link',{name:'Start a Deal',exact:true}).click();const leaveDialog=page.getByRole('dialog',{name:'Unsaved Sales Commander changes',exact:true});await leaveDialog.waitFor();await leaveDialog.getByRole('button',{name:'Stay Here',exact:true}).click();await main.getByRole('heading',{name:'Sales Commander',exact:true}).waitFor();assert.equal(requests.filter(x=>x==='/api/me/sale-commander PUT').length,0);
+ await openNav();await nav.getByRole('link',{name:'Start a Deal',exact:true}).click();await leaveDialog.getByRole('button',{name:'Save & Exit',exact:true}).click();await main.getByRole('heading',{name:'Start a Deal',exact:true}).waitFor();assert.equal(requests.filter(x=>x==='/api/me/sale-commander PUT').length,1);
+ await openNav();await nav.getByRole('link',{name:'Sales Commander',exact:true}).click();await objective.waitFor();assert.equal(await objective.inputValue(),'18');
+ await openNav();const customer=nav.locator('details').filter({has:page.locator('summary').filter({hasText:'Customer Information'})}).first();
+ const summary=customer.locator('summary');const before=await summary.boundingBox();const text=await summary.innerText();await summary.click();assert.equal(await summary.innerText(),text);const after=await summary.boundingBox();assert(Math.abs(before.width-after.width)<1);assert(Math.abs(before.height-after.height)<1);assert(await summary.locator('svg').count()===2);await summary.click();
+ await nav.getByText('Command Center',{exact:true}).click();await nav.getByRole('link',{name:'Saved shortcut',exact:true}).waitFor();const linkReads=requests.filter(x=>x==='/api/consultant-links GET').length;
+ await page.reload();await openNav();await nav.getByText('Command Center',{exact:true}).click();await nav.getByRole('link',{name:'Saved shortcut',exact:true}).waitFor();assert.equal(requests.filter(x=>x==='/api/consultant-links GET').length,linkReads);
+ await nav.getByRole('link',{name:'Messenger',exact:true}).click();await main.getByRole('button',{name:/Walker Honda/}).click();await main.getByRole('button',{name:/Consultant Chat/}).first().click();await main.getByText('Saved chat history',{exact:true}).waitFor();
+ await main.getByText('Live',{exact:true}).waitFor();
+ const historyReads=requests.filter(x=>x.startsWith('/api/messenger?conversationId=')).length;
+ for(const ws of sockets)ws.send(JSON.stringify([null,null,'realtime:messenger-'+room,'postgres_changes',{ids:[1],data:{schema:'public',table:'messenger_messages',type:'INSERT',columns:[{name:'id',type:'int8'},{name:'body',type:'text'},{name:'sender_id',type:'uuid'},{name:'conversation_id',type:'uuid'},{name:'created_at',type:'timestamptz'}],record:{id:3,conversation_id:room,sender_id:'peer',body:'Realtime delta message',created_at:'2026-10-24T13:00:00Z'},old_record:{},commit_timestamp:new Date().toISOString()}}]));
+ await main.getByText('Realtime delta message',{exact:true}).waitFor();
+ assert.equal(requests.filter(x=>x.startsWith('/api/messenger?conversationId=')).length,historyReads,'a realtime insert must not refetch history');
+ await page.clock.install();await page.clock.fastForward(31000);
+ assert.equal(requests.filter(x=>x.startsWith('/api/messenger?conversationId=')).length,historyReads,'live sockets must not run the fallback poll');
+ await main.getByLabel('Message',{exact:true}).fill('Synthetic sent message');await main.getByRole('button',{name:'Send message',exact:true}).click();await main.getByText('Synthetic sent message',{exact:true}).waitFor();
+ const directoryReads=requests.filter(x=>x==='/api/messenger GET').length;
+ await openNav();await nav.getByRole('link',{name:'Sales Commander',exact:true}).click();await main.getByRole('heading',{name:'Sales Commander',exact:true}).waitFor();await openNav();await nav.getByRole('link',{name:'Messenger',exact:true}).click();await main.getByRole('button',{name:/Walker Honda/}).click();await main.getByRole('button',{name:/Consultant Chat/}).first().click();await main.getByText('Saved chat history',{exact:true}).waitFor();assert.equal(requests.filter(x=>x==='/api/messenger GET').length,directoryReads);
+ assert.equal(await main.getByText('Loading messages…',{exact:true}).count(),0);
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));assert.deepEqual(errors,[]);
+ console.log(JSON.stringify({width,links:'reload reused cache',chat:'send, cached return, realtime delta without history fetch or live polling',sales:'local edits, leave warning, one acknowledged save',customer:'stable label and bounds',errors}));await context.close();
+}
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

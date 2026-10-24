@@ -114,11 +114,13 @@ export async function GET(request: NextRequest) {
   }
 
   // 1. Check if consultant_cards has a record
-  const { data: cardRow } = await supabase
+  const { data: cardRow, error: cardReadError } = await supabase
     .from("consultant_cards")
     .select("*")
     .eq("user_id", user.id)
     .maybeSingle();
+
+  if(cardReadError)return NextResponse.json({error:"Saved card is temporarily unavailable. Please retry."},{status:503});
 
   const displayName = profile?.display_name || user.email?.split("@")[0] || "Consultant";
   const slug = cardRow?.slug || (isTrav ? "trav" : `${slugify(displayName)}-${user.id.slice(0, 6)}`);
@@ -127,11 +129,11 @@ export async function GET(request: NextRequest) {
 
   if (cardRow) {
     const [
-      { data: reviews },
-      { data: vehicles },
-      { data: videos },
-      { data: soldGallery },
-      { data: socialLinks },
+      { data: reviews, error: reviewsError },
+      { data: vehicles, error: vehiclesError },
+      { data: videos, error: videosError },
+      { data: soldGallery, error: galleryError },
+      { data: socialLinks, error: socialError },
     ] = await Promise.all([
       supabase.from("consultant_reviews").select("*").eq("card_id", cardRow.id).order("sort_order", { ascending: true }),
       supabase.from("consultant_vehicles").select("*").eq("card_id", cardRow.id).order("sort_order", { ascending: true }),
@@ -139,6 +141,8 @@ export async function GET(request: NextRequest) {
       supabase.from("consultant_sold_gallery").select("*").eq("card_id", cardRow.id).order("sort_order", { ascending: true }),
       supabase.from("consultant_social_links").select("*").eq("card_id", cardRow.id).order("sort_order", { ascending: true }),
     ]);
+
+    if(reviewsError||vehiclesError||videosError||galleryError||socialError)return NextResponse.json({error:"Saved card sections are temporarily unavailable. Please retry."},{status:503});
 
     draft = {
       identity: {
@@ -257,9 +261,9 @@ export async function GET(request: NextRequest) {
   const settingsAddress = [street,cityState,zip].filter(Boolean).join(", ");
   draft.identity = {
     ...draft.identity,
-    ...(settingsName ? { displayName: settingsName } : {}),
-    ...(settingsPhone ? { phone: settingsPhone } : {}),
-    ...(settingsEmail ? { email: settingsEmail } : {}),
+    ...(!cardRow && settingsName ? { displayName: settingsName } : {}),
+    ...(!cardRow && settingsPhone ? { phone: settingsPhone } : {}),
+    ...(!cardRow && settingsEmail ? { email: settingsEmail } : {}),
     ...(settingsDealer ? { dealership: settingsDealer } : {}),
     ...(settingsAddress ? { location: settingsAddress } : {}),
   };
@@ -413,13 +417,16 @@ export async function PUT(request: NextRequest) {
   const cardId = savedCard.id;
 
   // 2. Save items (reviews, vehicles, videos, soldGallery, socialLinks)
-  await Promise.all([
+  const deletionResults = await Promise.all([
     supabase.from("consultant_reviews").delete().eq("card_id", cardId),
     supabase.from("consultant_vehicles").delete().eq("card_id", cardId),
     supabase.from("consultant_videos").delete().eq("card_id", cardId),
     supabase.from("consultant_sold_gallery").delete().eq("card_id", cardId),
     supabase.from("consultant_social_links").delete().eq("card_id", cardId),
   ]);
+
+  const deletionError=deletionResults.find(result=>result.error)?.error;
+  if(deletionError)return NextResponse.json({error:"Card sections could not be saved. Reload to check saved state before retrying."},{status:500});
 
   const insertPromises = [];
 

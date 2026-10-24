@@ -70,7 +70,7 @@ export function ConsultantSetupScreen() {
     finally { setSaving(false); }
   }
   return <section className={styles.page} aria-labelledby="setup-title">
-      <header className={styles.header}><div><p>YOUR WORKSPACE</p><h1 id="setup-title">Consultant Setup</h1></div><button onClick={onClose} aria-label="Back to workspace"><X /></button></header>
+      <header className={styles.header}><div><p>YOUR WORKSPACE</p><h1 id="setup-title">Consultant Set Up</h1></div><button onClick={onClose} aria-label="Close Consultant Set Up and return to Sales Commander"><X /></button></header>
       <div className={styles.content}>
         <section className={styles.photoSection}>
           <div className={styles.photo}>{photo ? <Image src={photo} alt="Your profile photo" width={84} height={84} unoptimized /> : <UserRound size={36} />}</div>
@@ -78,7 +78,6 @@ export function ConsultantSetupScreen() {
         </section>
         {status && <p className={styles.status} role="status">{status}</p>}{error && <p className={styles.error} role="alert">{error}</p>}
         <Link prefetch={false} href="/business-card" onClick={onClose} className={styles.adminLink}>Edit public business card separately</Link>
-        <Link prefetch={false} href="/consultant-links/settings" className={styles.adminLink}>Command Center Settings</Link>
         <form onSubmit={event => { event.preventDefault(); void save(); }}>
           <fieldset disabled={saving || loading}>
             <details className={styles.section} open><summary><div><h3>Consultant information</h3><p>Your contact details for documents and tools</p></div><ChevronDown size={18} /></summary><div className={styles.fields}>

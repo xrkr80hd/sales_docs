@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import headerStyles from "./deal-header.module.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useVinConfirmation } from "@/components/ui/use-vin-confirmation";
@@ -411,38 +411,11 @@ export function UnifiedInputScreen({
   return (
     <>
       <div className="grid gap-4">
-        {/* ── Hero ── */}
-        <section className="overflow-hidden border border-white/10 bg-[var(--panel)]  bg-cover bg-center shadow-[0_0_40px_rgba(190,23,23,0.15),0_24px_60px_rgba(0,0,0,0.3)]">
-          <div className="grid gap-5 px-5 py-5 sm:px-6">
-            <div className="text-center">
-              <Image
-                src="/branding/walker-automotive.png"
-                alt="Walker Automotive graphic"
-                width={320}
-                height={116}
-                priority
-                className="mx-auto h-auto w-full max-w-[280px]"
-              />
-              <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-[0.01em] text-white drop-shadow-sm sm:text-4xl">
-                {isNew ? "New Vehicle" : "Used Vehicle"}
-              </h2>
-              <p className="mt-2 text-sm font-bold text-white/90">
-                Last 8:{" "}
-                <span className="font-mono">{getLast8(data.vin) || "—"}</span>
-              </p>
-              <p className="mx-auto mt-3 max-w-3xl text-base leading-7 text-white/70">
-                Fill in every field once — all forms auto-populate at print time.
-              </p>
-              <div className="mt-5 print:hidden">
-                <Link
-                  href="/dashboard"
-                  className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.08em] text-white/70 transition hover:text-white"
-                >
-                  <span aria-hidden="true">&larr;</span>
-                  Back to Dashboard
-                </Link>
-              </div>
-            </div>
+        <section className={headerStyles.header} aria-label="Deal header">
+          <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} className={headerStyles.logo} />
+          <div className={headerStyles.details}>
+            <h2>{isNew ? "New Vehicle" : "Used Vehicle"}</h2>
+            <p>Last 8: <span>{getLast8(data.vin) || "—"}</span></p>
           </div>
         </section>
 

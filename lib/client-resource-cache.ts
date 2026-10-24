@@ -9,6 +9,12 @@ export function cachedResource<T>(scope: string, resource: string): T | undefine
   if (Date.now() >= entry.expiresAt) { values.delete(key); return undefined; }
   return entry.value as T;
 }
+export function primeResource<T>(scope: string, resource: string, value: T, ttlMs = 300000) {
+  const key = keyFor(scope, resource);
+  pending.delete(key); // An older read must not replace a successful write.
+  if (values.size >= 40 && !values.has(key)) values.delete(values.keys().next().value!);
+  values.set(key, { value, expiresAt: Date.now() + ttlMs });
+}
 export function invalidateResource(scope: string, resource: string) {
   const key = keyFor(scope, resource); values.delete(key); pending.delete(key);
 }

@@ -2,7 +2,9 @@
 
 import { ChangeEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSession } from "@/components/auth/supabase-session-gate";
+import { cachedResource, loadResource, primeResource } from "@/lib/client-resource-cache";
+import { requestJson } from "@/lib/request-json";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase-browser";
 import {
   ConsultantProfileContent,
@@ -21,6 +23,8 @@ type ProfileRow = {
   is_published: boolean;
 };
 
+type SavedCardResponse = { permitted?: boolean; error?: string; isAdmin: boolean; card: { slug: string; draft: ConsultantProfileContent; publishedAt: string | null } };
+const CARD_RESOURCE = "business-card-editor";
 const limits: Record<CollectionKey, number | undefined> = {
   reviews: 10,
   videos: undefined,
@@ -83,14 +87,16 @@ export function getSocialIcon(urlOrName: string) {
 }
 
 export function ProfileEditor() {
-  const router = useRouter();
+  const { accessToken } = useSession();
+  const cacheScope=accessToken||"";
+  const [initialCard]=useState(()=>cacheScope?cachedResource<SavedCardResponse>(cacheScope,CARD_RESOURCE):undefined);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialCard);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<ProfileRow | null>(null);
-  const [draft, setDraft] = useState<ConsultantProfileContent | null>(null);
-  const [savedDraft, setSavedDraft] = useState("");
+  const [profile, setProfile] = useState<ProfileRow | null>(()=>initialCard?{consultant_slug:initialCard.card.slug,is_published:Boolean(initialCard.card.publishedAt)}:null);
+  const [draft, setDraft] = useState<ConsultantProfileContent | null>(()=>initialCard?normalizeProfileContent(initialCard.card.draft,initialCard.isAdmin):null);
+  const [savedDraft, setSavedDraft] = useState(()=>initialCard?JSON.stringify(normalizeProfileContent(initialCard.card.draft,initialCard.isAdmin)):"");
   const [notice, setNotice] = useState("");
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [postedDialog, setPostedDialog] = useState(false);
@@ -130,18 +136,19 @@ export function ProfileEditor() {
       }
     }
     try {
-      const response = await authFetch("/api/me/business-card");
-      const result = await response.json();
-      if (!response.ok || result.permitted === false) {
-        setPermissionError(result.error || "Card permission has not been granted to your account. Please ask an administrator to enable your card.");
-        setLoading(false);
-        return;
-      }
+      const token=accessToken||(isLocalDev?"local-dev-token":null);
+      if(!token)throw new Error("Please log in again.");
+      const result = await loadResource<SavedCardResponse>(token,CARD_RESOURCE,async()=>{
+        const value=await requestJson<SavedCardResponse>("/api/me/business-card",{headers:{authorization:`Bearer ${token}`}});
+        if(value.permitted===false||!value.card)throw Error(value.error||"Card permission is required.");
+        return value;
+      },300000);
       const loadedDraft = normalizeProfileContent(result.card.draft, result.isAdmin);
       setProfile({ consultant_slug: result.card.slug, is_published: Boolean(result.card.publishedAt) });
       setDraft(loadedDraft);
       setSavedDraft(JSON.stringify(loadedDraft));
     } catch (err) {
+      if(err instanceof Error&&/permission|grant.*card/i.test(err.message))setPermissionError(err.message);
       setNotice(err instanceof Error ? err.message : "Failed to load profile.");
     } finally {
       setLoading(false);
@@ -188,7 +195,10 @@ export function ProfileEditor() {
       setProfile({ consultant_slug: result.card?.slug || profile.consultant_slug, is_published: true });
       setSavedDraft(JSON.stringify(draft));
       setPostedDialog(true);
-      router.refresh();
+      if(cacheScope)primeResource<SavedCardResponse>(cacheScope,CARD_RESOURCE,{
+        isAdmin:cachedResource<SavedCardResponse>(cacheScope,CARD_RESOURCE)?.isAdmin||false,
+        permitted:true,card:{slug:result.card?.slug||profile.consultant_slug,draft:result.card?.draft||draft,publishedAt:result.card?.publishedAt||new Date().toISOString()}
+      });
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Your changes could not be saved. Please try again.");
     } finally {
@@ -202,7 +212,11 @@ export function ProfileEditor() {
       method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "unpublish", draft }),
     });
     const result = await response.json();
-    if (response.ok) setProfile({ ...profile, is_published: false });
+    if (response.ok) {
+      setProfile({ ...profile, is_published: false });
+      const cached=cachedResource<SavedCardResponse>(cacheScope,CARD_RESOURCE);
+      if(cached)primeResource(cacheScope,CARD_RESOURCE,{...cached,card:{...cached.card,publishedAt:null,draft:result.card?.draft||draft}});
+    }
     setNotice(response.ok ? "Business card removed from the public site." : result.error);
   }
 

@@ -1,11 +1,13 @@
 "use client";
 
+import {requestWorkspaceExit} from "@/lib/workspace-exit";
+import { SalesTargetReminder } from "./sales-target-reminder";
 import { SoftwareLogo } from "@/components/branding/software-logo";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Home, FilePlus2, Files, Wrench, MessageCircle, Settings, Table2, Monitor, CalendarDays, Menu, X, ChevronDown, Shield, LogOut, GraduationCap } from "lucide-react";
+import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Monitor, CalendarDays, Menu, X, ChevronDown, Shield, LogOut, GraduationCap } from "lucide-react";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { useWorkspaceIdentity } from "./workspace-context";
 import { ROLE_LABELS, validWorkspaceRole } from "@/lib/workspace-roles";
@@ -38,7 +40,7 @@ function WorkspaceClock() {
   return <div className={styles.clock}><small>{now?.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "America/Chicago" }) || ""}</small><strong>{now?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" }) || ""}</strong></div>;
 }
 
-export function WorkspaceShell({ children, onSettings, onDocuments }: { children: ReactNode; onSettings: () => void; onDocuments: () => void }) {
+export function WorkspaceShell({ children, onDocuments }: { children: ReactNode; onSettings: () => void; onDocuments: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const {total:messageUnread}=useMessengerUnread();
@@ -63,8 +65,8 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
   const managementView = manager && ["sales_manager", "floor_manager", "district_manager", "bdm"].includes(activeView);
   const availableViews = admin ? ["user", "floor_manager", "sales_manager", "district_manager", "bdm", "fni", "admin"] : ["user", ...(identity?.workspaceRole && identity.workspaceRole !== "user" ? [identity.workspaceRole] : identity?.role && identity.role !== "user" ? [identity.role] : [])];
   useEffect(() => { writeView(viewKey, activeView); }, [viewKey, activeView]);
-  function switchView(role: string) {
-    if (!availableViews.includes(role)) return;
+  async function switchView(role: string) {
+    if (!availableViews.includes(role)||!await requestWorkspaceExit()) return;
     writeView(viewKey, role);
     router.push(role === "user" ? "/dashboard" : role === "admin" ? "/admin" : `/role-views/${role}`);
     setNavigationOpen(false);
@@ -77,10 +79,11 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
         <Link prefetch={false} href="/dashboard" className={styles.wordmark} aria-label="NXTDOX home"><SoftwareLogo /></Link>
         <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} className={styles.dealerLogo} priority />
       </div>
+      {consultantView && <SalesTargetReminder />}
       {display ? <div className={styles.displayActions}><div className={styles.displayLabel}><Monitor /><div>Performance Display<small>Read only · Live updates</small></div></div><Link prefetch={false} href="/manager-board" className={styles.exitDisplay} aria-label="Close Performance Display and return to Manager Board"><X size={22}/><span>Close</span></Link></div> : <>
         <Link prefetch={false} href="/messenger" className={styles.messageIndicator} aria-label={messageUnread ? `${messageUnread} unread messages. Open Messenger` : "Open Messenger. No unread messages"}><MessageCircle aria-hidden="true"/>{messageUnread>0&&<span aria-hidden="true">{messageUnread>99?"99+":messageUnread}</span>}</Link>
         <div className={styles.identity}>
-          <details><summary><span className={styles.profilePhoto}><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span>{identity?.dealership&&<OrganizationBadge name={identity.dealership} iconUrl={identity.organizationIconUrl} hidden={identity.organizationHideIcon}/>}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div><ChevronDown size={18} /></summary><div className={styles.accountMenu}>{(admin || availableViews.length > 1) && <label className={styles.viewPicker}>Workspace view <select aria-label="Workspace view" value={activeView} onChange={event => switchView(event.target.value)}>{availableViews.filter(validWorkspaceRole).map(role => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label>}<button onClick={onSettings}>Consultant Setup</button><button onClick={session.signOut}>Sign Out</button></div></details>
+          <details><summary><span className={styles.profilePhoto}><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span>{identity?.dealership&&<OrganizationBadge name={identity.dealership} iconUrl={identity.organizationIconUrl} hidden={identity.organizationHideIcon}/>}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div><ChevronDown size={18} /></summary><div className={styles.accountMenu}>{(admin || availableViews.length > 1) && <label className={styles.viewPicker}>Workspace view <select aria-label="Workspace view" value={activeView} onChange={event => switchView(event.target.value)}>{availableViews.filter(validWorkspaceRole).map(role => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label>}<button onClick={session.signOut}>Sign Out</button></div></details>
 
           <WorkspaceClock />
         </div>
@@ -98,7 +101,7 @@ export function WorkspaceShell({ children, onSettings, onDocuments }: { children
             <div role="group" aria-label="Sales Commander">
               <Link prefetch={false} href="/dashboard" onClick={close} className={`${styles.navLink} ${pathname === "/dashboard" || pathname === "/role-views/user" ? styles.active : ""}`}><Home />Sales Commander</Link>
               <div className={styles.subnav}>
-                <details open={pathname === "/consultant-setup" || pathname === "/consultant-links/settings"}><summary><Settings />Setup</summary><div className={styles.subnav}><Link prefetch={false} href="/consultant-setup" onClick={close}>Consultant Setup</Link><Link prefetch={false} href="/consultant-links/settings" onClick={close}>Command Center Settings</Link></div></details>
+                <Link prefetch={false} href="/consultant-setup" onClick={close} aria-current={pathname === "/consultant-setup" ? "page" : undefined}>Consultant Set Up</Link>
                 <ConsultantLinksNav onNavigate={close}/>
               </div>
             </div>
