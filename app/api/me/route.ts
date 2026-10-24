@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const headers = { "Cache-Control": "no-store" };
   let stage = "session";
   try {
-    const supabase = getSupabaseServiceClient({ allowPasswordChange: true });
+    const supabase = getSupabaseServiceClient({ allowPasswordChange: true, signal: AbortSignal.any([request.signal, AbortSignal.timeout(10000)]) });
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) {
       console.warn("account_session_check_failed", { status: userError?.status, code: userError?.code });

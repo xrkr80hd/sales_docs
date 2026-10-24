@@ -6,7 +6,7 @@ const ts = require('typescript');
 function load(path, dependencies = {}, globals = {}) {
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  vm.runInNewContext(source, { exports, require: name => { if (name in dependencies) return dependencies[name]; return require(name); }, Request, Response, Headers, URL, AbortController, setTimeout, clearTimeout, console, ...globals });
+  vm.runInNewContext(source, { exports, require: name => { if (name in dependencies) return dependencies[name]; return require(name); }, Request, Response, Headers, URL, AbortController, AbortSignal, setTimeout, clearTimeout, console, ...globals });
   return exports;
 }
 function account({ user = { id: 'member', email: 'member@example.test', app_metadata: {} }, authError = null, profileError = null, memberError = null, profile = { role: 'user', display_name: 'Member' }, brandingFails = false } = {}) {

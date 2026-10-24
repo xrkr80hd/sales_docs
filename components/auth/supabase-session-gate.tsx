@@ -1,17 +1,17 @@
 "use client";
 
-import { withDeadline } from "@/lib/request-json";
 import { SoftwareLogo } from "@/components/branding/software-logo";
 import { PasswordRequirement } from "./required-password-change";
 import type { Session } from "@supabase/supabase-js";
 import Image from "next/image";
-import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import {
   getSessionLabel,
   getSupabaseBrowserClient,
   getSupabaseConfigError,
-  isSupabaseConfigured
+  isSupabaseConfigured,
+  restoreBrowserSession
 } from "@/lib/supabase-browser";
 
 /* ───── Session Context ───── */
@@ -55,6 +55,7 @@ export function SupabaseSessionGate({
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const submitting = useRef(false);
   const [mode, setMode] = useState<"login" | "reset">("login");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -67,16 +68,16 @@ export function SupabaseSessionGate({
 
     const supabase = getSupabaseBrowserClient();
     let active = true;
+    let authChanged = false;
     const timer = window.setTimeout(() => {
       if (!active) return;
       setChecking(false);
       setError("Session verification took too long. Check your connection and retry.");
     }, 12000);
 
-    supabase.auth
-      .getSession()
+    restoreBrowserSession()
       .then(({ data, error: sessionError }) => {
-        if (!active) {
+        if (!active || authChanged) {
           return;
         }
 
@@ -89,7 +90,7 @@ export function SupabaseSessionGate({
         setChecking(false);
       })
       .catch((sessionError: unknown) => {
-        if (!active) {
+        if (!active || authChanged) {
           return;
         }
 
@@ -110,6 +111,7 @@ export function SupabaseSessionGate({
       }
 
       window.clearTimeout(timer);
+      authChanged = true;
       setSession(nextSession);
       setChecking(false);
       setError("");
@@ -124,6 +126,7 @@ export function SupabaseSessionGate({
 
   async function handleAuthSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current) return;
 
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedPassword = password;
@@ -134,6 +137,7 @@ export function SupabaseSessionGate({
     }
 
     if (mode === "reset") {
+      submitting.current = true;
       setSending(true);
       setStatus("");
       setError("");
@@ -151,6 +155,7 @@ export function SupabaseSessionGate({
       } catch (resetErr) {
         setError(resetErr instanceof Error ? resetErr.message : "Could not send reset email.");
       } finally {
+        submitting.current = false;
         setSending(false);
       }
       return;
@@ -162,20 +167,25 @@ export function SupabaseSessionGate({
     }
 
     setSending(true);
+    submitting.current = true;
     setStatus("");
     setError("");
 
     try {
       const supabase = getSupabaseBrowserClient();
 
-      const { error: signInError } = await withDeadline(supabase.auth.signInWithPassword({
+      // Finish the existing refresh before replacing its session. Otherwise an
+      // old refresh response can overwrite a newly successful password login.
+      await restoreBrowserSession();
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: trimmedEmail,
         password: trimmedPassword,
-      }), "Sign-in took too long. Check your connection and retry.", 15000);
+      });
       if (signInError) {
         setError(signInError.message);
         return;
       }
+      if (data.session) { setSession(data.session); setPassword(""); }
     } catch (authError) {
       setError(
         authError instanceof Error
@@ -183,6 +193,7 @@ export function SupabaseSessionGate({
           : "Could not complete sign-in.",
       );
     } finally {
+      submitting.current = false;
       setSending(false);
     }
   }

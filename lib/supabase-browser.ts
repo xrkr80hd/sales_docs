@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
+import { createSupabaseFetch } from "@/lib/supabase-fetch";
 
 type BrowserStorageAdapter = {
   getItem: (key: string) => string | null;
@@ -78,6 +79,7 @@ export function getSupabaseBrowserClient() {
 
   if (!browserClient) {
     browserClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { fetch: createSupabaseFetch() },
       auth: {
         autoRefreshToken: true,
         detectSessionInUrl: true,
@@ -90,6 +92,15 @@ export function getSupabaseBrowserClient() {
   }
 
   return browserClient;
+}
+
+let sessionRestore: ReturnType<SupabaseClient["auth"]["getSession"]> | null = null;
+/** Retry buttons share the pending SDK refresh instead of queueing more work. */
+export function restoreBrowserSession() {
+  if (!sessionRestore) {
+    sessionRestore = getSupabaseBrowserClient().auth.getSession().finally(() => { sessionRestore = null; });
+  }
+  return sessionRestore;
 }
 
 export function getAuthRedirectUrl() {

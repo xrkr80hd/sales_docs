@@ -1,10 +1,11 @@
 import "server-only";
 import { createClient, AuthError } from "@supabase/supabase-js";
+import { createSupabaseFetch } from "@/lib/supabase-fetch";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? "";
 
-export function getSupabaseServiceClient(options: { allowPasswordChange?: boolean } = {}) {
+export function getSupabaseServiceClient(options: { allowPasswordChange?: boolean; signal?: AbortSignal } = {}) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error(
       "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.",
@@ -12,6 +13,7 @@ export function getSupabaseServiceClient(options: { allowPasswordChange?: boolea
   }
 
   const client = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    global: { fetch: createSupabaseFetch({ signal: options.signal }) },
     auth: { autoRefreshToken: false, persistSession: false },
   });
   if (!options.allowPasswordChange) {

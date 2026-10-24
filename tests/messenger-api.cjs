@@ -4,7 +4,7 @@ const ts=require('typescript');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const C='00000000-0000-4000-8000-000000000001',H='00000000-0000-4000-8000-000000000002',O='00000000-0000-4000-8000-000000000003';
-function harness({admin=false,authorized=true}={}){
+function harness({admin=false,authorized=true,authError=null}={}){
  const tables={profiles:[{id:'me',role:admin?'admin':'user'}],organization_memberships:[{user_id:'me',organization_id:O,chat_enabled:true,can_dm:true,can_org_chat:true}],organizations:[{id:O,name:'Test organization'}],messenger_conversations:[{id:C,kind:'dm',organization_id:O,messenger_participants:[{user_id:'me',last_read_at:'2000-01-01'}]},{id:H,kind:'dm',organization_id:O,messenger_participants:[{user_id:'other'}]}],messenger_messages:[{id:1,conversation_id:C,sender_id:'me',body:'Existing',created_at:'2026-01-01',deleted_at:null},{id:2,conversation_id:H,sender_id:'other',body:'Private',created_at:'2026-01-02',deleted_at:null}],messenger_participants:[]};
  let writes=0, countReads=0;
  function from(name,scoped){let filters=[],one=false,mode='read',payload,head=false,count=false,limit=Infinity,order;const q={
@@ -17,16 +17,17 @@ function harness({admin=false,authorized=true}={}){
  if(order)rows=[...rows].sort((a,b)=>(a[order[0]]>b[order[0]]?1:-1)*(order[1]?1:-1));
  return Promise.resolve({data:head?null:one?rows[0]||null:rows.slice(0,limit),error:null,count:count?rows.length:null}).then(resolve,reject);
  }catch(e){return Promise.reject(e).then(resolve,reject)}}};return q}
- const db={auth:{getUser:async()=>({data:{user:authorized?{id:'me'}:null},error:null})},from:n=>from(n,false)};
+ const db={auth:{getUser:async()=>({data:{user:authorized?{id:'me'}:null},error:authError})},from:n=>from(n,false)};
  const scoped={from:n=>from(n,true),rpc:async n=>n==='messenger_accessible_organizations'?{data:[O],error:null}:{data:null,error:{message:'denied'}}};
  const moderation={};vm.runInNewContext(ts.transpileModule(fs.readFileSync('lib/chat-moderation.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:moderation});
  const output={exports:{}};
  const source=ts.transpileModule(fs.readFileSync('app/api/messenger/route.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
- vm.runInNewContext(source,{exports:output.exports,require:n=>n==='@supabase/supabase-js'?{createClient:()=>scoped}:n==='@/lib/supabase-server'?{getSupabaseServiceClient:()=>db}:n==='@/lib/organization-branding'?{organizationBranding:async()=>({})}:moderation,process:{env:{}},Response,Request,URL,AbortSignal,console});
+ vm.runInNewContext(source,{exports:output.exports,require:n=>n==='@supabase/supabase-js'?{createClient:()=>scoped}:n==='@/lib/supabase-server'?{getSupabaseServiceClient:()=>db}:n==='@/lib/supabase-fetch'?{createSupabaseFetch:()=>fetch}:n==='@/lib/organization-branding'?{organizationBranding:async()=>({})}:moderation,process:{env:{}},Response,Request,URL,AbortSignal,fetch,console});
  return {...output.exports,tables,writes:()=>writes,countReads:()=>countReads};
 }
 const req=(body,query='',auth=true)=>new Request('http://localhost/api/messenger'+query,{method:body?'POST':'GET',headers:auth?{authorization:'Bearer test'}:{},...(body?{body:JSON.stringify(body)}:{})});
 test('missing and invalid authentication rejected',async()=>{const h=harness();assert.equal((await h.GET(req(null,'',false))).status,401);assert.equal((await harness({authorized:false}).POST(req({action:'send'}))).status,401)});
+test('an auth outage returns recoverable 503 without claiming the login expired',async()=>{const h=harness({authorized:false,authError:{status:0}});const response=await h.GET(req());assert.equal(response.status,503);assert.match((await response.json()).error,/temporarily unavailable/);assert.equal(h.writes(),0);});
 for(const action of ['send','mark-read','clear-mine'])test(`${action} rejects nonparticipant even if admin`,async()=>{const h=harness({admin:true});assert.equal((await h.POST(req({action,conversationId:H,body:'Leak',messageId:2}))).status,403);assert.equal(h.writes(),0)});
 for(const action of ['edit','delete'])test(`${action} rejects inaccessible message even if admin`,async()=>{const h=harness({admin:true});assert.equal((await h.POST(req({action,messageId:2,body:'Changed'}))).status,403);assert.equal(h.writes(),0)});
 test('history endpoint rejects unauthorized conversation',async()=>{const h=harness();assert.equal((await h.GET(req(null,`?conversationId=${H}`))).status,403)});

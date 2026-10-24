@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   const token = getToken(request);
   if (!token) return Response.json({ error: "Missing authorization." }, { status: 401 });
 
-  const supabase = getSupabaseServiceClient();
+  const supabase = getSupabaseServiceClient({ signal: AbortSignal.any([request.signal, AbortSignal.timeout(10000)]) });
   const { data: { user }, error: userError } = await supabase.auth.getUser(token);
   if (userError || !user) return Response.json({ error: "Invalid session." }, { status: 401 });
 
@@ -61,7 +61,7 @@ export async function PUT(request: Request) {
   const token = getToken(request);
   if (!token) return Response.json({ error: "Missing authorization." }, { status: 401 });
 
-  const supabase = getSupabaseServiceClient();
+  const supabase = getSupabaseServiceClient({ signal: AbortSignal.any([request.signal, AbortSignal.timeout(10000)]) });
   const { data: { user }, error: userError } = await supabase.auth.getUser(token);
   if (userError || !user) return Response.json({ error: "Invalid session." }, { status: 401 });
 
