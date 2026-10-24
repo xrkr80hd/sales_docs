@@ -219,3 +219,6 @@
 @media(max-width:680px){.setupSection .grossGrid{grid-template-columns:minmax(0,1fr);}}
 
 .main.performanceMain {padding:8px;}
+
+.viewPicker { display: grid; gap: 6px; padding: 8px; font-size: 12px; color: #d6dee5; }
+.viewPicker select { width: 100%; min-height: 40px; background: #222c34; color: #fff; border: 1px solid #637383; border-radius: 4px; padding: 6px; font: inherit; }

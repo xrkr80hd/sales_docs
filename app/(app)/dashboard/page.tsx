@@ -1,13 +1,5 @@
-"use client";
+import { SaleCommander } from "@/components/command-center/sale-commander";
 
-import dynamic from "next/dynamic";
-
-const DashboardScreen = dynamic(
-  () =>
-    import("@/components/workflow/dashboard-screen").then(
-      (module) => module.DashboardScreen,
-    ),
-  { ssr: false },
-);
-
-export default DashboardScreen;
+export default function ConsultantDashboard() {
+  return <SaleCommander />;
+}

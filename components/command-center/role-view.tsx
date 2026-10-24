@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Users, ArrowRight } from "lucide-react";
 import { useWorkspaceIdentity } from "./workspace-context";
 import dynamic from "next/dynamic";
-const DashboardScreen=dynamic(()=>import("@/components/workflow/dashboard-screen").then(module=>module.DashboardScreen));
+const SaleCommander=dynamic(()=>import("./sale-commander").then(module=>module.SaleCommander));
 const ManagerBoard=dynamic(()=>import("./team-board").then(module=>module.ManagerBoard));
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { requestJson } from "@/lib/request-json";
@@ -89,7 +89,7 @@ export function RoleView({ role }: {role:string}) {
   if(!validWorkspaceRole(role) || role === "admin") return <p className={styles.notice}>Unknown role view.</p>;
   if(!identity) return <p className={styles.notice}>Checking your access…</p>;
   if(!allowed) return <p className={styles.notice}>You do not have access to this role view.</p>;
-  if(role==="user") return <><p className={styles.notice}>Consultant view{admin ? " · Master Admin access retained" : ""}</p><DashboardScreen /></>;
+  if(role==="user") return <><p className={styles.notice}>Consultant view{admin ? " · Master Admin access retained" : ""}</p><SaleCommander /></>;
   if(role==="bdm") return <><header><h1 className={styles.pageTitle}>BDM</h1><p>Read-only manager board statistics for your assigned organization.</p></header><ManagerBoard /></>;
   const selected=directory?.organizations.find(org=>org.id===organization);
   const assigned=directory?.memberships.filter(member=>member.organization_id===organization).map(member=>directory.users.find(user=>user.id===member.user_id)).filter(Boolean) || [];

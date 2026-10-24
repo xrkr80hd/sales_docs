@@ -70,7 +70,7 @@ export function ConsultantSetupScreen() {
     finally { setSaving(false); }
   }
   return <section className={styles.page} aria-labelledby="setup-title">
-      <header className={styles.header}><div><p>YOUR WORKSPACE</p><h1 id="setup-title">Consultant Setup</h1></div><button onClick={onClose} aria-label="Back to Deal Commander"><X /></button></header>
+      <header className={styles.header}><div><p>YOUR WORKSPACE</p><h1 id="setup-title">Consultant Setup</h1></div><button onClick={onClose} aria-label="Back to workspace"><X /></button></header>
       <div className={styles.content}>
         <section className={styles.photoSection}>
           <div className={styles.photo}>{photo ? <Image src={photo} alt="Your profile photo" width={84} height={84} unoptimized /> : <UserRound size={36} />}</div>

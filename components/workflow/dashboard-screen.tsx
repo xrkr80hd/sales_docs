@@ -1,74 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-
-import { CarFront, ChevronRight, FileText, ContactRound, Images, MessageCircle } from "lucide-react";
-import { ConsultantBoardProvider, ConsultantPace, ConsultantTeamBoard } from "@/components/command-center/consultant-board";
+import { CarFront, ChevronRight } from "lucide-react";
+import { clearLocalDealId, consumeStartFreshDeal, markStartFreshDeal } from "@/lib/deals";
+import { clearWorkflowSession } from "@/lib/walker-workflow";
 import styles from "@/components/command-center/workspace.module.css";
-import {
-  clearLocalDealId,
-  consumeStartFreshDeal,
-  deleteDeal,
-  listMyDeals,
-  loadDealFromServer,
-  markStartFreshDeal,
-  setLocalDealId,
-  type DealSummary
-} from "@/lib/deals";
-import { useMessengerUnread } from "@/components/messenger/unread-context";
-import { isSupabaseConfigured } from "@/lib/supabase-browser";
-import {
-  clearWorkflowSession,
-  loadWorkflow,
-  saveSignatures,
-  saveWorkflow,
-  type WorkflowData
-} from "@/lib/walker-workflow";
 
 export function DashboardScreen() {
   const router = useRouter();
-  const [lastDeal, setLastDeal] = useState<DealSummary | null>(null);
-  const [allDeals, setAllDeals] = useState<DealSummary[]>([]);
-  const [resuming,setResuming]=useState(false);
-  const [dealError,setDealError]=useState("");
-  const [showPicker, setShowPicker] = useState(false);
-  const {total:messengerUnread}=useMessengerUnread();
-  const [localResume] = useState<{ name: string; dealType: "new" | "used" } | null>(() => {
-    const wf = loadWorkflow();
-    if (!wf.customerName && !wf.vin && !wf.dealNumber) {
-      return null;
-    }
-    return {
-      name: wf.customerName || "In-Progress Deal",
-      dealType: wf.dealType === "new" ? "new" : "used",
-    };
-  });
-
-  // Fetch deals from server on mount (persists across devices)
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      if (!isSupabaseConfigured()) {
-        return;
-      }
-      const deals = await listMyDeals(true);
-      if (cancelled) return;
-
-      // Sort most recent first
-      const sorted = [...deals].sort(
-        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
-      );
-
-      setLastDeal(sorted[0] ?? null);
-      setAllDeals(sorted);
-    }
-    void load().catch(()=>{if(!cancelled)setDealError("Saved deals are temporarily unavailable. You can still start a new deal.");});
-    return () => { cancelled = true; };
-  }, []);
-
-
   function startFreshDeal(dealType: "new" | "used") {
     clearWorkflowSession();
     clearLocalDealId();
@@ -76,139 +15,16 @@ export function DashboardScreen() {
     markStartFreshDeal(dealType);
     router.push(dealType === "new" ? "/deal-sheet/new" : "/deal-sheet");
   }
-
-  async function resumeDeal(summary: DealSummary) {
-    if(resuming)return;setResuming(true);setDealError("");
-    try {
-    const deal=await loadDealFromServer(summary.id);
-    if(!deal)throw new Error("This deal could not be opened. Refresh the list and try again.");
-    const workflow = deal.workflow_data as unknown as WorkflowData;
-    saveWorkflow(workflow);
-    if (deal.signatures && typeof deal.signatures === "object") {
-      saveSignatures(deal.signatures as Record<string, string>);
-    }
-    setLocalDealId(deal.id);
-    setShowPicker(false);
-    const route = workflow.dealType === "new" ? "/deal-sheet/new" : "/deal-sheet";
-    router.push(route);
-    }catch(failure){setDealError(failure instanceof Error?failure.message:"Could not resume deal.");}
-    finally{setResuming(false);}
-  }
-
-  const previousDeals = lastDeal
-    ? allDeals.filter((deal) => deal.id !== lastDeal.id)
-    : allDeals;
-  const pickerDeals = previousDeals.length > 0 ? previousDeals : allDeals;
-  return (
-    <>
-      <ConsultantBoardProvider><section aria-label="Consultant dashboard">
-        <div className={styles.hero} id="start-deal">
-          <p className={styles.eyebrow}>Welcome to NXTDOX</p>
-          <h1 className={styles.pageTitle}>Start a Deal</h1>
-          <div className={styles.underline} />
-          <p className={styles.subtitle}>Choose a vehicle type to get started.</p>
-        </div>
-        <nav className={styles.vehicleActions} aria-label="Start a deal">
-          <button type="button" onClick={() => startFreshDeal("new")} className={styles.vehicleButton}><CarFront /><span>New Vehicle</span><ChevronRight /></button>
-          <button type="button" onClick={() => startFreshDeal("used")} className={styles.vehicleButton}><CarFront /><span>Used Vehicle</span><ChevronRight /></button>
-        </nav>
-        <div className={styles.dashboardGrid}>
-          <div className={styles.column}>
-            <section className={styles.panel}>
-              <div className={styles.panelHeader}><h2>Resume Deal / Previous Deals</h2><button type="button" className={styles.textLink} onClick={() => setShowPicker(true)}>View All ({pickerDeals.length})</button></div>
-              {dealError&&<p role="alert" className={styles.notice}>{dealError}</p>}
-              <div className={styles.dealList}>
-                {allDeals.slice(0, 3).map(deal => {
-                  const wf = deal.workflow_data as unknown as WorkflowData;
-                  const vehicle = [wf.vehicleYear, wf.vehicleMake, wf.vehicleModel].filter(Boolean).join(" ");
-                  return <button type="button" key={deal.id} disabled={resuming} onClick={() => void resumeDeal(deal)} className={styles.dealRow}><div><strong>{wf.customerName || "In-Progress Deal"}</strong><small>{vehicle || "Vehicle details pending"}</small></div><span className={styles.dealStatus}>Resume</span><ChevronRight size={18} /></button>;
-                })}
-                {!lastDeal && localResume && <Link prefetch={false} href={localResume.dealType === "new" ? "/deal-sheet/new" : "/deal-sheet"} className={styles.dealRow}><div><strong>{localResume.name}</strong><small>Resume this device&apos;s in-progress deal</small></div><ChevronRight size={18} /></Link>}
-                {!lastDeal && !localResume && <p className={`${styles.muted} p-4`}>No saved deals yet. Start a new or used vehicle deal above.</p>}
-              </div>
-            </section>
-            <ConsultantPace />
-          </div>
-          <div className={styles.column}>
-            <section className={styles.panel}>
-              <details open><summary className={`${styles.panelHeader} cursor-pointer list-none`}><h2>Consultant Tools</h2><ChevronRight size={18} /></summary>
-                <div className={styles.tools}>
-                  {[
-                    { label: "Training", href: "/training", icon: FileText },
-                    { label: "Business Card", href: "/business-card", icon: ContactRound },
-                    { label: "Vehicle Collage", href: "/vehicle-collage", icon: Images },
-                    { label: "Messenger", href: "/messenger", icon: MessageCircle },
-                  ].map(({ label, href, icon: Icon }) => <Link prefetch={false} key={href} href={href} className={styles.tool}><Icon /><span>{label}{href === "/messenger" && messengerUnread > 0 && <span className={styles.unread}> · {messengerUnread} unread</span>}</span><ChevronRight /></Link>)}
-                </div>
-              </details>
-            </section>
-            <ConsultantTeamBoard />
-          </div>
-        </div>
-      </section></ConsultantBoardProvider>
-
-      {showPicker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setShowPicker(false)}
-            onKeyDown={(e) => { if (e.key === "Escape") setShowPicker(false); }}
-            role="button"
-            tabIndex={-1}
-            aria-label="Close deal picker"
-          />
-          <div className="relative z-10 mx-4 w-full max-w-md border border-white/10 bg-[#1c1c1e] shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-              <h2 className="text-lg font-bold text-white">Previous Deals</h2>
-              <button
-                type="button"
-                onClick={() => setShowPicker(false)}
-                className="inline-flex h-8 w-8 items-center justify-center text-white/60 transition hover:text-white"
-                aria-label="Close"
-              >✕</button>
-            </div>
-            <div className="max-h-[60vh] overflow-y-auto">
-              {pickerDeals.length === 0 ? (
-                <p className="px-5 py-8 text-center text-sm text-white/50">No previous deals found.</p>
-              ) : (
-                <div className="divide-y divide-white/5">
-                  {pickerDeals.map((deal) => {
-                    const wf = deal.workflow_data as unknown as WorkflowData;
-                    const name = wf.customerName || "Unnamed";
-                    const vehicle = [wf.vehicleYear, wf.vehicleMake, wf.vehicleModel].filter(Boolean).join(" ") || "No vehicle";
-                    const type = wf.dealType === "new" ? "New" : "Used";
-                    return (
-                      <div key={deal.id} className="flex items-center">
-                        <button
-                          type="button"
-                          disabled={resuming} onClick={() => void resumeDeal(deal)}
-                          className="flex min-w-0 flex-1 flex-col gap-1 px-5 py-4 text-left transition hover:bg-white/5"
-                        >
-                          <span className="text-sm font-bold text-white">{name}</span>
-                          <span className="text-xs text-white/50">{vehicle} · {type}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            if (!confirm(`Are you sure you want to delete ${name}'s deal?`)) return;
-                            const ok = await deleteDeal(deal.id);
-                            if (ok) setAllDeals((prev) => prev.filter((d) => d.id !== deal.id));
-                          }}
-                          className="mr-3 shrink-0 border border-transparent px-2 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white/40 transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                          aria-label={`Delete ${name}'s deal`}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
+  return <section aria-label="Deal Commander">
+    <div className={styles.hero} id="start-deal">
+      <p className={styles.eyebrow}>Deal Commander</p>
+      <h1 className={styles.pageTitle}>Start a Deal</h1>
+      <div className={styles.underline} />
+      <p className={styles.subtitle}>Choose a vehicle type to get started.</p>
+    </div>
+    <nav className={styles.vehicleActions} aria-label="Start a deal">
+      <button type="button" onClick={() => startFreshDeal("new")} className={styles.vehicleButton}><CarFront /><span>New Vehicle</span><ChevronRight /></button>
+      <button type="button" onClick={() => startFreshDeal("used")} className={styles.vehicleButton}><CarFront /><span>Used Vehicle</span><ChevronRight /></button>
+    </nav>
+  </section>;
 }
