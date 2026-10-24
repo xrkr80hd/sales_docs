@@ -77,7 +77,7 @@ export function ConsultantSetupScreen() {
           <div><h3>Organization profile</h3><p>{identity?.displayName || "Your name"}</p><p>{ROLE_LABELS[(identity?.workspaceRole || identity?.role || "user") as WorkspaceRole]} · {identity?.dealership || "Unassigned"}</p><p>Internal staff photo. Separate from your public business card.</p><label className={styles.upload}><Camera size={16} />Upload photo<input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload profile picture" onChange={uploadPhoto} disabled={saving || loading} /></label><small>JPG, PNG or WebP · up to 3 MB</small></div>
         </section>
         {status && <p className={styles.status} role="status">{status}</p>}{error && <p className={styles.error} role="alert">{error}</p>}
-        <Link prefetch={false} href="/business-card" onClick={onClose} className={styles.adminLink}>Edit public business card separately</Link>
+        <Link prefetch={false} href="/business-card" className={styles.adminLink}>Edit public business card separately</Link>
         <form onSubmit={event => { event.preventDefault(); void save(); }}>
           <fieldset disabled={saving || loading}>
             <details className={styles.section} open><summary><div><h3>Consultant information</h3><p>Your contact details for documents and tools</p></div><ChevronDown size={18} /></summary><div className={styles.fields}>
@@ -91,7 +91,7 @@ export function ConsultantSetupScreen() {
             <button type="submit" className={styles.save}>{loading ? "Loading account…" : saving ? "Saving…" : "Save consultant setup"}</button>
           </fieldset>
         </form>
-        {(identity?.role === "admin" || identity?.email === "xrkr80hd@gmail.com") && <Link prefetch={false} href="/admin" onClick={onClose} className={styles.adminLink}>Team Management</Link>}
+        {(identity?.role === "admin" || identity?.email === "xrkr80hd@gmail.com") && <Link prefetch={false} href="/admin" className={styles.adminLink}>Team Management</Link>}
       </div>
   </section>;
 }

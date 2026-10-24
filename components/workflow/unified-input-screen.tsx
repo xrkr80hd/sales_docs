@@ -1,5 +1,9 @@
 "use client";
 
+import {useRouter} from "next/navigation";
+import {useWorkspaceIdentity} from "@/components/command-center/workspace-context";
+import {readPageAccordions,writePageAccordions,clearPageAccordions} from "@/lib/page-accordion-state";
+import {markDealTypeTransfer,consumeDealTypeTransfer} from "@/lib/deal-type-transfer";
 import Image from "next/image";
 import headerStyles from "./deal-header.module.css";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -51,10 +55,12 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border border-white/10 shadow-[0_0_30px_rgba(190,23,23,0.12),0_14px_40px_rgba(0,0,0,0.2)]">
+    <div role="region" aria-label={title} className="min-w-0 max-w-full border border-white/10 shadow-[0_0_30px_rgba(190,23,23,0.12),0_14px_40px_rgba(0,0,0,0.2)]">
       <button
         type="button"
         onClick={onToggle}
+        aria-expanded={open}
+        aria-label={title}
         className="flex w-full items-center justify-between bg-[var(--accent)]  bg-cover bg-center px-5 py-4 text-left"
       >
         <span className="flex items-center gap-2">
@@ -79,6 +85,7 @@ function Section({
             <button
               type="button"
               onClick={onToggleComplete}
+              aria-label={complete?"Section Complete":"Mark Complete"}
               className={`mt-5 flex min-h-12 w-full items-center justify-center gap-3 border px-4 text-sm font-bold uppercase tracking-[0.08em] transition ${complete
                 ? "border-green-500 bg-green-500/20 text-green-400"
                 : "border-white/20 bg-white/5 text-white/60 hover:border-green-500"
@@ -111,7 +118,7 @@ function Section({
 /* ── Shared input classes ─────────────────────────────────── */
 
 const INPUT =
-  "min-h-12 border border-white/10 bg-white px-4 text-base text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]";
+  "min-w-0 w-full max-w-full min-h-12 border border-white/10 bg-white px-4 text-base text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]";
 const LABEL =
   "text-xs font-bold uppercase tracking-[0.14em] text-white/60";
 
@@ -122,6 +129,7 @@ export function UnifiedInputScreen({
 }: {
   dealType?: "used" | "new";
 }) {
+  const router=useRouter();const identity=useWorkspaceIdentity();
   const isNew = dealType === "new";
   const { dialog } = useVinConfirmation();
   const [data, setData] = useState<WorkflowData>(() => loadWorkflow());
@@ -134,22 +142,24 @@ export function UnifiedInputScreen({
 
   const serverSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialLoadDone = useRef(false);
+  const serverSaveInFlight=useRef<ReturnType<typeof saveDealToServer>|null>(null);
+  const [typeChanging,setTypeChanging]=useState(false);
 
   /* ── Accordion open states ── */
-  const [sections, setSections] = useState<Record<string, boolean>>({
-    customer: true,
-    address: false,
-    vehicle: false,
-    trade: false,
-    payoff: false,
-    dealSetup: false,
-    checklist: false,
-    requiredDocs: false,
-    spaced: false,
-  });
-
-  function toggle(key: string) {
-    setSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  const accordionKey=`${identity?.id}:deal:${dealId||"draft"}`;
+  const initialAccordionKey=useRef(accordionKey);
+  const [sections,setSections]=useState<Record<string,boolean>>(()=>readPageAccordions(accordionKey));
+  function toggle(key:string){setSections(previous=>{const next={...previous,[key]:!previous[key]};writePageAccordions(accordionKey,next);return next;});}
+  async function switchDealType(nextType:"new"|"used"){
+   if(nextType===dealType||typeChanging)return;
+   if(serverSaveTimer.current){clearTimeout(serverSaveTimer.current);serverSaveTimer.current=null;}
+   setTypeChanging(true);
+   try{
+    const pending=serverSaveInFlight.current;
+    if(pending&&!await pending){setStatus("Save could not be confirmed. Your information is still here; try changing the vehicle type again.");setTone("warn");return;}
+    const next=saveWorkflow({...loadWorkflow(),dealType:nextType});setData(next);markDealTypeTransfer(nextType);
+    router.push(nextType==="new"?"/deal-sheet/new":"/deal-sheet");
+   }finally{setTypeChanging(false);}
   }
 
   function isSectionComplete(key: string) {
@@ -216,7 +226,10 @@ export function UnifiedInputScreen({
       serverSaveTimer.current = setTimeout(async () => {
         if (!isSupabaseConfigured()) return;
         const sigs = loadSignatures();
-        const result = await saveDealToServer(workflow, sigs, currentDealId);
+        const pending=saveDealToServer(workflow,sigs,currentDealId);
+        serverSaveInFlight.current=pending;
+        const result=await pending;
+        if(serverSaveInFlight.current===pending)serverSaveInFlight.current=null;
         if (result === null) {
           setStatus("Could not sync to server — please refresh or sign in again.");
           setTone("warn");
@@ -242,8 +255,10 @@ export function UnifiedInputScreen({
   useEffect(() => {
     let cancelled = false;
     async function loadDeals() {
+      if(consumeDealTypeTransfer(dealType)){const current=saveWorkflow({...loadWorkflow(),dealType});setData(current);setDealId(getLocalDealId());initialLoadDone.current=true;return;}
       const startFreshDealType = consumeStartFreshDeal();
       if (startFreshDealType === dealType) {
+        clearPageAccordions(initialAccordionKey.current);setSections({});
         const next = saveWorkflow({
           ...createDefaultWorkflowData(),
           dealType,
@@ -311,18 +326,19 @@ export function UnifiedInputScreen({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [dealType]);
 
   /* ── Session clear listener ── */
   useEffect(() => {
     return subscribeToWorkflowSessionClear(() => {
       clearLocalDealId();
+      clearPageAccordions(accordionKey);setSections({});
       setDealId(null);
       setData(loadWorkflow());
       setStatus("Session cleared. Ready for a new deal.");
       setTone("success");
     });
-  }, []);
+  }, [accordionKey]);
 
   /* ── Actions ── */
 
@@ -410,13 +426,14 @@ export function UnifiedInputScreen({
 
   return (
     <>
-      <div className="grid gap-4">
+      <div className="deal-input-screen grid min-w-0 max-w-full gap-4">
         <section className={headerStyles.header} aria-label="Deal header">
           <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} className={headerStyles.logo} />
           <div className={headerStyles.details}>
             <h2>{isNew ? "New Vehicle" : "Used Vehicle"}</h2>
             <p>Last 8: <span>{getLast8(data.vin) || "—"}</span></p>
           </div>
+          <label className={headerStyles.typePicker}>Vehicle type<select aria-label="Vehicle type" disabled={typeChanging} value={dealType} onChange={event=>switchDealType(event.target.value as "new"|"used")}><option value="new">New</option><option value="used">Used</option></select></label>
         </section>
 
         {/* Status bar */}
@@ -436,7 +453,7 @@ export function UnifiedInputScreen({
         {/* ── 1. Customer Info ───────────────────────────────── */}
         <Section
           title="Customer Info"
-          open={sections.customer}
+          open={!!sections.customer}
           onToggle={() => toggle("customer")}
           complete={isSectionComplete("customer")}
           onToggleComplete={() => toggleSectionComplete("customer")}
@@ -505,7 +522,7 @@ export function UnifiedInputScreen({
         {/* ── 2. Address ─────────────────────────────────────── */}
         <Section
           title="Address"
-          open={sections.address}
+          open={!!sections.address}
           onToggle={() => toggle("address")}
           complete={isSectionComplete("address")}
           onToggleComplete={() => toggleSectionComplete("address")}
@@ -624,7 +641,7 @@ export function UnifiedInputScreen({
         {/* ── 3. S.P.A.C.E.D. ───────────────────────────────── */}
         <Section
           title="S.P.A.C.E.D."
-          open={sections.spaced}
+          open={!!sections.spaced}
           onToggle={() => toggle("spaced")}
           complete={isSectionComplete("spaced")}
           onToggleComplete={() => toggleSectionComplete("spaced")}
@@ -770,7 +787,7 @@ export function UnifiedInputScreen({
         {/* ── 4. Vehicle Trade-In ─────────────────────────── */}
         <Section
           title="Vehicle Trade-In"
-          open={sections.trade}
+          open={!!sections.trade}
           onToggle={() => toggle("trade")}
           complete={isSectionComplete("trade")}
           onToggleComplete={() => toggleSectionComplete("trade")}
@@ -810,7 +827,7 @@ export function UnifiedInputScreen({
 
           {data.tradeIn === "yes" && (
             <>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="mt-4 vehicle-field-grid grid grid-cols-2 gap-3">
                 <label className="grid gap-2">
                   <span className={LABEL}>Approx. Balance</span>
                   <input
@@ -836,10 +853,8 @@ export function UnifiedInputScreen({
               </div>
 
               <hr className="my-4 border-white/10" />
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-white/50">
-                Trade-In Vehicle
-              </p>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <Section title="Trade-In Information" open={!!sections.tradeInformation} onToggle={()=>toggle("tradeInformation")} complete={isSectionComplete("tradeInformation")} onToggleComplete={()=>toggleSectionComplete("tradeInformation")}>
+              <div className="vehicle-field-grid grid grid-cols-2 gap-3">
                 <label className="grid gap-2">
                   <span className={LABEL}>Year</span>
                   <input
@@ -869,8 +884,8 @@ export function UnifiedInputScreen({
                   />
                 </label>
               </div>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-2 sm:col-span-2">
+              <div className="mt-4 vehicle-field-grid grid grid-cols-2 gap-3">
+                <label className="grid gap-2 col-span-2">
                   <span className={LABEL}>Trade VIN</span>
                   <input
                     type="text"
@@ -904,6 +919,7 @@ export function UnifiedInputScreen({
                   />
                 </label>
               </div>
+              </Section>
             </>
           )}
         </Section>
@@ -912,12 +928,12 @@ export function UnifiedInputScreen({
         {data.tradeIn === "yes" && (
           <Section
             title="Payoff / Lienholder"
-            open={sections.payoff}
+            open={!!sections.payoff}
             onToggle={() => toggle("payoff")}
             complete={isSectionComplete("payoff")}
             onToggleComplete={() => toggleSectionComplete("payoff")}
           >
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="vehicle-field-grid grid grid-cols-2 gap-3">
               <label className="grid gap-2">
                 <span className={LABEL}>Lienholder Name</span>
                 <input
@@ -1007,7 +1023,7 @@ export function UnifiedInputScreen({
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-white/50">
               Representative
             </p>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="vehicle-field-grid grid grid-cols-2 gap-3">
               <label className="grid gap-2">
                 <span className={LABEL}>Rep Name</span>
                 <input
@@ -1044,12 +1060,12 @@ export function UnifiedInputScreen({
         {/* ── 6. Vehicle Being Purchased ─────────────────────── */}
         <Section
           title="Vehicle Being Purchased"
-          open={sections.vehicle}
+          open={!!sections.vehicle}
           onToggle={() => toggle("vehicle")}
           complete={isSectionComplete("vehicle")}
           onToggleComplete={() => toggleSectionComplete("vehicle")}
         >
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="vehicle-field-grid grid grid-cols-2 gap-3">
             <label className="grid gap-2">
               <span className={LABEL}>Year</span>
               <input
@@ -1078,10 +1094,11 @@ export function UnifiedInputScreen({
                 className={INPUT}
               />
             </label>
+            <label className="grid gap-2"><span className={LABEL}>Trim</span><input type="text" value={data.vehicleTrim||""} onChange={event=>updateField("vehicleTrim",event.target.value)} className={INPUT}/></label>
           </div>
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-2 sm:col-span-2">
+          <div className="mt-4 vehicle-field-grid grid grid-cols-2 gap-3">
+            <label className="grid gap-2 col-span-2">
               <span className={LABEL}>VIN</span>
               <input
                 type="text"
@@ -1105,7 +1122,7 @@ export function UnifiedInputScreen({
             </label>
             <div className="grid gap-2">
               <span className={LABEL}>Stock #</span>
-              <div className="flex gap-2">
+              <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_52px] gap-2">
                 <input
                   type="text"
                   inputMode="numeric"
@@ -1119,7 +1136,8 @@ export function UnifiedInputScreen({
                   onChange={(e) =>
                     updateField("stockNumberLetter", e.target.value)
                   }
-                  className="min-h-12 border border-white/10 bg-white px-3 text-base font-bold text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+                  aria-label="Stock suffix"
+                  className="min-w-0 w-full max-w-full min-h-12 border border-white/10 bg-white px-1 text-base font-bold text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
                 >
                   <option value="">—</option>
                   <option value="A">A</option>
@@ -1147,7 +1165,7 @@ export function UnifiedInputScreen({
         {/* ── 7. Deal Setup ──────────────────────────────────── */}
         <Section
           title="Deal Setup"
-          open={sections.dealSetup}
+          open={!!sections.dealSetup}
           onToggle={() => toggle("dealSetup")}
           complete={isSectionComplete("dealSetup")}
           onToggleComplete={() => toggleSectionComplete("dealSetup")}
@@ -1188,7 +1206,7 @@ export function UnifiedInputScreen({
         {/* ── 8. Required Documents ──────────────────────────── */}
         <Section
           title="Required Documents"
-          open={sections.requiredDocs}
+          open={!!sections.requiredDocs}
           onToggle={() => toggle("requiredDocs")}
           complete={isSectionComplete("requiredDocs")}
           onToggleComplete={() => toggleSectionComplete("requiredDocs")}
@@ -1243,7 +1261,7 @@ export function UnifiedInputScreen({
         {/* ── 9. Checklist Items ─────────────────────────────── */}
         <Section
           title="Checklist"
-          open={sections.checklist}
+          open={!!sections.checklist}
           onToggle={() => toggle("checklist")}
           complete={isSectionComplete("checklist")}
           onToggleComplete={() => toggleSectionComplete("checklist")}

@@ -21,7 +21,7 @@ const labels: Record<string, string> = {
 export function ProfileAnalyticsPanel() {
   const [open,setOpen]=useState(false);
   const [data, setData] = useState<AnalyticsData | null>(null);
-  const [message, setMessage] = useState(()=>isSupabaseConfigured()?"Loading private analytics…":"Analytics become available when connected.");
+  const [message, setMessage] = useState(()=>isSupabaseConfigured()?"Loading card activity…":"Card activity is unavailable right now.");
 
   useEffect(() => {
     if(!open||data)return;
@@ -46,10 +46,9 @@ export function ProfileAnalyticsPanel() {
   }, [open,data]);
 
   return (
-    <details onToggle={event=>setOpen(event.currentTarget.open)} className="mb-4 overflow-hidden rounded-2xl border border-white/10 bg-[#171719] text-white">
+    <details onToggle={event=>setOpen(event.currentTarget.open)} className="mb-4 overflow-hidden rounded-md border border-white/10 bg-[#171719] text-white">
       <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between px-4 font-black [&::-webkit-details-marker]:hidden">
-        <span>Private analytics</span>
-        <span className="text-xs font-semibold text-white/45">Only visible after login</span>
+        <span>Card activity</span>
       </summary>
       <div className="border-t border-white/10 p-4">
         {message && <p className="text-sm text-white/55">{message}</p>}

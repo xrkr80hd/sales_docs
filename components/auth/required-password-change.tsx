@@ -1,4 +1,5 @@
 "use client";
+import { readDisplayHandoff } from "@/lib/display-handoff";
 import { requestJson } from "@/lib/request-json";
 import { SoftwareLogo } from "@/components/branding/software-logo";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
@@ -8,8 +9,9 @@ import type { WorkspaceIdentity } from "@/components/command-center/workspace-co
 const VerifiedAccountContext = createContext<WorkspaceIdentity | null>(null);
 export function useVerifiedAccount() { return useContext(VerifiedAccountContext); }
 export function PasswordRequirement({ session, children }: { session: Session; children: ReactNode }) {
-  const [account, setAccount] = useState<WorkspaceIdentity | null>(null);
-  const [required, setRequired] = useState<boolean | null>(null);
+  const [handoff] = useState(() => readDisplayHandoff(session.user.id));
+  const [account, setAccount] = useState<WorkspaceIdentity | null>(handoff?.account ?? null);
+  const [required, setRequired] = useState<boolean | null>(handoff ? false : null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
@@ -29,9 +31,9 @@ export function PasswordRequirement({ session, children }: { session: Session; c
       } catch (failure) { if (active) setError(failure instanceof Error ? failure.message : "Could not verify access."); }
       finally { pending = false; }
     };
-    void check(); const timer = window.setInterval(() => { if (document.visibilityState === "visible") void check(); }, 60000);
+    if (!handoff || attempt > 0 || handoff.expiresAt < Date.now()) void check(); const timer = window.setInterval(() => { if (document.visibilityState === "visible") void check(); }, 60000);
     return () => { active = false; window.clearInterval(timer); };
-  }, [session.access_token, attempt]);
+  }, [session.access_token, attempt, handoff]);
   if (required === false && account) return <VerifiedAccountContext.Provider value={account}>{children}</VerifiedAccountContext.Provider>;
   return <div className="nxt-ui nxt-auth-screen"><section className="nxt-auth-panel"><header className="nxt-auth-header"><div className="nxt-auth-wordmark"><SoftwareLogo /></div><h2>{required ? "Choose a new password" : error ? "Account check interrupted" : "Checking account access…"}</h2></header><div className="nxt-auth-form">
     {error && <><p role="alert">{error}</p><button type="button" onClick={() => { setError(""); setAttempt(value => value + 1); }}>Retry account check</button></>}

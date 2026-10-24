@@ -5,3 +5,6 @@
 .details p { margin: 0; font-size: 12px; line-height: 1.5; color: #bfcbd4; white-space: nowrap; }
 .details p span { font-family: monospace; color: #f4f7fa; }
 @media(max-width:480px) { .header { gap: 10px; padding: 8px 10px; } .logo { width: 70px; } .details { display: block; } .details h2 { font-size: 17px; } }
+
+.typePicker {display:grid;gap:3px;font-size:11px;flex:0 0 auto;}
+.typePicker select {background:var(--panel);border:1px solid var(--border);color:var(--foreground);padding:5px;font-size:13px;max-width:85px;}

@@ -6,7 +6,7 @@ export const CDJR_LINKS: ConsultantLink[] = [
   { id: "drive-centric", name: "Drive Centric", url: "https://app.drivecentric.com/" },
 ];
 export function normalizedConsultantUrl(value: string): string | null {
-  try { const url=new URL(value.trim());return ["https:","http:"].includes(url.protocol)&&!url.username&&!url.password&&!/[\u0000-\u001f\u007f]/.test(value)?url.href:null; } catch { return null; }
+  try { const trimmed=value.trim();const candidate=/^[a-z][a-z\d+.-]*:/i.test(trimmed)?trimmed:`https://${trimmed.replace(/^\/\//,"")}`;if(!trimmed||/\s/.test(trimmed))return null;const url=new URL(candidate);return ["https:","http:"].includes(url.protocol)&&!url.username&&!url.password&&!/[\u0000-\u001f\u007f]/.test(value)?url.href:null; } catch { return null; }
 }
 export function validConsultantUrl(value: string) { return normalizedConsultantUrl(value)!==null; }
 export function validateConsultantLinks(value: unknown): ConsultantLink[] {

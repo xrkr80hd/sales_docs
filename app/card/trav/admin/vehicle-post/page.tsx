@@ -1,5 +1,7 @@
 "use client";
 
+import {useWorkspaceIdentity} from "@/components/command-center/workspace-context";
+import {cachedResource,primeResource,invalidateResource} from "@/lib/client-resource-cache";
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   createDefaultConsultant,
@@ -208,19 +210,22 @@ const canvasToPngBlob = (canvas: HTMLCanvasElement) => new Promise<Blob>((resolv
 });
 
 export default function VehiclePostBuilder() {
-  const [form, setForm] = useState(initialForm);
-  const [photoCount, setPhotoCount] = useState<number | null>(null);
-  const [photos, setPhotos] = useState<CropPhoto[]>([]);
+  const identity=useWorkspaceIdentity();const scope=`collage:${identity?.id||""}`;
+  const [restored]=useState(()=>identity?.id?cachedResource<{form:VehicleForm;photoCount:number|null;photos:CropPhoto[];editId:string|null}>(scope,"working-collage"):undefined);
+  const [form, setForm] = useState(restored?.form||initialForm);
+  const [photoCount, setPhotoCount] = useState<number | null>(restored?.photoCount??null);
+  const [photos, setPhotos] = useState<CropPhoto[]>(restored?.photos||[]);
   const [uploadSlot, setUploadSlot] = useState(0);
   const [selectedPhoto, setSelectedPhoto] = useState(0);
   const [selectedCaption, setSelectedCaption] = useState(0);
   const [editorOpen, setEditorOpen] = useState(false);
   const [savingCarousel, setSavingCarousel] = useState(false);
-  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
+  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(restored?.editId??null);
   const [notice, setNotice] = useState("");
   const [toast, setToast] = useState("");
   const [dealer, setDealer] = useState<DealerInfo>(createDefaultDealer);
   const [consultant, setConsultant] = useState<ConsultantInfo>(createDefaultConsultant);
+  const editGeneration=useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLCanvasElement>(null);
   const dragRef = useRef<{ index: number; startX: number; startY: number; initialX: number; initialY: number } | null>(null);
@@ -228,6 +233,11 @@ export default function VehiclePostBuilder() {
   const editorPointers = useRef(new Map<number, { x: number; y: number }>());
   const editorGesture = useRef<{ distance: number; zoom: number } | null>(null);
 
+  useEffect(()=>{if(identity?.id)primeResource(scope,"working-collage",{form,photoCount,photos,editId:editingVehicleId},30*60*1000);},[scope,identity?.id,form,photoCount,photos,editingVehicleId]);
+  function newCollage(){
+    editGeneration.current++;
+    photos.forEach(photo=>URL.revokeObjectURL(photo.url));invalidateResource(scope,"working-collage");setForm({...initialForm,consultantUrl:form.consultantUrl});setPhotos([]);setPhotoCount(null);setEditingVehicleId(null);setSelectedPhoto(0);setNotice("");window.dispatchEvent(new Event("page-accordions-reset"));
+  }
   useEffect(() => {
     if (!previewRef.current) return;
     void renderCollage(previewRef.current, photos, form, dealer, consultant, selectedPhoto);
@@ -506,10 +516,12 @@ INSTRUCTIONS
 
   useEffect(() => {
     const editId = new URLSearchParams(window.location.search).get("edit");
-    if (!editId) return;
+    if (!editId || restored?.editId===editId) return;
+    const generation=++editGeneration.current;
     void authFetch("/api/me/business-card").then(async (response) => {
       const result = await response.json();
-      const cardUrl = result.card?.slug ? consultantCardUrl(result.card.slug) : form.consultantUrl;
+      if(generation!==editGeneration.current)return;
+      const cardUrl = result.card?.slug ? consultantCardUrl(result.card.slug) : (restored?.form.consultantUrl||"");
       const draft = normalizeProfileContent(result.card?.draft, Boolean(result.isAdmin));
       const vehicle = draft.vehicles.find((item) => item.id === editId);
       if (!vehicle) throw new Error("That vehicle could not be found in your card.");
@@ -540,7 +552,7 @@ INSTRUCTIONS
       setPhotos(project.photos.map((photo) => ({ id: crypto.randomUUID(), ...photo })));
       setNotice("Editable collage loaded. Update it, then save it back to your carousel draft.");
     }).catch((error) => setNotice(error instanceof Error ? error.message : "The collage could not be loaded."));
-  }, []);
+  }, [restored]);
 
   const buildCollageBlob = async () => {
     const canvas = document.createElement("canvas");
@@ -641,12 +653,13 @@ INSTRUCTIONS
     <main className={styles.page}>
       <div className={styles.shell}>
         <header className={styles.header}>
-          <p>Consultant backend</p>
+          <p>Consultant Tools</p>
           <h1>Vehicle Collage Builder</h1>
-          <span>Build a true 1920 × 1080 collage. What you see is exactly what downloads.</span>
+          <span>Create a vehicle collage to download or add to your business card.</span>
+          <button type="button" onClick={newCollage}>New collage</button>
         </header>
 
-        <details className={styles.panel} open>
+        <details className={styles.panel}>
           <summary><span>01</span> How many photos?</summary>
           <div className={styles.panelBody}>
             <p className={styles.helperText}>Choose a layout first. The builder will then tell you which vehicle views fit each space.</p>
@@ -669,7 +682,7 @@ INSTRUCTIONS
           </div>
         </details>
 
-        <details className={styles.panel} open>
+        <details className={styles.panel}>
           <summary><span>02</span> Vehicle information</summary>
           <div className={styles.panelBody}>
             <div className={styles.grid}>
@@ -677,7 +690,7 @@ INSTRUCTIONS
               <label>Make<input value={form.make} onChange={update("make")} /></label>
               <label>Model<input value={form.model} onChange={update("model")} /></label>
               <label>Trim<input value={form.trim} onChange={update("trim")} /></label>
-              <label>VIN<input value={form.vin} onChange={update("vin")} /></label>
+              <label className={styles.fullField}>VIN<input value={form.vin} onChange={update("vin")} /></label>
               <label>Stock number<input value={form.stock} onChange={update("stock")} /></label>
               <label>Mileage<input inputMode="numeric" value={form.mileage} onChange={update("mileage")} /></label>
               <label>Price<div className={styles.priceInput}><span>$</span><input type="number" min="0" step="1" inputMode="decimal" value={form.price} onChange={update("price")} placeholder="00,000" /></div></label>
@@ -696,7 +709,7 @@ INSTRUCTIONS
           </div>
         </details>
 
-        <details className={styles.panel} open>
+        <details className={styles.panel}>
           <summary><span>03</span> Add and position photos</summary>
           <div className={styles.panelBody}>
             {photoCount === null ? (
@@ -770,7 +783,7 @@ INSTRUCTIONS
           </div>
         </details>
 
-        <details className={styles.panel} open>
+        <details className={styles.panel}>
           <summary><span>04</span> Facebook-ready posts</summary>
           <div className={styles.panelBody}>
             <p className={styles.helperText}>Choose a post style. Vehicle details and the Walker disclaimer are added automatically.</p>

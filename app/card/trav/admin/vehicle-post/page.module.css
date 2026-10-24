@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  background: radial-gradient(circle at 10% 0%, rgba(190, 23, 23, .22), transparent 32rem), #0d0e10;
+  background:var(--background);
   color: #f7f7f7;
   padding: 24px 14px 56px;
 }
@@ -13,8 +13,8 @@
 .header {
   margin-bottom: 18px;
   border: 1px solid #30333a;
-  border-radius: 26px;
-  background: linear-gradient(150deg, #22252a, #14161a 70%);
+  border-radius: 6px;
+  background:var(--panel);
   padding: 24px;
 }
 
@@ -43,7 +43,7 @@
   margin-top: 12px;
   overflow: hidden;
   border: 1px solid #30333a;
-  border-radius: 20px;
+  border-radius: 6px;
   background: #17191d;
 }
 
@@ -763,7 +763,7 @@
   width: min(100%, 760px);
   gap: 14px;
   border: 1px solid #3a3e45;
-  border-radius: 20px;
+  border-radius: 6px;
   background: #17191d;
   padding: 16px;
   box-shadow: 0 24px 70px rgba(0, 0, 0, .55);
@@ -877,3 +877,8 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+.grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+.grid > *, .page input, .page select {min-width:0;max-width:100%;box-sizing:border-box;}
+.fullField {grid-column:1 / -1;}
+.header button {margin-top:12px;background:var(--accent);color:var(--foreground);border:1px solid var(--border);border-radius:4px;padding:8px 12px;}

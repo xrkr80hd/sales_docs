@@ -357,7 +357,7 @@ export function SupabaseSessionGate({
                 </p>
               )}
 
-              {mode==='login'&&<label className="nxt-stay-signed-in"><input type="checkbox" checked={staySignedIn} onChange={event=>setStaySignedInChoice(event.target.checked)}/><span>Stay signed in<small>Keep this device connected for faster return visits.</small></span></label>}
+              {mode==='login'&&<label className="nxt-stay-signed-in"><input type="checkbox" checked={staySignedIn} onChange={event=>setStaySignedInChoice(event.target.checked)}/><span>Remember me<small>Stay signed in on this device for faster return visits.</small></span></label>}
 
               <button
                 type="submit"

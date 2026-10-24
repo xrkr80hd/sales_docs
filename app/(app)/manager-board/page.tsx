@@ -1,2 +1,3 @@
-import { ManagerBoard } from "@/components/command-center/team-board";
-export default async function ManagerBoardPage({searchParams}:{searchParams:Promise<{organization?:string;month?:string}>}){const query=await searchParams;return <ManagerBoard key={`${query.organization}:${query.month}`} organization={query.organization} month={query.month}/>;}
+import { redirect } from "next/navigation";
+// Keep existing bookmarks while giving setup one explicit home.
+export default async function Page({searchParams}:{searchParams:Promise<{organization?:string;month?:string}>}){const query=await searchParams;const params=new URLSearchParams();if(query.organization)params.set("organization",query.organization);if(query.month)params.set("month",query.month);redirect(`/manager-board/setup${params.size?`?${params}`:""}`);}

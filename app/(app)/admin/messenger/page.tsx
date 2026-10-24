@@ -168,7 +168,7 @@ export default function MessengerAdmin() {
 			{!data && !error && <p className="p-6 text-sm text-neutral-400">Loading member access...</p>}
 			{data?.organizations.length === 0 && (
 				<p className="border border-amber-600/40 bg-amber-950/30 p-4 text-sm font-bold text-amber-100">
-					No organizations exist. Apply Supabase migrations 013-015 before assigning Messenger access.
+					No organizations yet. Add one in People & Organizations before assigning Messenger access.
 				</p>
 			)}
 

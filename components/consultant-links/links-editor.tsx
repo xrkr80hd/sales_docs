@@ -13,8 +13,8 @@ function Editor(){
  const {collection,busy,error,notice,load,save}=useCommandCenter();const [dialog,setDialog]=useState<{link?:ConsultantLink;deleting?:boolean}|null>(null);
  useEffect(()=>{void load();},[load]);
  const links=collection?.links||[];
- return <section className={styles.workspace}><header className={styles.heading}><p>CONSULTANT SETUP</p><h1>Command Center Settings</h1><span>Your shortcuts for {collection?.organization.name||"your organization"}. Saved only to your account.</span></header>
- <div className={styles.actions}><button type="button" className={styles.primary} disabled={busy||!collection||links.length>=20} onClick={()=>setDialog({})}><Plus size={16}/>Add Link</button><button type="button" disabled={busy} onClick={()=>void load(true)}>Reload links</button><Link prefetch={false} href="/consultant-setup">Back to Consultant Setup</Link></div>
+ return <section className={styles.workspace}><header className={styles.heading}><p>COMMAND CENTER</p><h1>Command Center Settings</h1><span>Your shortcuts for {collection?.organization.name||"your organization"}. Saved only to your account.</span></header>
+ <div className={styles.actions}><button type="button" className={styles.primary} disabled={busy||!collection||links.length>=20} onClick={()=>setDialog({})}><Plus size={16}/>Add Link</button><button type="button" disabled={busy} onClick={()=>void load(true)}>Reload links</button><Link prefetch={false} href="/consultant-links">Close settings</Link></div>
  {busy&&!collection&&<p role="status">Loading your links…</p>}{error&&!dialog&&<p className={styles.error} role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
  {collection&&<LinkRows links={links} busy={busy} onReorder={next=>void save(next,true)} onEdit={link=>setDialog({link})} onDelete={link=>setDialog({link,deleting:true})}/>}
  {collection&&!links.length&&<p>No shortcuts saved. Choose Add Link to create your first one.</p>}

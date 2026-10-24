@@ -1,5 +1,6 @@
 "use client";
 
+import {PageAccordions} from "@/components/ui/page-accordions";
 import {requestWorkspaceExit} from "@/lib/workspace-exit";
 import { SalesTargetReminder } from "./sales-target-reminder";
 import { SoftwareLogo } from "@/components/branding/software-logo";
@@ -7,7 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Monitor, CalendarDays, Menu, X, ChevronDown, Shield, LogOut, GraduationCap } from "lucide-react";
+import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap } from "lucide-react";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { useWorkspaceIdentity } from "./workspace-context";
 import { ROLE_LABELS, validWorkspaceRole } from "@/lib/workspace-roles";
@@ -40,7 +41,7 @@ function WorkspaceClock() {
   return <div className={styles.clock}><small>{now?.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "America/Chicago" }) || ""}</small><strong>{now?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" }) || ""}</strong></div>;
 }
 
-export function WorkspaceShell({ children, onDocuments }: { children: ReactNode; onSettings: () => void; onDocuments: () => void }) {
+export function WorkspaceShell({ children, onDocuments }: { children: ReactNode; onDocuments: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const {total:messageUnread}=useMessengerUnread();
@@ -51,18 +52,19 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
   const manager = identity?.workspaceRole === "bdm" || identity?.role === "sales_manager" || identity?.role === "admin" || identity?.email.toLowerCase() === "xrkr80hd@gmail.com";
   const admin = identity?.role === "admin" || identity?.email.toLowerCase() === "xrkr80hd@gmail.com";
+  const floorManager = !admin && identity?.workspaceRole === "floor_manager";
   const display = pathname === "/office-display";
   const embeddedTool = pathname.startsWith("/consultant-links/") && pathname !== "/consultant-links/settings";
   const viewKey = `nextdocs.workspace-view.v1:${identity?.id || ""}`;
   const storedView = useSyncExternalStore(subscribeView, () => readView(viewKey), () => "user");
   const routeRole = pathname.startsWith("/role-views/") ? pathname.split("/")[2] : null;
-  const consultantPage = ["/dashboard", "/sale-commander", "/consultant-setup", "/deal-commander", "/deals", "/business-card", "/vehicle-collage", "/training"].includes(pathname) || pathname.startsWith("/consultant-links");
+  const consultantPage = ["/dashboard", "/sale-commander", "/consultant-setup", "/deal-commander", "/deals", "/business-card", "/vehicle-collage", "/training"].includes(pathname) || pathname.startsWith("/consultant-links") || pathname.startsWith("/sale-commander/") || pathname === "/team-board" || pathname.startsWith("/deal-sheet");
   const activeView = routeRole && validWorkspaceRole(routeRole) ? routeRole
     : pathname.startsWith("/admin") ? "admin"
     : pathname.startsWith("/manager-board") ? (["sales_manager", "floor_manager", "district_manager", "bdm"].includes(storedView) ? storedView : "sales_manager")
     : consultantPage ? "user" : storedView;
-  const consultantView = activeView === "user";
-  const managementView = manager && ["sales_manager", "floor_manager", "district_manager", "bdm"].includes(activeView);
+  const consultantView = activeView === "user" || floorManager;
+  const managementView = !floorManager && manager && ["sales_manager", "floor_manager", "district_manager", "bdm"].includes(activeView);
   const availableViews = admin ? ["user", "floor_manager", "sales_manager", "district_manager", "bdm", "fni", "admin"] : ["user", ...(identity?.workspaceRole && identity.workspaceRole !== "user" ? [identity.workspaceRole] : identity?.role && identity.role !== "user" ? [identity.role] : [])];
   useEffect(() => { writeView(viewKey, activeView); }, [viewKey, activeView]);
   async function switchView(role: string) {
@@ -71,6 +73,8 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
     router.push(role === "user" ? "/dashboard" : role === "admin" ? "/admin" : `/role-views/${role}`);
     setNavigationOpen(false);
   }
+  const readOnlyBoard = activeView === "bdm";
+  const canSwitchViews=!floorManager&&(admin||availableViews.length>1);
   const close = () => setNavigationOpen(false);
   if(display)return <div className="nxt-ui">{children}</div>;
   return <div className={`nxt-ui ${styles.shell}`}>
@@ -80,15 +84,14 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
         <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} className={styles.dealerLogo} priority />
       </div>
       {consultantView && <SalesTargetReminder />}
-      {display ? <div className={styles.displayActions}><div className={styles.displayLabel}><Monitor /><div>Performance Display<small>Read only · Live updates</small></div></div><Link prefetch={false} href="/manager-board" className={styles.exitDisplay} aria-label="Close Performance Display and return to Manager Board"><X size={22}/><span>Close</span></Link></div> : <>
+
         <Link prefetch={false} href="/messenger" className={styles.messageIndicator} aria-label={messageUnread ? `${messageUnread} unread messages. Open Messenger` : "Open Messenger. No unread messages"}><MessageCircle aria-hidden="true"/>{messageUnread>0&&<span aria-hidden="true">{messageUnread>99?"99+":messageUnread}</span>}</Link>
         <div className={styles.identity}>
-          <details><summary><span className={styles.profilePhoto}><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span>{identity?.dealership&&<OrganizationBadge name={identity.dealership} iconUrl={identity.organizationIconUrl} hidden={identity.organizationHideIcon}/>}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div><ChevronDown size={18} /></summary><div className={styles.accountMenu}>{(admin || availableViews.length > 1) && <label className={styles.viewPicker}>Workspace view <select aria-label="Workspace view" value={activeView} onChange={event => switchView(event.target.value)}>{availableViews.filter(validWorkspaceRole).map(role => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label>}<button onClick={session.signOut}>Sign Out</button></div></details>
+          {canSwitchViews?<details><summary><span className={styles.profilePhoto}><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span>{identity?.dealership&&<OrganizationBadge name={identity.dealership} iconUrl={identity.organizationIconUrl} hidden={identity.organizationHideIcon}/>}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : floorManager ? "Floor Manager" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div><ChevronDown size={18}/></summary><div className={styles.accountMenu}><label className={styles.viewPicker}>Workspace view <select aria-label="Workspace view" value={activeView} onChange={event => switchView(event.target.value)}>{availableViews.filter(validWorkspaceRole).map(role => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label></div></details>:<div className={styles.profileIdentity}><span className={styles.profilePhoto}><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span>{identity?.dealership&&<OrganizationBadge name={identity.dealership} iconUrl={identity.organizationIconUrl} hidden={identity.organizationHideIcon}/>}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : floorManager ? "Floor Manager" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div></div>}
 
           <WorkspaceClock />
         </div>
         <button className={styles.menuButton} aria-label="Open navigation" aria-expanded={navigationOpen} onClick={() => setNavigationOpen(true)}><Menu /></button>
-      </>}
     </header>
     <div className={`${styles.body} ${display ? styles.displayBody : !mobile&&sidebarCollapsed ? styles.sidebarCollapsed : ""}`}>
       {!display && <>
@@ -111,17 +114,18 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
             <details open={pathname === "/business-card" || pathname === "/vehicle-collage" || pathname === "/sale-commander/fun-facts"}><summary><Wrench />Consultant Tools</summary><div className={styles.subnav}>{[["Business Card", "/business-card"], ["Vehicle Collage", "/vehicle-collage"], ["Fun Facts · Sales Numbers", "/sale-commander/fun-facts"]].map(([label, href]) => <Link prefetch={false} key={href} href={href} onClick={close}>{label}</Link>)}</div></details>
             <Link prefetch={false} href="/training" onClick={close} className={`${styles.navLink} ${pathname === "/training" ? styles.active : ""}`}><GraduationCap />Training</Link>
             </>}
-            {managementView && <><Link prefetch={false} href={`/role-views/${activeView}`} onClick={close} className={styles.navLink}><Home />{validWorkspaceRole(activeView) ? ROLE_LABELS[activeView] : "Workspace"}</Link>{activeView !== "district_manager" && <details open={pathname.startsWith("/manager-board")}><summary><Table2 />Manager Board</summary><div className={styles.subnav}><Link prefetch={false} href="/manager-board" onClick={close}>Setup</Link><Link prefetch={false} href="/manager-board/display" onClick={close}>Performance Display</Link><Link prefetch={false} href="/manager-board/sale-commander" onClick={close}>Sales Commander Stats</Link><Link prefetch={false} href="/manager-board#team-schedule" onClick={close}><CalendarDays />Team Schedule</Link></div></details>}</>}
+            {floorManager && <Link prefetch={false} href="/role-views/floor_manager" onClick={close} className={`${styles.navLink} ${pathname === "/role-views/floor_manager" ? styles.active : ""}`}><Table2 />FM View</Link>}
+            {managementView && <><Link prefetch={false} href={`/role-views/${activeView}`} onClick={close} className={styles.navLink}><Home />{validWorkspaceRole(activeView) ? ROLE_LABELS[activeView] : "Workspace"}</Link>{activeView !== "district_manager" && <details open={pathname.startsWith("/manager-board")}><summary><Table2 />Manager Board</summary><div className={styles.subnav}>{!readOnlyBoard&&<Link prefetch={false} href="/manager-board/setup" onClick={close}>Manager Board Set Up</Link>}<Link prefetch={false} href="/manager-board/display" onClick={close}>Performance Display</Link><Link prefetch={false} href="/manager-board/sale-commander" onClick={close}>Sales Commander Stats</Link>{!readOnlyBoard&&<Link prefetch={false} href="/manager-board/schedule" onClick={close}>Team Schedule</Link>}</div></details>}</>}
             {activeView === "fni" && <Link prefetch={false} href="/role-views/fni" onClick={close} className={styles.navLink}><Home />F&amp;I</Link>}
             <Link prefetch={false} href="/messenger" onClick={close} className={`${styles.navLink} ${pathname === "/messenger" ? styles.active : ""}`}><MessageCircle />Messenger</Link>
-            <Link prefetch={false} href="/documents" onClick={close} className={`${styles.navLink} ${pathname === "/documents" ? styles.active : ""}`}><Files />Documents</Link>
+            {!pathname.startsWith("/deal-sheet")&&<Link prefetch={false} href="/documents" onClick={close} className={`${styles.navLink} ${pathname === "/documents" ? styles.active : ""}`}><Files />Documents</Link>}
             {pathname.startsWith("/deal-sheet") && <button onClick={() => { close(); onDocuments(); }} className={styles.navButton}><FilePlus2 />Deal Documents</button>}
             <button onClick={() => { close(); session.signOut(); }} className={styles.navButton}><LogOut />Sign Out</button>
             {admin && activeView === "admin" && <details open><summary><Shield />Administration</summary><div className={styles.subnav}><Link prefetch={false} href="/admin" onClick={close}>People &amp; Organizations</Link><Link prefetch={false} href="/admin/messenger" onClick={close}>Messenger Permissions</Link></div></details>}
           </nav>
         </aside>
       </>}
-      <main className={`${styles.main} ${embeddedTool ? styles.browserMain : ""} ${pathname === "/messenger" ? styles.messengerMain : ""} ${pathname === "/manager-board/display" ? styles.performanceMain : ""} ${pathname.startsWith("/documents") || pathname.startsWith("/deal-sheet") ? styles.formMain : ""}`}>{children}</main>
+      <main className={`${styles.main} ${embeddedTool ? styles.browserMain : ""} ${pathname === "/messenger" ? styles.messengerMain : ""} ${pathname === "/manager-board/display" ? styles.performanceMain : ""} ${pathname.startsWith("/documents") || pathname.startsWith("/deal-sheet") ? styles.formMain : ""}`}><PageAccordions>{children}</PageAccordions></main>
     </div>
   </div>;
 }

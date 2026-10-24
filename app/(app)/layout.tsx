@@ -43,6 +43,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
 
   const drawerDealType: "new" | "used" = (() => {
+    if(pathname === "/deal-sheet/new")return "new";
+    if(pathname === "/deal-sheet")return "used";
     if (typeof window === "undefined") return "used";
     try {
       const raw = window.sessionStorage.getItem("walker.workflow.view.v1");
@@ -57,7 +59,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {(pathname.startsWith("/documents") || pathname.startsWith("/deal-sheet")) && <SessionSettingsSync />}
       <DisclosureGate>
         <div className="nxt-ui"><WorkspaceProvider>{pathname === "/office-display" ? children : <CommandCenterProvider><MessengerUnreadProvider>
-          <WorkspaceShell onSettings={() => router.push("/consultant-setup")} onDocuments={() => setDrawerOpen(true)}>
+          <WorkspaceShell onDocuments={() => setDrawerOpen(true)}>
             {children}
           </WorkspaceShell>
           {(pathname.startsWith("/documents") || pathname.startsWith("/deal-sheet")) && (

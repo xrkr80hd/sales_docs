@@ -109,21 +109,21 @@ export function AllPrintScreen() {
               notes={notes}
               onNoteChange={() => { }}
             />
-            <div className="mt-6" />
+            <div className="mt-6 print:hidden" />
             <SpaceSheet workflow={workflow} />
-            <div className="mt-6" />
+            <div className="mt-6 print:hidden" />
             <PayoffFormSheet workflow={workflow} />
-            <div className="mt-6" />
+            <div className="mt-6 print:hidden" />
             <AddressInformationSheet workflow={workflow} />
-            <div className="mt-6" />
+            <div className="mt-6 print:hidden" />
             <BuyersGuideSheet workflow={workflow} />
-            <div className="mt-6" />
+            <div className="mt-6 print:hidden" />
             <BuyersGuideReverseSheet
               workflow={workflow}
               dealer={dealer}
               consultant={consultant}
             />
-            <div className="mt-6" />
+            <div className="mt-6 print:hidden" />
             <VinVerificationSheet workflow={workflow} consultant={consultant} />
           </div>
         </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { openDisplayWindow } from "@/lib/display-handoff";
+import { useVerifiedAccount } from "@/components/auth/required-password-change";
 import Link from "next/link";
 import {ExternalLink} from "lucide-react";
 import {emptyRow} from "@/lib/manager-board";
@@ -13,6 +15,7 @@ const fullCurrency=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD
 const number=new Intl.NumberFormat("en-US");
 
 export function PerformanceDisplay({organization="",month="",standalone=false}:{organization?:string;month?:string;standalone?:boolean}) {
+  const account=useVerifiedAccount();
   const {data,error,reload}=useSharedBoard(organization,"display",month);
   if(!data)return <section className={styles.status} role={error?"alert":"status"}>{error||"Loading performance…"}{error&&<button onClick={()=>void reload()}>Retry display</button>}</section>;
   if(!data.canViewStats)return <p className={styles.status}>Manager statistics access required.</p>;
@@ -24,15 +27,14 @@ export function PerformanceDisplay({organization="",month="",standalone=false}:{
     return {projection:sum.projection+(row.projection??data.proposals[person.id]?.value??0),weeklyGoal:sum.weeklyGoal+row.weeklyGoal,objective:sum.objective+row.objective,avg90:sum.avg90+row.avg90,mtd:sum.mtd+row.mtd};
   },{projection:0,weeklyGoal:0,objective:0,avg90:0,mtd:0});
   function popOut(){
-    // noopener prevents dependence on (or access to) the originating app window.
-    // Keep a regular link visible: noopener windows may return null even on success.
-    window.open(target,"_blank","popup=yes,noopener,noreferrer,width=1040,height=640");
+    if(account)openDisplayWindow(target,account,data!);
+    else window.open(target,"_blank","popup=yes,noopener,noreferrer,width=1040,height=640");
   }
   return <section className={`${styles.display} ${standalone?styles.standalone:""}`} aria-label="Performance Display">
     <header className={styles.heading}>
       <div className={styles.identity}><OrganizationBadge name={data.organization.name} iconUrl={data.organization.iconUrl} hidden={data.organization.hideIcon}/><div><p>{data.organization.name} · {data.month}</p><h1>Performance Display</h1></div></div>
       <div className={styles.actions}>
-        {!standalone&&<><Link prefetch={false} href={`/manager-board?${query}`}>Setup</Link><button onClick={popOut}><ExternalLink size={15}/>Pop Out Display</button><a href={target} target="_blank" rel="noopener noreferrer">Open in new tab</a></>}
+        {!standalone&&<><button onClick={popOut}><ExternalLink size={15}/>Pop Out Display</button><a href={target} target="_blank" rel="noopener noreferrer">Open in new tab</a></>}
         {standalone&&<Link prefetch={false} href={`/manager-board/display?${query}`}>Return to Manager Board</Link>}
       </div>
     </header>

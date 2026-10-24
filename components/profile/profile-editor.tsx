@@ -90,8 +90,6 @@ export function ProfileEditor() {
   const { accessToken } = useSession();
   const cacheScope=accessToken||"";
   const [initialCard]=useState(()=>cacheScope?cachedResource<SavedCardResponse>(cacheScope,CARD_RESOURCE):undefined);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(!initialCard);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<ProfileRow | null>(()=>initialCard?{consultant_slug:initialCard.card.slug,is_published:Boolean(initialCard.card.publishedAt)}:null);
@@ -124,7 +122,7 @@ export function ProfileEditor() {
   async function loadProfile() {
     const isLocalDev = process.env.NEXT_PUBLIC_DISABLE_AUTH === "1";
     if (!isSupabaseConfigured() && !isLocalDev) {
-      setNotice("The profile database is not connected yet.");
+      setNotice("Your business card is unavailable right now.");
       setLoading(false);
       return;
     }
@@ -159,18 +157,6 @@ export function ProfileEditor() {
     setCardOrigin(window.location.origin);
     void loadProfile();
   }, []);
-
-  async function signIn() {
-    setLoading(true);
-    setNotice("");
-    const { error } = await getSupabaseBrowserClient().auth.signInWithPassword({ email, password });
-    if (error) {
-      setNotice(error.message);
-      setLoading(false);
-      return;
-    }
-    await loadProfile();
-  }
 
   const updateIdentity = (field: keyof ConsultantProfileContent["identity"], value: string) => {
     setDraft((current) => current ? { ...current, identity: { ...current.identity, [field]: value } } : current);
@@ -367,12 +353,9 @@ export function ProfileEditor() {
     return (
       <main className={styles.page}>
         <section className={styles.login}>
-          <p>Private consultant backend</p>
-          <h1>Business Card Login</h1>
-          <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
-          <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-          <button type="button" onClick={signIn}>Log in with NXTDOX</button>
-          {notice && <p className={styles.notice}>{notice}</p>}
+          <h1>Business Card</h1>
+          <p role="alert">{notice || "Your saved card could not be loaded."}</p>
+          <button type="button" onClick={()=>{setLoading(true);setNotice("");void loadProfile();}}>Retry saved card</button>
         </section>
       </main>
     );
@@ -385,7 +368,6 @@ export function ProfileEditor() {
     <main className={styles.page}>
       <header className={styles.header}>
         <div>
-          <Link href="/dashboard" className={styles.backLink}>← Dashboard</Link>
           <h1>Business Card</h1>
           <span>Your public card: /card/{profile.consultant_slug}</span>
         </div>

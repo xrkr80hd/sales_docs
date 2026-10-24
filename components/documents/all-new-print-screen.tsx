@@ -99,13 +99,13 @@ export function AllNewPrintScreen() {
               notes={notes}
               onNoteChange={() => { }}
             />
-            <div className="mt-6" />
+            <div className="mt-6 print:hidden" />
             <SpaceSheet workflow={workflow} />
-            <div className="mt-6" />
+            <div className="mt-6 print:hidden" />
             <PayoffFormSheet workflow={workflow} />
-            <div className="mt-6" />
+            <div className="mt-6 print:hidden" />
             <AddressInformationSheet workflow={workflow} />
-            <div className="mt-6" />
+            <div className="mt-6 print:hidden" />
             <VinVerificationSheet workflow={workflow} consultant={consultant} />
           </div>
         </div>

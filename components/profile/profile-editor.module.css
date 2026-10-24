@@ -50,7 +50,7 @@
 
 .viewCard {
   border: 1px solid #3a3d43;
-  border-radius: 999px;
+  border-radius: 4px;
   padding: 8px 16px;
   background: var(--panel);
   color: #fff;
@@ -107,9 +107,9 @@
   margin: 12px 0 18px;
   padding: 10px 14px;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 6px;
   background: rgba(18, 20, 24, 0.94);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  box-shadow:none;
   backdrop-filter: blur(14px);
 }
 
@@ -123,7 +123,7 @@
 .live,
 .draft,
 .permissionBadge {
-  border-radius: 999px;
+  border-radius: 4px;
   padding: 6px 12px;
   font-size: 0.7rem;
   font-weight: 900;
@@ -138,8 +138,8 @@
 }
 
 .draft {
-  background: #382c12;
-  color: #ffe288;
+  background:var(--panel-strong);
+  color:var(--muted);
   border: 1px solid rgba(255, 226, 136, 0.2);
 }
 
@@ -152,7 +152,7 @@
 .panel {
   margin: 12px 0;
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 6px;
   background: var(--panel);
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
   overflow: hidden;
@@ -191,7 +191,7 @@
   justify-content: center;
   width: 26px;
   height: 26px;
-  border-radius: 999px;
+  border-radius: 4px;
   background: #1c1f24;
   border: 1px solid #363a43;
   color: #ef6262;
@@ -208,7 +208,7 @@
 .panel summary small {
   display: inline-block;
   min-width: 52px;
-  border-radius: 999px;
+  border-radius: 4px;
   padding: 3px 9px;
   background: #2b1214;
   color: #ff9999;
@@ -288,7 +288,7 @@
   gap: 16px;
   padding: 24px 20px;
   border: 1px dashed #3a3d43;
-  border-radius: 20px;
+  border-radius: 6px;
   background: #111317;
   text-align: center;
 }
@@ -338,7 +338,7 @@
   position: relative;
   width: min(100%, 320px);
   aspect-ratio: 1 / 1;
-  border-radius: 20px;
+  border-radius: 6px;
   overflow: hidden;
   border: 2px solid #3e424c;
   background: #000;
@@ -666,7 +666,7 @@
 .dialog {
   width: min(380px, 100%);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 6px;
   background: var(--panel);
   padding: 28px;
   text-align: center;
@@ -912,7 +912,7 @@
   position: absolute;
   right: 10px;
   bottom: 10px;
-  border-radius: 999px;
+  border-radius: 4px;
   background: rgba(20, 56, 32, .94);
   color: #7ff0a5;
   padding: 6px 10px;
@@ -1189,3 +1189,8 @@
     gap: 2px;
   }
 }
+
+.statusBar {display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--panel);}
+.statusBar .live, .statusBar .draft {background:transparent;border:0;padding:0;}
+.statusBar .live::before {content:"";display:inline-block;width:6px;height:6px;background:#45bd7c;margin-right:6px;}
+.statusBar button {border-radius:4px;min-height:36px;}

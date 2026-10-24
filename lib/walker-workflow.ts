@@ -224,6 +224,7 @@ export type WorkflowData = {
   vehicleYear: string;
   vehicleMake: string;
   vehicleModel: string;
+  vehicleTrim?: string;
   mileage: string;
   etchNumbers: string;
   taxPercent: string;
@@ -355,12 +356,13 @@ export function getLast8(vin: string) {
 }
 
 export function getYearMakeModel(
-  data: Pick<WorkflowData, "vehicleYear" | "vehicleMake" | "vehicleModel">,
+  data: Pick<WorkflowData, "vehicleYear" | "vehicleMake" | "vehicleModel" | "vehicleTrim">,
 ) {
   return [
     safeTrim(data.vehicleYear),
     safeTrim(data.vehicleMake),
     safeTrim(data.vehicleModel),
+    safeTrim(data.vehicleTrim),
   ]
     .filter(Boolean)
     .join(" ");
@@ -414,6 +416,7 @@ export function createDefaultWorkflowData(): WorkflowData {
     vehicleYear: "",
     vehicleMake: "",
     vehicleModel: "",
+    vehicleTrim: "",
     mileage: "",
     etchNumbers: "",
     taxPercent: "",
@@ -508,6 +511,7 @@ export function normalizeWorkflowData(value: unknown): WorkflowData {
     vehicleYear: safeTrim(value.vehicleYear),
     vehicleMake: safeTrim(value.vehicleMake),
     vehicleModel: safeTrim(value.vehicleModel),
+    vehicleTrim: safeTrim(value.vehicleTrim),
     mileage: safeTrim(value.mileage),
     etchNumbers: safeTrim(value.etchNumbers),
     taxPercent: safeTrim(value.taxPercent),

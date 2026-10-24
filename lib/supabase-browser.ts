@@ -1,4 +1,5 @@
 "use client";
+import {clearPageAccordions} from "@/lib/page-accordion-state";
 import { clearCustomerCopy } from "@/lib/customer-copy";
 
 import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
@@ -80,7 +81,7 @@ export function getSupabaseConfigError() {
 export function forgetBrowserSession() {
   clearCustomerCopy();
   persistentBrowserStorage.removeItem(AUTH_STORAGE_KEY);
-  clearResourceCache();
+  clearResourceCache();clearPageAccordions();
   clearLinksCache();
   clearMessengerCache();
 }
