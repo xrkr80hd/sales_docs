@@ -32,3 +32,8 @@
 .status { background: #173529; color: #98ecc0; border-color: #40c985; }
 .error { background: #421c23; color: #ffb6bf; border-color: #ee2336; }
 .adminLink { display: block; margin-top: 24px; color: #ff6977; text-align: center; font-weight: 600; }
+
+.page {width:100%;max-width:900px;margin:0 auto;background:var(--panel);border:1px solid var(--border);border-radius:7px;overflow:hidden;}
+.page .header h1 {font-size:30px;font-weight:800;}
+.page fieldset:disabled {opacity:.6;}
+@media(max-width:600px){.page .header,.page .content{padding:16px;}.photoSection{align-items:flex-start;gap:12px;}.photo{width:64px;height:64px;}}

@@ -14,20 +14,23 @@ export async function GET(request: Request) {
   const token = getToken(request);
   if (!token) return Response.json({ error: "Missing authorization." }, { status: 401 });
 
-  const supabase = getSupabaseServiceClient();
+  const supabase = getSupabaseServiceClient({signal:AbortSignal.any([request.signal,AbortSignal.timeout(10000)])});
   const { data: { user }, error: userError } = await supabase.auth.getUser(token);
   if (userError || !user) return Response.json({ error: "Invalid session." }, { status: 401 });
 
+  const summary = new URL(request.url).searchParams.get("summary") === "1";
   const { data: deals, error } = await supabase
     .from("deals")
-    .select("id, workflow_data, signatures, status, created_at, updated_at")
+    .select((summary ? "id,status,created_at,updated_at,customerName:workflow_data->>customerName,vehicleYear:workflow_data->>vehicleYear,vehicleMake:workflow_data->>vehicleMake,vehicleModel:workflow_data->>vehicleModel,dealType:workflow_data->>dealType" : "id, workflow_data, signatures, status, created_at, updated_at") as string)
     .eq("user_id", user.id)
     .eq("status", "open")
     .order("updated_at", { ascending: false });
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
-
-  return Response.json({ deals: (deals ?? []).map(deal => ({ ...deal, signatures: stripSsnFields(deal.signatures), workflow_data: normalizeWorkflowData(deal.workflow_data) })) }, { headers: { "Cache-Control": "private, no-store" } });
+  type ListRow={id:string;status:string;created_at:string;updated_at:string;workflow_data?:unknown;signatures?:unknown;customerName?:string;vehicleYear?:string;vehicleMake?:string;vehicleModel?:string;dealType?:string};
+  const rows=(deals||[]) as unknown as ListRow[];
+  if(summary)return Response.json({deals:rows.map(deal=>({id:deal.id,status:deal.status,created_at:deal.created_at,updated_at:deal.updated_at,workflow_data:{customerName:deal.customerName,vehicleYear:deal.vehicleYear,vehicleMake:deal.vehicleMake,vehicleModel:deal.vehicleModel,dealType:deal.dealType}}))},{headers:{"Cache-Control":"private, no-store"}});
+  return Response.json({ deals: rows.map(deal => ({ ...deal, signatures: stripSsnFields(deal.signatures), workflow_data: normalizeWorkflowData(deal.workflow_data) })) }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 export async function POST(request: Request) {

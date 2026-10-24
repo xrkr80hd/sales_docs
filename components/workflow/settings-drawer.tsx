@@ -1,18 +1,19 @@
 "use client";
 
 import { notifySave } from "@/components/ui/save-toast-host";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Camera, ChevronDown, UserRound, X } from "lucide-react";
 import { fetchServerSettings, loadConsultant, loadDealer, saveConsultant, saveDealer, saveServerSettings, type ConsultantInfo, type DealerInfo } from "@/lib/dealer-consultant";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { useWorkspaceIdentity } from "@/components/command-center/workspace-context";
 import { ROLE_LABELS, type WorkspaceRole } from "@/lib/workspace-roles";
-import { LinksEditor } from "@/components/consultant-links/links-editor";
 import styles from "./consultant-setup.module.css";
 
-export function SettingsDrawer({ onClose }: { onClose: () => void }) {
+export function ConsultantSetupScreen() {
+  const router=useRouter();const onClose=()=>router.push("/dashboard");
   const identity = useWorkspaceIdentity();
   const [dealer, setDealer] = useState<DealerInfo>(() => loadDealer());
   const [consultant, setConsultant] = useState<ConsultantInfo>(() => loadConsultant());
@@ -21,8 +22,6 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const dialogRef = useRef<HTMLElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     let active = true;
     void fetchServerSettings().then((server) => {
@@ -35,18 +34,8 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
       } else if (identity?.dealership) setDealer(current => ({ ...current, dealershipName: identity.dealership || "" }));
       setLoading(false);
     });
-    closeRef.current?.focus();
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-      if (event.key !== "Tab") return;
-      const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), a[href], summary') || []).filter(element => element.getClientRects().length > 0);
-      const first = controls[0], last = controls[controls.length - 1];
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
-      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
-    };
-    document.addEventListener("keydown", handleKey);
-    return () => { active = false; document.removeEventListener("keydown", handleKey); };
-  // Opening the drawer loads the current account settings once.
+    return () => { active = false; };
+  // Opening Consultant Setup loads the current account settings once.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   async function save() {
@@ -80,18 +69,16 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
     } catch (failure) { setError(failure instanceof Error ? failure.message : "Could not save your photo."); }
     finally { setSaving(false); }
   }
-  return <div className={styles.overlay}>
-    <button className={styles.backdrop} onClick={onClose} aria-label="Close consultant setup" tabIndex={-1} />
-    <aside ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="setup-title" className={styles.drawer}>
-      <header className={styles.header}><div><p>YOUR WORKSPACE</p><h2 id="setup-title">Consultant Setup</h2></div><button ref={closeRef} onClick={onClose} aria-label="Close consultant setup"><X /></button></header>
+  return <section className={styles.page} aria-labelledby="setup-title">
+      <header className={styles.header}><div><p>YOUR WORKSPACE</p><h1 id="setup-title">Consultant Setup</h1></div><button onClick={onClose} aria-label="Back to Deal Commander"><X /></button></header>
       <div className={styles.content}>
         <section className={styles.photoSection}>
           <div className={styles.photo}>{photo ? <Image src={photo} alt="Your profile photo" width={84} height={84} unoptimized /> : <UserRound size={36} />}</div>
           <div><h3>Organization profile</h3><p>{identity?.displayName || "Your name"}</p><p>{ROLE_LABELS[(identity?.workspaceRole || identity?.role || "user") as WorkspaceRole]} · {identity?.dealership || "Unassigned"}</p><p>Internal staff photo. Separate from your public business card.</p><label className={styles.upload}><Camera size={16} />Upload photo<input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload profile picture" onChange={uploadPhoto} disabled={saving || loading} /></label><small>JPG, PNG or WebP · up to 3 MB</small></div>
         </section>
         {status && <p className={styles.status} role="status">{status}</p>}{error && <p className={styles.error} role="alert">{error}</p>}
-        <Link href="/business-card" onClick={onClose} className={styles.adminLink}>Edit public business card separately</Link>
-        <LinksEditor />
+        <Link prefetch={false} href="/business-card" onClick={onClose} className={styles.adminLink}>Edit public business card separately</Link>
+        <Link prefetch={false} href="/consultant-links/settings" className={styles.adminLink}>Command Center Settings</Link>
         <form onSubmit={event => { event.preventDefault(); void save(); }}>
           <fieldset disabled={saving || loading}>
             <details className={styles.section} open><summary><div><h3>Consultant information</h3><p>Your contact details for documents and tools</p></div><ChevronDown size={18} /></summary><div className={styles.fields}>
@@ -105,8 +92,7 @@ export function SettingsDrawer({ onClose }: { onClose: () => void }) {
             <button type="submit" className={styles.save}>{loading ? "Loading account…" : saving ? "Saving…" : "Save consultant setup"}</button>
           </fieldset>
         </form>
-        {(identity?.role === "admin" || identity?.email === "xrkr80hd@gmail.com") && <Link href="/admin" onClick={onClose} className={styles.adminLink}>Team Management</Link>}
+        {(identity?.role === "admin" || identity?.email === "xrkr80hd@gmail.com") && <Link prefetch={false} href="/admin" onClick={onClose} className={styles.adminLink}>Team Management</Link>}
       </div>
-    </aside>
-  </div>;
+  </section>;
 }

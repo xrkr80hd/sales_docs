@@ -1,6 +1,9 @@
 "use client";
+import { clearCustomerCopy } from "@/lib/customer-copy";
 
 import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
+import { browserSessionExpired, recordBrowserActivity } from "@/lib/browser-activity";
+import { clearResourceCache } from "@/lib/client-resource-cache";
 import { createSupabaseFetch } from "@/lib/supabase-fetch";
 
 type BrowserStorageAdapter = {
@@ -72,12 +75,29 @@ export function getSupabaseConfigError() {
   return `Missing ${missing.join(" and ")}.`;
 }
 
+export function forgetBrowserSession() {
+  clearCustomerCopy();
+  persistentBrowserStorage.removeItem(AUTH_STORAGE_KEY);
+  clearResourceCache();
+}
+function expireStoredBrowserSession() {
+  if(typeof window === "undefined")return;
+  try {
+    const saved=JSON.parse(persistentBrowserStorage.getItem(AUTH_STORAGE_KEY)||"null");
+    const userId=saved?.user?.id;
+    if(typeof userId!=="string")return;
+    if(browserSessionExpired(userId))forgetBrowserSession();
+    else recordBrowserActivity(userId);
+  } catch { /* The SDK handles malformed session data. */ }
+}
+
 export function getSupabaseBrowserClient() {
   if (!isSupabaseConfigured()) {
     throw new Error(getSupabaseConfigError() || "Supabase is not configured.");
   }
 
   if (!browserClient) {
+    expireStoredBrowserSession();
     browserClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { fetch: createSupabaseFetch() },
       auth: {

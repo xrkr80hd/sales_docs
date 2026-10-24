@@ -59,7 +59,7 @@ export function DocumentDrawer({ dealType, open, onClose }: DocumentDrawerProps)
         <div className="flex flex-1 flex-col bg-[var(--panel)]">
           <nav className="flex flex-1 flex-col justify-evenly bg-white/5 p-3">
             {/* Deal Sheet — back to input section */}
-            <Link
+            <Link prefetch={false}
               href={dealType === "new" ? "/deal-sheet/new" : "/deal-sheet"}
               onClick={onClose}
               className={`group flex items-center gap-3 border px-4 py-3 transition ${pathname.startsWith("/deal-sheet")
@@ -87,7 +87,7 @@ export function DocumentDrawer({ dealType, open, onClose }: DocumentDrawerProps)
               const isActive = pathname === doc.href;
 
               return (
-                <Link
+                <Link prefetch={false}
                   key={doc.slug}
                   href={doc.href}
                   onClick={onClose}
@@ -137,14 +137,14 @@ export function DocumentDrawer({ dealType, open, onClose }: DocumentDrawerProps)
 
         {/* Footer actions */}
         <div className="flex flex-col gap-2 border-t border-white/10 bg-[var(--panel)] px-5 py-4">
-          <Link
+          <Link prefetch={false}
             href="/dashboard"
             onClick={onClose}
             className="inline-flex min-h-11 w-full items-center justify-center border border-white/20 bg-white/10 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-white/20"
           >
             ← Dashboard
           </Link>
-          <Link
+          <Link prefetch={false}
             href="/documents/cheat-sheet"
             onClick={onClose}
             className="inline-flex min-h-11 w-full items-center justify-center border border-[var(--accent)] bg-[var(--accent)] text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[var(--accent-strong)]"

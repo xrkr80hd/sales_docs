@@ -72,10 +72,9 @@ export async function PUT(request: Request) {
     return Response.json({ error: "Invalid JSON." }, { status: 400 });
   }
 
-  const now = new Date().toISOString();
   const { data: existing, error: existingError } = await supabase
     .from("user_settings")
-    .select("dealer_info, consultant_info")
+    .select("dealer_info, consultant_info, updated_at")
     .eq("user_id", user.id)
     .maybeSingle();
   if (existingError) return Response.json({ error: existingError.message }, { status: 500 });
@@ -87,19 +86,15 @@ export async function PUT(request: Request) {
   const dealerInfo = { ...asRecord(existing?.dealer_info), ...asRecord(body.dealer_info),...(assignedDealer||{}) };
   const consultantInfo = { ...asRecord(existing?.consultant_info), ...asRecord(body.consultant_info) };
 
-  const { error } = await supabase
-    .from("user_settings")
-    .upsert(
-      {
-        user_id: user.id,
-        dealer_info: dealerInfo,
-        consultant_info: consultantInfo,
-        updated_at: now,
-      },
-      { onConflict: "user_id" },
-    );
-
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  const update={dealer_info:dealerInfo,consultant_info:consultantInfo,updated_at:new Date(Math.max(Date.now(),(Date.parse(existing?.updated_at||"")||0)+1)).toISOString()};
+  if(existing){
+    const {data:rows,error}=await supabase.from("user_settings").update(update).eq("user_id",user.id).eq("updated_at",existing.updated_at).select("user_id");
+    if(error)return Response.json({error:"Could not save consultant settings."},{status:500});
+    if(!rows?.length)return Response.json({error:"Settings changed in another tab. Reload before saving."},{status:409});
+  }else{
+    const {error}=await supabase.from("user_settings").insert({user_id:user.id,...update});
+    if(error)return Response.json({error:"Settings changed. Reload before saving."},{status:409});
+  }
 
   const name = clean(consultantInfo.name);
   if (name) {
@@ -107,5 +102,5 @@ export async function PUT(request: Request) {
     if (profileError) return Response.json({ error: profileError.message }, { status: 500 });
   }
 
-  return Response.json({ saved: true, dealer_info: dealerInfo, consultant_info: consultantInfo, updated_at: now });
+  return Response.json({ saved: true, dealer_info: dealerInfo, consultant_info: consultantInfo, updated_at: update.updated_at });
 }

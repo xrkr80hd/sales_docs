@@ -21,7 +21,7 @@ export function MessengerUnreadProvider({children}:{children:ReactNode}){
  const markRead=useCallback((id:string)=>{++generation.current;setLoaded(previous=>previous&&previous.token===tokenRef.current?{...previous,counts:{...previous.counts,[id]:0}}:previous);},[]);
  useEffect(()=>{
   if(!accessToken||!isSupabaseConfigured())return;
-  void refresh();let debounce:ReturnType<typeof setTimeout>|undefined;
+  const startup=setTimeout(()=>void refresh(),1500);let debounce:ReturnType<typeof setTimeout>|undefined;
   const visible=()=>{if(document.visibilityState==="visible")void refresh();};
   const changed=()=>{if(debounce)clearTimeout(debounce);debounce=setTimeout(visible,350);};
   const interval=setInterval(visible,60000);
@@ -29,7 +29,7 @@ export function MessengerUnreadProvider({children}:{children:ReactNode}){
   const client=getSupabaseBrowserClient();
   // Database RLS controls event delivery. No directory/history is loaded here.
   const channel=client.channel("messenger-unread-badge").on("postgres_changes",{event:"*",schema:"public",table:"messenger_messages"},changed).subscribe();
-  return()=>{++generation.current;pending.current=null;clearInterval(interval);if(debounce)clearTimeout(debounce);window.removeEventListener("focus",visible);document.removeEventListener("visibilitychange",visible);void client.removeChannel(channel);};
+  return()=>{++generation.current;pending.current=null;clearTimeout(startup);clearInterval(interval);if(debounce)clearTimeout(debounce);window.removeEventListener("focus",visible);document.removeEventListener("visibilitychange",visible);void client.removeChannel(channel);};
  },[refresh]);
  const value=useMemo(()=>{const counts=loaded&&loaded.token===accessToken?loaded.counts:{};return {counts,total:Object.values(counts).reduce((n,c)=>n+c,0),refresh,markRead};},[loaded,accessToken,refresh,markRead]);
  return <UnreadContext.Provider value={value}>{children}</UnreadContext.Provider>;

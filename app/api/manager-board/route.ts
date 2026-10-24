@@ -5,7 +5,7 @@ function record(value:unknown):Record<string,unknown>{return value&&typeof value
 async function context(request:Request){
  const token=(request.headers.get("authorization")||"").replace(/^Bearer\s+/i,"").trim();
  if(!token)return Response.json({error:"Sign in required."},{status:401});
- const db=getSupabaseServiceClient();const {data:{user},error}=await db.auth.getUser(token);
+ const db=getSupabaseServiceClient({signal:AbortSignal.any([request.signal,AbortSignal.timeout(10000)])});const {data:{user},error}=await db.auth.getUser(token);
  if(error||!user)return Response.json({error:"Invalid session."},{status:401});
  const [{data:profile,error:profileError},{data:membership,error:membershipError}]=await Promise.all([db.from("profiles").select("role,display_name").eq("id",user.id).single(),db.from("organization_memberships").select("organization_id").eq("user_id",user.id).maybeSingle()]);
  if(profileError||membershipError)throw new Error("Your board access could not be verified. Please retry.");
@@ -13,7 +13,7 @@ async function context(request:Request){
  const district=admin||(profile?.role==="sales_manager"&&user.app_metadata?.workspace_role==="district_manager");
  const bdm=profile?.role==="user"&&user.app_metadata?.workspace_role==="bdm";
  const manager=admin||profile?.role==="sales_manager";
- const url=new URL(request.url);const requested=url.searchParams.get("organization");const organizationId=district&&requested?requested:membership?.organization_id;
+ const url=new URL(request.url);const requested=url.searchParams.get("organization");const organizationId=url.searchParams.get("view")!=="consultant"&&district&&requested?requested:membership?.organization_id;
  if(organizationId&&(await organizationBranding(db))[organizationId]?.deletedAt)return Response.json({error:"This organization was deleted. Assigned users have moved to Walker Automotive."},{status:404});
  const month=url.searchParams.get("month")||currentBoardMonth();
  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return Response.json({error:"Invalid month."},{status:400});
@@ -29,7 +29,14 @@ async function boardRecords(db:ReturnType<typeof getSupabaseServiceClient>,organ
  const saved=organizationId&&month?record(boards[`${organizationId}:${month}`]):{};
  return [{...row,boards,saved:saved.publishedAt?saved as unknown as MonthBoard:undefined}];
 }
-function annualDefault(records:Awaited<ReturnType<typeof boardRecords>>,organizationId:string,month:string){
+async function displayRecords(db:ReturnType<typeof getSupabaseServiceClient>,organizationId:string,month:string){
+ const owner=await boardOwner(db);
+ const {data,error}=await db.from("user_settings").select(`board:dealer_info->managerBoards->"${organizationId}:${month}"`).eq("user_id",owner).maybeSingle();
+ if(error)throw error;
+ const saved=record(data?.board);
+ return [{boards:{},saved:saved.publishedAt?saved as unknown as MonthBoard:undefined}];
+}
+function annualDefault(records:{boards:Record<string,unknown>}[],organizationId:string,month:string){
  const result=emptyBoard();let newest="";
  for(const row of records)for(const [key,value]of Object.entries(row.boards)){const board=value as MonthBoard;if(key.startsWith(`${organizationId}:${month.slice(0,4)}-`)&&board.publishedAt>newest){result.yearlyGross=board.yearlyGross;newest=board.publishedAt;}}
  return result;
@@ -49,7 +56,24 @@ export async function GET(request:Request){
    return Response.json({stores,notifications,month},{headers:{"Cache-Control":"private, no-store"}});
   }
   if(!organizationId)return Response.json({error:"Assign this account to an organization to use the board."},{status:400});
-  const [{data:organization,error:orgError},{data:members,error:memberError},records]=await Promise.all([db.from("organizations").select("id,name").eq("id",organizationId).single(),db.from("organization_memberships").select("user_id,profiles!organization_memberships_user_id_fkey(display_name,role)").eq("organization_id",organizationId),boardRecords(db,organizationId,month)]);
+  if(new URL(request.url).searchParams.get("view")==="consultant"){
+   const owner=await brandingOwner(db);
+   const [{data:organization,error:orgError},{data:members,error:membersError},{data:saved,error:boardError},{data:settings,error:settingsError}]=await Promise.all([
+    db.from("organizations").select("id,name").eq("id",organizationId).single(),
+    db.from("organization_memberships").select("user_id,profiles!organization_memberships_user_id_fkey(display_name,role)").eq("organization_id",organizationId),
+    db.from("user_settings").select(`board:dealer_info->managerBoards->"${organizationId}:${month}"`).eq("user_id",owner).maybeSingle(),
+    db.from("user_settings").select("projections:consultant_info->monthlyProjections").eq("user_id",user.id).maybeSingle(),
+   ]);
+   if(orgError||membersError||boardError||settingsError)throw new Error("Your consultant board could not be loaded.");
+   const board={...emptyBoard(),...record(saved?.board)} as MonthBoard;
+   const rows=Object.fromEntries(Object.entries(board.rows||{}).map(([id,row])=>[id,{objective:row.objective,appointmentsGoal:row.appointmentsGoal,appointmentsSet:row.appointmentsSet,mtd:row.mtd,weeklyGoal:row.weeklyGoal,avg90:row.avg90,days:row.days,projection:row.projection,confirmedAt:row.confirmedAt}]));
+   const roster=(members||[]).filter(member=>(member.profiles as unknown as {role:string})?.role==="user").map(member=>({id:member.user_id,name:(member.profiles as unknown as {display_name:string})?.display_name||"Unnamed consultant"}));
+   const branding=(await organizationBranding(db))[organizationId];
+   return Response.json({organization:{...organization,...branding},month,board:{newGoal:board.newGoal,usedGoal:board.usedGoal,rows,schedule:board.schedule,weeklyUpdate:board.weeklyUpdate,publishedAt:board.publishedAt},roster,proposals:{[user.id]:record(settings?.projections)[`${organizationId}:${month}`]},me:user.id,canManage:false,canViewStats:false,version:board.publishedAt},{headers:{"Cache-Control":"private, no-store"}});
+  }
+  const isDisplay=new URL(request.url).searchParams.get("view")==="display";
+  if(isDisplay&&!manager&&!bdm)return Response.json({error:"Manager statistics access required."},{status:403});
+  const [{data:organization,error:orgError},{data:members,error:memberError},records]=await Promise.all([db.from("organizations").select("id,name").eq("id",organizationId).single(),db.from("organization_memberships").select("user_id,profiles!organization_memberships_user_id_fkey(display_name,role)").eq("organization_id",organizationId),isDisplay?displayRecords(db,organizationId,month):boardRecords(db,organizationId,month)]);
   if(orgError||memberError)throw orgError||memberError;
   const latest=records.filter(row=>"saved" in row&&row.saved).sort((a,b)=>(b.saved as MonthBoard).publishedAt.localeCompare((a.saved as MonthBoard).publishedAt))[0];
   const board=latest&&"saved"in latest?latest.saved as MonthBoard:annualDefault(records,organizationId,month);
@@ -58,6 +82,12 @@ export async function GET(request:Request){
   const {data:settings,error:settingsError}=ids.length?await db.from("user_settings").select("user_id,projections:consultant_info->monthlyProjections").in("user_id",ids):{data:[],error:null};
   if(settingsError)throw settingsError;
   const proposals=Object.fromEntries((settings||[]).map(row=>[row.user_id,record(row.projections)[`${organizationId}:${month}`]]));
+  if(isDisplay){
+   // Presentation never receives schedule, annual figures, messages, events or edit metadata.
+   const rows=Object.fromEntries(roster.map(person=>{const row={...emptyRow(),...board.rows[person.id]};return [person.id,{objective:row.objective,mtd:row.mtd,weeklyGoal:row.weeklyGoal,avg90:row.avg90,projection:row.projection,newSold:row.newSold,usedSold:row.usedSold,newGrossActual:row.newGrossActual,usedGrossActual:row.usedGrossActual}];}));
+   const branding=(await organizationBranding(db))[organizationId];
+   return Response.json({organization:{...organization,...branding},month,board:{newGoal:board.newGoal,usedGoal:board.usedGoal,newGrossGoal:board.newGrossGoal??board.monthlyGross??0,usedGrossGoal:board.usedGrossGoal??0,rows,publishedAt:board.publishedAt},roster,proposals:Object.fromEntries(Object.entries(manager?proposals:{[user.id]:proposals[user.id]}).map(([id,value])=>[id,{value:record(value).value}])),me:user.id,canManage:false,canViewStats:true,version:board.publishedAt},{headers:{"Cache-Control":"private, no-store"}});
+  }
   const grossYtd=Object.entries(records[0]?.boards||{}).filter(([key])=>key.startsWith(`${organizationId}:${month.slice(0,4)}-`)&&key.slice(-7)<=month).reduce((total,[,value])=>{const saved=value as MonthBoard;return total+Object.values(saved.rows||{}).reduce((sum,row)=>sum+(Number(row.newGrossActual)||0)+(Number(row.usedGrossActual)||0),0);},0);
   const publicBoard={newGoal:board.newGoal,usedGoal:board.usedGoal,rows:board.rows,schedule:board.schedule,weeklyUpdate:board.weeklyUpdate,publishedAt:board.publishedAt};
   const branding=(await organizationBranding(db))[organizationId];
@@ -65,6 +95,7 @@ export async function GET(request:Request){
  }catch(error){return Response.json({error:error instanceof Error?error.message:"Could not load the board."},{status:500});}
 }
 export async function POST(request:Request){
+ if(new URL(request.url).searchParams.get("view")==="display")return Response.json({error:"Performance Display is read only."},{status:405});
  try{
   const ctx=await context(request);if(ctx instanceof Response)return ctx;
   const {db,user,profile,manager,district,organizationId,month}=ctx;

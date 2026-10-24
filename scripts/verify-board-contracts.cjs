@@ -85,7 +85,7 @@ async function json(response){const data=await response.json();return {status:re
  assert.equal((await board.POST(req('manager',{action:'save-board',board:approved.data.board,version:'stale-version'}))).status,409);
  const put=body=>new Request('https://test.invalid/api/consultant-links',{method:'PUT',headers:{authorization:'Bearer manager','content-type':'application/json'},body:JSON.stringify(body)});
  assert.equal((await links.PUT(put({links:[{id:'bad',name:'Unsafe',url:'javascript:alert(1)'}]}))).status,400);
- assert.equal((await links.PUT(put({links:[{id:'dealer-connect',name:'Dealer Connect',url:'https://dealerconnect.chrysler.com/'}]}))).status,200);
+ assert.equal((await links.PUT(put({version:'',organizationId:'store-a',links:[{id:'dealer-connect',name:'Dealer Connect',url:'https://dealerconnect.chrysler.com/'}]}))).status,200);
  assert.equal(state.user_settings[0].dealer_info.street,'Keep this address');assert.ok(state.user_settings.find(row=>row.user_id==='admin').dealer_info.managerBoards);
  state.profiles.find(profile=>profile.id==='manager').role='user';const persisted=await json(await board.GET(req('consultant')));assert.equal(persisted.data.board.rows.consultant.projection,10);state.profiles.find(profile=>profile.id==='manager').role='sales_manager';
  assert.equal((await photo.POST(new Request('https://test.invalid/api/me/photo',{method:'POST'}))).status,401);

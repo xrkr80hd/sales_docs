@@ -1,4 +1,5 @@
 import { requestJson, withDeadline } from "@/lib/request-json";
+import { loadResource, invalidateResource } from "@/lib/client-resource-cache";
 const DEALER_STORAGE_KEY = "walker.dealer.v1";
 const CONSULTANT_STORAGE_KEY = "walker.consultant.v1";
 
@@ -123,7 +124,7 @@ export async function fetchServerSettings(accessToken?: string): Promise<{ deale
   if (!token) return null;
 
   try {
-    const json = await requestJson<{dealer_info:unknown;consultant_info:unknown}>("/api/me/settings", { headers: { Authorization: `Bearer ${token}` } });
+    const json = await loadResource(token,"paperwork-settings",()=>requestJson<{dealer_info:unknown;consultant_info:unknown}>("/api/me/settings", { headers: { Authorization: `Bearer ${token}` } }),300000);
     return {
       dealer: normalizeDealer(json.dealer_info),
       consultant: normalizeConsultant(json.consultant_info),
@@ -149,6 +150,7 @@ export async function saveServerSettings(dealer: DealerInfo, consultant: Consult
         consultant_info: consultant,
       }),
     });
+    if (res.ok) invalidateResource(token,"paperwork-settings");
     return res.ok;
   } catch {
     return false;

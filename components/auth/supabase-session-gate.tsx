@@ -4,6 +4,10 @@ import { SoftwareLogo } from "@/components/branding/software-logo";
 import { PasswordRequirement } from "./required-password-change";
 import type { Session } from "@supabase/supabase-js";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { BROWSER_IDLE_MS, browserLastActiveAt, browserSessionExpired, recordBrowserActivity } from "@/lib/browser-activity";
+import { clearCustomerCopy } from "@/lib/customer-copy";
+import { clearResourceCache } from "@/lib/client-resource-cache";
 import { createContext, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import {
@@ -11,6 +15,7 @@ import {
   getSupabaseBrowserClient,
   getSupabaseConfigError,
   isSupabaseConfigured,
+  forgetBrowserSession,
   restoreBrowserSession
 } from "@/lib/supabase-browser";
 
@@ -45,6 +50,7 @@ export function SupabaseSessionGate({
   surface = "app",
   renderBar = true,
 }: SupabaseSessionGateProps) {
+  const router=useRouter();
   const authDisabled = process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DISABLE_AUTH === "1";
 
   const [checking, setChecking] = useState(!authDisabled);
@@ -86,6 +92,7 @@ export function SupabaseSessionGate({
         }
 
         window.clearTimeout(timer);
+        if(data.session&&browserSessionExpired(data.session.user.id)){forgetBrowserSession();setSession(null);setChecking(false);return;}
         setSession(data.session ?? null);
         setChecking(false);
       })
@@ -110,6 +117,11 @@ export function SupabaseSessionGate({
         return;
       }
 
+      if(_event === "SIGNED_IN" && submitting.current && nextSession)recordBrowserActivity(nextSession.user.id,true);
+      if(nextSession && browserSessionExpired(nextSession.user.id)) {
+        forgetBrowserSession();window.clearTimeout(timer);authChanged=true;setSession(null);setChecking(false);return;
+      }
+      if(_event === "SIGNED_OUT"){clearResourceCache();clearCustomerCopy();}
       window.clearTimeout(timer);
       authChanged = true;
       setSession(nextSession);
@@ -123,6 +135,25 @@ export function SupabaseSessionGate({
       subscription.unsubscribe();
     };
   }, [authDisabled, sessionAttempt]);
+
+  useEffect(()=>{
+    if(!session?.user.id||authDisabled)return;
+    const userId=session.user.id;
+    let lastActive=Date.now(),lastEvent=0,expired=false;
+    const expire=()=>{
+      if(expired)return;expired=true;
+      forgetBrowserSession();void getSupabaseBrowserClient().auth.stopAutoRefresh();
+      setSession(null);setError("Your session ended after eight hours of inactivity in this browser. Sign in again.");
+    };
+    const check=()=>{if(browserSessionExpired(userId)||Date.now()-Math.max(lastActive,browserLastActiveAt(userId)||0)>=BROWSER_IDLE_MS){expire();return false;}return !expired;};
+    const activity=()=>{if(Date.now()-lastEvent<1000)return;lastEvent=Date.now();if(!check())return;lastActive=Date.now();recordBrowserActivity(userId);};
+    const visible=()=>{if(document.visibilityState==="visible")activity();};
+    if(check())recordBrowserActivity(userId);
+    const timer=window.setInterval(check,60000);
+    window.addEventListener("pointermove",activity,{passive:true});window.addEventListener("scroll",activity,{passive:true});window.addEventListener("pointerdown",activity,{passive:true});window.addEventListener("keydown",activity);
+    window.addEventListener("focus",visible);window.addEventListener("storage",check);document.addEventListener("visibilitychange",visible);
+    return()=>{window.clearInterval(timer);window.removeEventListener("pointermove",activity);window.removeEventListener("scroll",activity);window.removeEventListener("pointerdown",activity);window.removeEventListener("keydown",activity);window.removeEventListener("focus",visible);window.removeEventListener("storage",check);document.removeEventListener("visibilitychange",visible);};
+  },[session?.user.id,authDisabled]);
 
   async function handleAuthSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -185,7 +216,7 @@ export function SupabaseSessionGate({
         setError(signInError.message);
         return;
       }
-      if (data.session) { setSession(data.session); setPassword(""); }
+      if (data.session) { clearResourceCache();clearCustomerCopy();recordBrowserActivity(data.session.user.id,true);setSession(data.session);setPassword("");void supabase.auth.startAutoRefresh();if(surface==="app")router.replace("/dashboard"); }
     } catch (authError) {
       setError(
         authError instanceof Error
@@ -205,6 +236,7 @@ export function SupabaseSessionGate({
     try {
       const supabase = getSupabaseBrowserClient();
       const { error: signOutError } = await supabase.auth.signOut();
+      if(!signOutError)clearResourceCache();
 
       if (signOutError) {
         setError(signOutError.message);

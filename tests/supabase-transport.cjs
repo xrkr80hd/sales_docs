@@ -45,7 +45,7 @@ test('real Supabase SDK exits a hung password login and the next attempt succeed
 });
 test('repeated session checks share pending refresh and allow a fresh check after settlement',async()=>{
  let calls=0,resolve;
- const browser=load('lib/supabase-browser.ts',{'@supabase/supabase-js':{createClient:()=>({auth:{getSession:()=>{calls++;return new Promise(r=>{resolve=r});}}})},'@/lib/supabase-fetch':{createSupabaseFetch}}, {process:{env:{NEXT_PUBLIC_SUPABASE_URL:'https://fixture.test',NEXT_PUBLIC_SUPABASE_ANON_KEY:'synthetic-public-key'}}});
+ const browser=load('lib/supabase-browser.ts',{'@supabase/supabase-js':{createClient:()=>({auth:{getSession:()=>{calls++;return new Promise(r=>{resolve=r});}}})},'@/lib/supabase-fetch':{createSupabaseFetch},'@/lib/browser-activity':{},'@/lib/customer-copy':{clearCustomerCopy(){}},'@/lib/client-resource-cache':{}}, {process:{env:{NEXT_PUBLIC_SUPABASE_URL:'https://fixture.test',NEXT_PUBLIC_SUPABASE_ANON_KEY:'synthetic-public-key'}}});
  const first=browser.restoreBrowserSession(),second=browser.restoreBrowserSession();assert.equal(first,second);assert.equal(calls,1);resolve({data:{session:null},error:null});await first;
  const next=browser.restoreBrowserSession();assert.equal(calls,2);resolve({data:{session:null},error:null});await next;
 });

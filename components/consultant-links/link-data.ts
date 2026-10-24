@@ -1,6 +1,6 @@
-import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
-export async function requestLinks(organization = "", links?: unknown) {
-  const {data}=await getSupabaseBrowserClient().auth.getSession();
-  const response=await fetch(`/api/consultant-links${organization?`?organization=${encodeURIComponent(organization)}`:""}`,{method:links?"PUT":"GET",headers:{Authorization:`Bearer ${data.session?.access_token || ""}`,"Content-Type":"application/json"},...(links?{body:JSON.stringify({links})}:{}),cache:"no-store"});
-  const result=await response.json();if(!response.ok)throw new Error(result.error||"Could not load links.");return result;
+import type { ConsultantLink } from "@/lib/consultant-links";
+import { requestJson } from "@/lib/request-json";
+export type LinkCollection={links:ConsultantLink[];organization:{id:string;name:string};version:string};
+export function requestLinks(token:string,save?:{links:ConsultantLink[];version:string;organizationId:string}){
+ return requestJson<LinkCollection>("/api/consultant-links",{method:save?"PUT":"GET",headers:{Authorization:`Bearer ${token}`,...(save?{"Content-Type":"application/json"}:{})},...(save?{body:JSON.stringify(save)}:{})});
 }

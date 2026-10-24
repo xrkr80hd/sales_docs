@@ -199,3 +199,23 @@
   .dealerLogo { width:clamp(86px,calc(100vw - 274px),152px); object-fit:contain; }
   .identity { margin-left:0; flex-shrink:0; }
 }
+.sidebar {min-width:0;}
+.sidebarCollapsed {grid-template-columns:0 minmax(0,1fr);}
+.collapsedSidebar {visibility:hidden;overflow:hidden;padding:0;border:0;pointer-events:none;}
+.sidebarToggle {position:fixed;z-index:45;top:112px;left:226px;width:24px;height:44px;display:grid;place-items:center;cursor:pointer;}
+.toggleTriangle {display:block;width:15px;height:28px;background:#fff;clip-path:polygon(100% 0,0 50%,100% 100%);}
+.toggleClosed {left:0;background:var(--panel);border:1px solid var(--border);border-radius:0 4px 4px 0;}
+.toggleClosed .toggleTriangle {transform:rotate(180deg);}
+.sidebarToggle:focus-visible {outline:2px solid #fff;outline-offset:2px;}
+@media(max-width:900px) and (min-width:681px){.sidebarToggle{left:156px;top:96px;}.toggleClosed{left:0;}}
+@media(max-width:680px){.sidebarToggle{display:none;}}
+@media(max-width:680px){.sidebar{overflow:hidden;}.sidebar nav{height:calc(100dvh - 70px);overflow-y:auto;overscroll-behavior:contain;}}
+
+/* Management controls remain grouped; the display uses its own compact layout. */
+.setupSection {min-width:0;border:1px solid #354149;border-radius:7px;margin:12px 0;background:var(--panel);padding:12px;}
+.setupSection > summary {cursor:pointer;font-size:17px;font-weight:700;padding:4px 0;}
+.setupSection[open] > summary {margin-bottom:12px;}
+.setupSection .grossGrid {grid-template-columns:repeat(2,minmax(0,1fr));}
+@media(max-width:680px){.setupSection .grossGrid{grid-template-columns:minmax(0,1fr);}}
+
+.main.performanceMain {padding:8px;}

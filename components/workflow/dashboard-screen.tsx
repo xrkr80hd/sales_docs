@@ -5,18 +5,18 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { CarFront, ChevronRight, FileText, ContactRound, Images, MessageCircle } from "lucide-react";
-import { ConsultantPace, ConsultantTeamBoard } from "@/components/command-center/team-board";
+import { ConsultantBoardProvider, ConsultantPace, ConsultantTeamBoard } from "@/components/command-center/consultant-board";
 import styles from "@/components/command-center/workspace.module.css";
 import {
   clearLocalDealId,
   consumeStartFreshDeal,
   deleteDeal,
   listMyDeals,
+  loadDealFromServer,
   markStartFreshDeal,
   setLocalDealId,
   type DealSummary
 } from "@/lib/deals";
-import { useSession } from "@/components/auth/supabase-session-gate";
 import { useMessengerUnread } from "@/components/messenger/unread-context";
 import { isSupabaseConfigured } from "@/lib/supabase-browser";
 import {
@@ -28,10 +28,11 @@ import {
 } from "@/lib/walker-workflow";
 
 export function DashboardScreen() {
-  const { accessToken } = useSession();
   const router = useRouter();
   const [lastDeal, setLastDeal] = useState<DealSummary | null>(null);
   const [allDeals, setAllDeals] = useState<DealSummary[]>([]);
+  const [resuming,setResuming]=useState(false);
+  const [dealError,setDealError]=useState("");
   const [showPicker, setShowPicker] = useState(false);
   const {total:messengerUnread}=useMessengerUnread();
   const [localResume] = useState<{ name: string; dealType: "new" | "used" } | null>(() => {
@@ -52,7 +53,7 @@ export function DashboardScreen() {
       if (!isSupabaseConfigured()) {
         return;
       }
-      const deals = await listMyDeals();
+      const deals = await listMyDeals(true);
       if (cancelled) return;
 
       // Sort most recent first
@@ -63,7 +64,7 @@ export function DashboardScreen() {
       setLastDeal(sorted[0] ?? null);
       setAllDeals(sorted);
     }
-    load();
+    void load().catch(()=>{if(!cancelled)setDealError("Saved deals are temporarily unavailable. You can still start a new deal.");});
     return () => { cancelled = true; };
   }, []);
 
@@ -76,7 +77,11 @@ export function DashboardScreen() {
     router.push(dealType === "new" ? "/deal-sheet/new" : "/deal-sheet");
   }
 
-  function resumeDeal(deal: DealSummary) {
+  async function resumeDeal(summary: DealSummary) {
+    if(resuming)return;setResuming(true);setDealError("");
+    try {
+    const deal=await loadDealFromServer(summary.id);
+    if(!deal)throw new Error("This deal could not be opened. Refresh the list and try again.");
     const workflow = deal.workflow_data as unknown as WorkflowData;
     saveWorkflow(workflow);
     if (deal.signatures && typeof deal.signatures === "object") {
@@ -86,6 +91,8 @@ export function DashboardScreen() {
     setShowPicker(false);
     const route = workflow.dealType === "new" ? "/deal-sheet/new" : "/deal-sheet";
     router.push(route);
+    }catch(failure){setDealError(failure instanceof Error?failure.message:"Could not resume deal.");}
+    finally{setResuming(false);}
   }
 
   const previousDeals = lastDeal
@@ -94,7 +101,7 @@ export function DashboardScreen() {
   const pickerDeals = previousDeals.length > 0 ? previousDeals : allDeals;
   return (
     <>
-      <section aria-label="Consultant dashboard">
+      <ConsultantBoardProvider><section aria-label="Consultant dashboard">
         <div className={styles.hero} id="start-deal">
           <p className={styles.eyebrow}>Welcome to NXTDOX</p>
           <h1 className={styles.pageTitle}>Start a Deal</h1>
@@ -109,13 +116,14 @@ export function DashboardScreen() {
           <div className={styles.column}>
             <section className={styles.panel}>
               <div className={styles.panelHeader}><h2>Resume Deal / Previous Deals</h2><button type="button" className={styles.textLink} onClick={() => setShowPicker(true)}>View All ({pickerDeals.length})</button></div>
+              {dealError&&<p role="alert" className={styles.notice}>{dealError}</p>}
               <div className={styles.dealList}>
                 {allDeals.slice(0, 3).map(deal => {
                   const wf = deal.workflow_data as unknown as WorkflowData;
                   const vehicle = [wf.vehicleYear, wf.vehicleMake, wf.vehicleModel].filter(Boolean).join(" ");
-                  return <button type="button" key={deal.id} onClick={() => resumeDeal(deal)} className={styles.dealRow}><div><strong>{wf.customerName || "In-Progress Deal"}</strong><small>{vehicle || "Vehicle details pending"}</small></div><span className={styles.dealStatus}>Resume</span><ChevronRight size={18} /></button>;
+                  return <button type="button" key={deal.id} disabled={resuming} onClick={() => void resumeDeal(deal)} className={styles.dealRow}><div><strong>{wf.customerName || "In-Progress Deal"}</strong><small>{vehicle || "Vehicle details pending"}</small></div><span className={styles.dealStatus}>Resume</span><ChevronRight size={18} /></button>;
                 })}
-                {!lastDeal && localResume && <Link href={localResume.dealType === "new" ? "/deal-sheet/new" : "/deal-sheet"} className={styles.dealRow}><div><strong>{localResume.name}</strong><small>Resume this device&apos;s in-progress deal</small></div><ChevronRight size={18} /></Link>}
+                {!lastDeal && localResume && <Link prefetch={false} href={localResume.dealType === "new" ? "/deal-sheet/new" : "/deal-sheet"} className={styles.dealRow}><div><strong>{localResume.name}</strong><small>Resume this device&apos;s in-progress deal</small></div><ChevronRight size={18} /></Link>}
                 {!lastDeal && !localResume && <p className={`${styles.muted} p-4`}>No saved deals yet. Start a new or used vehicle deal above.</p>}
               </div>
             </section>
@@ -130,14 +138,14 @@ export function DashboardScreen() {
                     { label: "Business Card", href: "/business-card", icon: ContactRound },
                     { label: "Vehicle Collage", href: "/vehicle-collage", icon: Images },
                     { label: "Messenger", href: "/messenger", icon: MessageCircle },
-                  ].map(({ label, href, icon: Icon }) => <Link key={href} href={href} className={styles.tool}><Icon /><span>{label}{href === "/messenger" && messengerUnread > 0 && <span className={styles.unread}> · {messengerUnread} unread</span>}</span><ChevronRight /></Link>)}
+                  ].map(({ label, href, icon: Icon }) => <Link prefetch={false} key={href} href={href} className={styles.tool}><Icon /><span>{label}{href === "/messenger" && messengerUnread > 0 && <span className={styles.unread}> · {messengerUnread} unread</span>}</span><ChevronRight /></Link>)}
                 </div>
               </details>
             </section>
             <ConsultantTeamBoard />
           </div>
         </div>
-      </section>
+      </section></ConsultantBoardProvider>
 
       {showPicker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -173,7 +181,7 @@ export function DashboardScreen() {
                       <div key={deal.id} className="flex items-center">
                         <button
                           type="button"
-                          onClick={() => resumeDeal(deal)}
+                          disabled={resuming} onClick={() => void resumeDeal(deal)}
                           className="flex min-w-0 flex-1 flex-col gap-1 px-5 py-4 text-left transition hover:bg-white/5"
                         >
                           <span className="text-sm font-bold text-white">{name}</span>

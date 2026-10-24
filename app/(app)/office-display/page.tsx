@@ -1,2 +1,2 @@
-import { ManagerBoard } from "@/components/command-center/team-board";
-export default async function OfficeDisplayPage({searchParams}:{searchParams:Promise<{organization?:string}>}){const query=await searchParams;return <ManagerBoard office organization={query.organization}/>;}
+import { PerformanceDisplay } from "@/components/command-center/performance-display";
+export default async function Page({searchParams}:{searchParams:Promise<{organization?:string;month?:string}>}){const query=await searchParams;return <PerformanceDisplay key={`${query.organization}:${query.month}`} organization={query.organization} month={query.month} standalone/>;}

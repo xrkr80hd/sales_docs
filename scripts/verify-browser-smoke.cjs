@@ -11,7 +11,7 @@ for(const viewport of [{width:390,height:844},{width:1440,height:1000}]){
  await page.route('**/api/**',async route=>{const req=route.request(),url=new URL(req.url());requests.push(url.pathname+url.search);let value={};
  if(url.pathname==='/api/me')value={id:'fixture-user',email:'fixture@example.test',displayName:'Synthetic Consultant',role,workspaceRole:role,dealership:'Walker Honda',organizationId:'fixture-org',organizationTheme:'honda',mustChangePassword:false};
  else if(url.pathname==='/api/me/settings')value={dealer_info:{dealershipName:'Walker Honda'},consultant_info:{name:'Synthetic Consultant'}};
- else if(url.pathname==='/api/consultant-links')value={links:[]};
+ else if(url.pathname==='/api/consultant-links')value={links:[],organization:{id:'fixture-org',name:'Walker Honda'},version:''};
  else if(url.pathname==='/api/messenger'){
  if(req.method()==='POST'){const b=req.postDataJSON();if(b.action==='send'){const m={id:1,sender_id:'fixture-user',body:b.body,created_at:new Date().toISOString()};messages.push(m);value={ok:true,message:m};}else {if(b.action==='mark-read')unread=0;value={ok:true};}}
  else if(url.searchParams.has('summary')){await new Promise(r=>setTimeout(r,1500));value={conversations:[{id:room,unread}]};}

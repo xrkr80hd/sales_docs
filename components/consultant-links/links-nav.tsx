@@ -1,11 +1,20 @@
 "use client";
 import Link from "next/link";
-import { useEffect,useState } from "react";
-import { usePathname } from "next/navigation";
-import type { ConsultantLink } from "@/lib/consultant-links";
-import { requestLinks } from "./link-data";
-export function ConsultantLinksNav({onNavigate}:{onNavigate:()=>void}) {
-  const pathname=usePathname();const [links,setLinks]=useState<ConsultantLink[]>([]);
-  useEffect(()=>{let active=true;const load=()=>{void requestLinks().then(result=>{if(active)setLinks(result.links);}).catch(()=>{});};load();window.addEventListener("consultant-links-updated",load);window.addEventListener("consultant-profile-updated",load);return()=>{active=false;window.removeEventListener("consultant-links-updated",load);window.removeEventListener("consultant-profile-updated",load);};},[]);
-  return <details open={pathname.startsWith("/consultant-links")}><summary>Consultant Links</summary><div style={{display:"grid",paddingLeft:12}}><Link href="/consultant-links" onClick={onNavigate}>All links</Link>{links.map(link=><Link key={link.id} href={`/consultant-links/${link.id}`} onClick={onNavigate}>{link.name}</Link>)}</div></details>;
+import dynamic from "next/dynamic";
+import {useEffect,useState} from "react";
+import {usePathname} from "next/navigation";
+import {Folder,ChevronDown} from "lucide-react";
+import {useCommandCenter} from "./command-center-context";
+const LinkRows=dynamic(()=>import("./link-rows").then(module=>module.LinkRows));
+import styles from "./links.module.css";
+export function ConsultantLinksNav({onNavigate}:{onNavigate:()=>void}){
+ const pathname=usePathname();const [open,setOpen]=useState(pathname.startsWith("/consultant-links"));const {collection,busy,error,notice,load,save}=useCommandCenter();
+ useEffect(()=>{if(open)void load();},[open,load]);
+ return <details className={styles.commandNav} open={open} onToggle={event=>setOpen(event.currentTarget.open)}><summary><Folder size={20}/><span>Command Center</span><ChevronDown size={15}/></summary>{open&&<div className={styles.branches}>
+  {collection&&<LinkRows compact links={collection.links} busy={busy} onNavigate={onNavigate} onReorder={links=>void save(links,true)}/>}
+  {busy&&!collection&&<p role="status">Loading links…</p>}{collection?.links.length===0&&<p>No shortcuts yet.</p>}
+  {error&&<p role="alert">{error}<button type="button" disabled={busy} onClick={()=>void load(true)}>Reload links</button></p>}
+  {notice&&<span className={styles.srOnly} role="status">{notice}</span>}
+  <Link prefetch={false} href="/consultant-links/settings" onClick={onNavigate} className={styles.settingsLink}>Command Center Settings</Link>
+ </div>}</details>;
 }

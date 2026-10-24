@@ -1,2 +1,2 @@
 import { ManagerBoard } from "@/components/command-center/team-board";
-export default async function ManagerBoardPage({searchParams}:{searchParams:Promise<{organization?:string}>}){const query=await searchParams;return <ManagerBoard organization={query.organization}/>;}
+export default async function ManagerBoardPage({searchParams}:{searchParams:Promise<{organization?:string;month?:string}>}){const query=await searchParams;return <ManagerBoard key={`${query.organization}:${query.month}`} organization={query.organization} month={query.month}/>;}

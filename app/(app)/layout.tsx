@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { DisclosureGate } from "@/components/auth/disclosure-gate";
@@ -10,7 +10,7 @@ import { NotificationPrompt } from "@/components/ui/notification-prompt";
 import {
   DocumentDrawer,
 } from "@/components/workflow/document-drawer";
-import { SettingsDrawer } from "@/components/workflow/settings-drawer";
+import { CommandCenterProvider } from "@/components/consultant-links/command-center-context";
 import { fetchServerSettings, saveConsultant, saveDealer } from "@/lib/dealer-consultant";
 import { WorkspaceProvider } from "@/components/command-center/workspace-context";
 import { MessengerUnreadProvider } from "@/components/messenger/unread-context";
@@ -33,13 +33,13 @@ function SessionSettingsSync() {
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const router=useRouter();
 
   useEffect(() => {
-    const handler = () => setSettingsOpen(true);
+    const handler = () => router.push("/consultant-setup");
     window.addEventListener("open-settings", handler);
     return () => window.removeEventListener("open-settings", handler);
-  }, []);
+  }, [router]);
 
 
   const drawerDealType: "new" | "used" = (() => {
@@ -54,20 +54,19 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <SupabaseSessionGate surface="app" renderBar={false}>
-      <SessionSettingsSync />
+      {(pathname.startsWith("/documents") || pathname.startsWith("/deal-sheet")) && <SessionSettingsSync />}
       <DisclosureGate>
-        <div className="nxt-ui"><WorkspaceProvider><MessengerUnreadProvider>
-          <WorkspaceShell onSettings={() => setSettingsOpen(true)} onDocuments={() => setDrawerOpen(true)}>
+        <div className="nxt-ui"><WorkspaceProvider>{pathname === "/office-display" ? children : <CommandCenterProvider><MessengerUnreadProvider>
+          <WorkspaceShell onSettings={() => router.push("/consultant-setup")} onDocuments={() => setDrawerOpen(true)}>
             {children}
           </WorkspaceShell>
           {(pathname.startsWith("/documents") || pathname.startsWith("/deal-sheet")) && (
             <DocumentDrawer dealType={drawerDealType} open={drawerOpen} onClose={() => setDrawerOpen(false)} />
           )}
-          {settingsOpen && <SettingsDrawer onClose={() => setSettingsOpen(false)} />}
-        </MessengerUnreadProvider></WorkspaceProvider></div>
+        </MessengerUnreadProvider></CommandCenterProvider>}</WorkspaceProvider></div>
       </DisclosureGate>
       <SaveToastHost />
-      <NotificationPrompt />
+      {pathname !== "/office-display" && <NotificationPrompt />}
     </SupabaseSessionGate>
   );
 }

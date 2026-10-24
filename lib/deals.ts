@@ -1,3 +1,5 @@
+import {clearCustomerCopy,selectCustomerCopy,publishCustomerCopy,customerCopyRevision,customerSelectionRevision} from "@/lib/customer-copy";
+import { requestJson } from "@/lib/request-json";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase-browser";
 import { normalizeWorkflowData, stripSsnFields, type SignatureStore, type WorkflowData } from "@/lib/walker-workflow";
 
@@ -24,13 +26,16 @@ export function getLocalDealId(): string | null {
 
 export function setLocalDealId(id: string) {
   if (typeof window !== "undefined") {
+    const changed=getLocalDealId()!==id;
     window.sessionStorage.setItem(DEAL_ID_KEY, id);
+    if(changed)selectCustomerCopy(id);
   }
 }
 
 export function clearLocalDealId() {
   if (typeof window !== "undefined") {
     window.sessionStorage.removeItem(DEAL_ID_KEY);
+    clearCustomerCopy();
   }
 }
 
@@ -60,28 +65,26 @@ export type DealSummary = {
   updated_at: string;
 };
 
-export async function listMyDeals(): Promise<DealSummary[]> {
+export async function listMyDeals(summary = false): Promise<DealSummary[]> {
   const token = await getAuthToken();
   if (!token) return [];
 
-  const res = await fetch("/api/deals", { headers: authHeaders(token) });
-  if (!res.ok) return [];
-
-  const json = await res.json();
+  const json=await requestJson<{deals:DealSummary[]}>(summary ? "/api/deals?summary=1" : "/api/deals", { headers: authHeaders(token) });
   return (json.deals ?? []).map((deal: DealSummary) => ({ ...deal, workflow_data: normalizeWorkflowData(deal.workflow_data) }));
 }
 
-export async function loadDealFromServer(dealId: string): Promise<DealSummary | null> {
+export async function loadDealFromServer(dealId: string, options: {copyOnly?:boolean} = {}): Promise<DealSummary | null> {
+  if(!options.copyOnly)clearCustomerCopy(dealId);
+  const revision=customerCopyRevision();
   const token = await getAuthToken();
   if (!token) return null;
 
-  const res = await fetch(`/api/deals/${encodeURIComponent(dealId)}`, {
-    headers: authHeaders(token),
-  });
-  if (!res.ok) return null;
-
-  const json = await res.json();
-  return json.deal ? { ...json.deal, workflow_data: normalizeWorkflowData(json.deal.workflow_data) } : null;
+  try {
+    const json=await requestJson<{deal:DealSummary|null}>(`/api/deals/${encodeURIComponent(dealId)}`, {headers:authHeaders(token)});
+    if(!json.deal||json.deal.id!==dealId){if(!options.copyOnly&&customerCopyRevision()===revision)clearCustomerCopy(getLocalDealId());return null;}
+    if(customerCopyRevision()===revision&&(!options.copyOnly||getLocalDealId()===dealId))publishCustomerCopy(dealId,json.deal.workflow_data);
+    return {...json.deal,workflow_data:normalizeWorkflowData(json.deal.workflow_data)};
+  }catch(error){if(!options.copyOnly&&customerCopyRevision()===revision)clearCustomerCopy(getLocalDealId());throw error;}
 }
 
 export async function saveDealToServer(
@@ -89,27 +92,19 @@ export async function saveDealToServer(
   signatures: SignatureStore,
   dealId?: string | null,
 ): Promise<{ id: string; updated_at: string } | null> {
+  const selection=customerSelectionRevision();
   const token = await getAuthToken();
   if (!token) return null;
 
   const body: Record<string, unknown> = { workflowData: normalizeWorkflowData(workflowData), signatures: stripSsnFields(signatures) };
   if (dealId) body.id = dealId;
 
-  const res = await fetch("/api/deals", {
-    method: "POST",
-    headers: authHeaders(token),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) return null;
-
-  const json = await res.json();
-  const deal = json.deal as { id: string; updated_at: string } | undefined;
-
-  if (deal?.id) {
-    setLocalDealId(deal.id);
-  }
-
-  return deal ?? null;
+  try {
+    const json=await requestJson<{deal?:{id:string;updated_at:string}}>("/api/deals",{method:"POST",headers:authHeaders(token),body:JSON.stringify(body)});
+    const deal=json.deal;
+    if(deal?.id&&selection===customerSelectionRevision()){setLocalDealId(deal.id);publishCustomerCopy(deal.id,workflowData);}
+    return deal??null;
+  }catch{return null;}
 }
 
 export async function finishDeal(dealId: string): Promise<boolean> {
