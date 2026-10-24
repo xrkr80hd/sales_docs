@@ -54,3 +54,15 @@ PLANNED_WORK_LOG.md
 COMPLETED_WORK_LOG.md
 /agents/
 /build_profiles/
+
+# Local secrets, OS metadata, and generated diagnostics
+.env
+.env.local
+.env.*.local
+*.p12
+*.pfx
+*.key
+._*
+Thumbs.db
+*.log
+/coverage/
