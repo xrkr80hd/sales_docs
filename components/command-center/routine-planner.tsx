@@ -1,28 +1,10 @@
 "use client";
 import {useMemo,useState} from "react";
-import {weekdayRoutineKind,type EarlyDays} from "@/lib/routine-schedule";
-type RoutineItem={id:string;time:string;name:string;done?:boolean};
-type PlanDay={kind:"short"|"long"|"friday"|"off";items:RoutineItem[]};
+import {dateKey as key,defaultDayKind,isClosedDay,parseDay as parse,planFor,planFromTemplate as fromTemplate,routineTemplates as templates,startOfWeek as startWeek,type EarlyDays,type PlanDay} from "@/lib/routine-schedule";
 type Kind=PlanDay["kind"];
 type Props={earlyDays:EarlyDays;onEarlyDays:(value:EarlyDays)=>void;schedule:Record<string,PlanDay>;weekendAnchor:string;onWeekendAnchor:(day:string)=>void;disabled:boolean;onSave:(next:Record<string,PlanDay>)=>void};
 const field={background:"#0d1724",border:"1px solid #405064",color:"#fff",padding:"9px",borderRadius:5} as const;
 const styles={panel:{padding:16,background:"#121a25",border:"1px solid #344152",borderRadius:8,marginTop:12},button:{background:"#223247",border:"1px solid #405064",color:"#fff",padding:"8px 12px",borderRadius:5,cursor:"pointer"}} as const;
-const templates:{id:string;label:string;kind:Kind;items:[string,string][]}[]=[
-{id:"short",label:"5-hour sales sprint",kind:"short",items:[["09:00","Plan the day and review hot prospects"],["09:20","Walk inventory and choose three vehicles"],["09:45","First calls: unsold and internet leads"],["10:45","Customer appointments and test drives"],["11:45","Follow-up texts and videos"],["12:15","Second calls and appointment requests"],["13:15","Confirm appointments, update CRM"],["13:45","Close open tasks and hand off customers"]]},
-{id:"long",label:"7-hour balanced day",kind:"long",items:[["09:00","Review appointments and customer pipeline"],["09:20","Walk inventory and learn three vehicles"],["09:45","First outbound calling block"],["10:45","Appointments and showroom floor"],["11:45","Follow-up and customer videos"],["12:15","Lunch or coverage break"],["12:45","Second calls and appointment setting"],["13:45","Customer test drives and demonstrations"],["14:45","Service, owner, and unsold follow-ups"],["15:30","Confirm appointments and finalize CRM"]]},
-{id:"friday",label:"Friday noon finish",kind:"friday",items:[["08:00","Review hot deals and weekend handoffs"],["08:20","Inventory walk and identify priority units"],["08:45","Call and confirm weekend appointments"],["09:45","Customers and active deals"],["10:45","Follow-up, CRM, and manager handoffs"],["11:30","Finish outstanding tasks before noon"]]},
-{id:"customer",label:"Customer-first flexible day",kind:"long",items:[["09:00","Review scheduled customers and priorities"],["09:20","Walk inventory for today's appointments"],["09:45","Confirm appointments and prepare vehicles"],["10:15","Showroom appointments and test drives"],["11:45","Respond to leads and customer follow-up"],["12:30","Lunch or coverage break"],["13:00","Prospecting and outbound calls"],["14:00","More appointments, demos, and deliveries"],["15:00","Unfinished calls and appointment setting"],["15:40","Update CRM and plan next shift"]]}
-];
-const pad=(n:number)=>String(n).padStart(2,"0");
-function key(d:Date){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
-function parse(value:string){return new Date(value+"T12:00:00");}
-function startWeek(date:Date){const d=new Date(date);d.setDate(d.getDate()-(d.getDay()+6)%7);return d;}
-function nth(y:number,m:number,day:number,n:number){const f=new Date(y,m,1).getDay();return 1+(day-f+7)%7+7*(n-1);}
-function last(y:number,m:number,day:number){const e=new Date(y,m+1,0);return e.getDate()-(e.getDay()-day+7)%7;}
-function observed(y:number,m:number,day:number,date:Date){const v=new Date(y,m,day);v.setDate(v.getDate()+(v.getDay()===6?-1:v.getDay()===0?1:0));return key(v)===key(date);}
-function holiday(d:Date){const y=d.getFullYear(),m=d.getMonth(),n=d.getDate();return [[0,1],[5,19],[6,4],[10,11],[11,25]].some(([mm,dd])=>observed(y,mm,dd,d))||(m===0&&n===nth(y,0,1,3))||(m===1&&n===nth(y,1,1,3))||(m===4&&n===last(y,4,1))||(m===8&&n===nth(y,8,1,1))||(m===9&&n===nth(y,9,1,2))||(m===10&&n===nth(y,10,4,4));}
-function offSaturday(d:Date,anchor:string){const a=parse(anchor);const delta=Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(a.getFullYear(),a.getMonth(),a.getDate()))/86400000);return ((delta%14)+14)%14===0;}
-function fromTemplate(id:string):PlanDay{if(id==="off")return{kind:"off",items:[]};const t=templates.find(t=>t.id===id)||templates[0];return{kind:t.kind,items:t.items.map(([time,name],i)=>({id:id+"-"+i,time,name,done:false}))};}
 export function RoutinePlanner({earlyDays,onEarlyDays,schedule,weekendAnchor,onWeekendAnchor,disabled,onSave}:Props){
 const [week,setWeek]=useState(()=>key(startWeek(new Date())));
 const [selected,setSelected]=useState(()=>key(new Date()));
@@ -30,9 +12,9 @@ const anchor=weekendAnchor;
 const [template,setTemplate]=useState("short");
 const [editing,setEditing]=useState<PlanDay|null>(null);
 const dates=useMemo(()=>Array.from({length:7},(_,i)=>{const d=parse(week);d.setDate(d.getDate()+i);return d;}),[week]);
-function blocked(d:Date){return d.getDay()===0||holiday(d);}
-function defaultKind(d:Date):Kind{if(blocked(d)||(d.getDay()===6&&offSaturday(d,anchor)))return "off";if(d.getDay()===5)return "friday";const weekday=weekdayRoutineKind(d.getDay(),earlyDays);if(weekday)return weekday;const index=Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(2026,0,5))/86400000);return index%2===0?"short":"long";}
-function plan(d:Date):PlanDay{if(blocked(d))return{kind:"off",items:[]};return schedule[key(d)]||fromTemplate(defaultKind(d));}
+function blocked(d:Date){return isClosedDay(d);}
+function defaultKind(d:Date):Kind{return defaultDayKind(d,anchor,earlyDays);}
+function plan(d:Date):PlanDay{return planFor(d,schedule,anchor,earlyDays);}
 const selectedDate=parse(selected);const closed=blocked(selectedDate);const planNow=editing||plan(selectedDate);
 function select(date:string){setSelected(date);setEditing(null);setTemplate(defaultKind(parse(date)));}
 function save(next:PlanDay){if(closed||disabled)return;const entry={...next,items:next.items.filter(x=>x.name.trim()).map(x=>({...x,name:x.name.trim()}))};onSave({...schedule,[selected]:entry});setEditing(null);}
