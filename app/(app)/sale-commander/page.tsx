@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { SaleCommander } from "@/components/command-center/sale-commander";
 
-export default function Page() {
-  redirect("/dashboard");
+export default function SalesCommanderPage() {
+  return <SaleCommander />;
 }

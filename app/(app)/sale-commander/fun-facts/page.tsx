@@ -19,6 +19,6 @@ return <main style={{maxWidth:780,margin:"auto",padding:20,color:"#f2f5f8"}}>
 <p>The outbound calling and conversation rates above are planning assumptions, not independently verified Walker Automotive conversion rates. Use dealership history to refine them.</p>
 </section>
 <section style={{marginTop:18}}><h2>Research and further reading</h2><p><a href="https://www.foureyes.io/blog/dealership-data-study-appointment-rates" target="_blank" rel="noreferrer">Foureyes dealership study</a> · <a href="https://www.foureyes.io/blog/dealership-appointment-set-rates" target="_blank" rel="noreferrer">Foureyes appointment rates</a> · <a href="https://www.spyne.ai/blogs/dealership-ai-benchmarks" target="_blank" rel="noreferrer">Automotive benchmark summary</a></p></section>
-<p><Link href="/dashboard">Return to Sales Commander</Link></p>
+<p><Link href="/sale-commander">Return to Sales Commander</Link></p>
 </main>;
 }

@@ -3,10 +3,11 @@ import {useCallback,useEffect,useRef,useState} from "react";
 import styles from "./sales-commander-stats.module.css";
 import {useSession} from "@/components/auth/supabase-session-gate";
 import {requestJson} from "@/lib/request-json";
+import {normalizeRates,projection} from "@/lib/sales-commander-model";
 type Counts={calls:number;talks:number;appts:number;shows:number;sold:number};
-type Entry={userId:string;name:string;organization:string;organizationId:string;goal:number;rates?:{contact?:number;set?:number;show?:number;sold?:number;buffer?:number};workdays:number;today:Counts;monthly:Counts;updatedAt:string|null};
+type Entry={userId:string;name:string;organization:string;organizationId:string;goal:number;rates?:Record<string,number>;workdays:number;today:Counts;monthly:Counts;updatedAt:string|null};
 type Result={entries:Entry[];organizations:{id:string;name:string}[];scope:string;date:string};
-function targets(e:Entry){const r=e.rates||{};const sold=Math.max(1,r.sold||40)/100,show=Math.max(1,r.show||59)/100,set=Math.max(1,r.set||40)/100,contact=Math.max(1,r.contact||22)/100,buffer=1+(r.buffer??2)/100;const appts=Math.ceil(e.goal/(show*sold));const talks=Math.ceil(appts/set),calls=Math.ceil(talks/contact);const monthly={calls:Math.ceil(calls*buffer),talks:Math.ceil(talks*buffer),appts:Math.ceil(appts*buffer),shows:Math.ceil(e.goal/sold),sold:e.goal};return monthly;}
+function targets(e:Entry):Counts{const a=projection({goal:e.goal,rates:normalizeRates({...e.rates,workdays:e.workdays})}).adjusted;return {calls:a.calls,talks:a.talks,appts:a.appts,shows:a.shows,sold:a.sold};}
 const fields=[["calls","Calls"],["talks","Real conversations"],["appts","Appointments set"],["shows","Appointments shown"],["sold","Sales"]] as const;
 export function SalesCommanderStats(){
  const {accessToken}=useSession();

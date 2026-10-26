@@ -1,5 +1,5 @@
-import { SaleCommander } from "@/components/command-center/sale-commander";
+import { ConsultantHome } from "@/components/command-center/consultant-home";
 
 export default function ConsultantDashboard() {
-  return <SaleCommander />;
+  return <ConsultantHome />;
 }
