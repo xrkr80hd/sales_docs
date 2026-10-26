@@ -9,7 +9,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap, CircleHelp } from "lucide-react";
+import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap, CircleHelp, Bell } from "lucide-react";
+import { NotificationCenter, useUnreadAnnouncements } from "./notification-center";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { useWorkspaceIdentity } from "./workspace-context";
 import { ROLE_LABELS, validWorkspaceRole } from "@/lib/workspace-roles";
@@ -48,6 +49,7 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
   const {total:messageUnread}=useMessengerUnread();
   const mobile = useSyncExternalStore(subscribeMobile,mobileSnapshot,serverMobileSnapshot);
   const identity = useWorkspaceIdentity();
+  const announcementUnread=useUnreadAnnouncements(identity?.id||"");
   const session = useSession();
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
@@ -88,7 +90,8 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
       </div>
       {consultantView && <SalesTargetReminder />}
 
-        <Link prefetch={false} href="/messenger" className={styles.messageIndicator} aria-label={messageUnread ? `${messageUnread} unread messages. Open Messenger` : "Open Messenger. No unread messages"}><MessageCircle aria-hidden="true"/>{messageUnread>0&&<span aria-hidden="true">{messageUnread>99?"99+":messageUnread}</span>}</Link>
+        <NotificationCenter userId={identity?.id || ""} className={styles.messageIndicator} />
+        <Link prefetch={false} href="/messenger" className={`${styles.messageIndicator} ${styles.afterBell}`} aria-label={messageUnread ? `${messageUnread} unread messages. Open Messenger` : "Open Messenger. No unread messages"}><MessageCircle aria-hidden="true"/>{messageUnread>0&&<span aria-hidden="true">{messageUnread>99?"99+":messageUnread}</span>}</Link>
         <div className={styles.identity}>
           {canSwitchViews?<details><summary><span className={styles.profilePhoto}><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span>{identity?.dealership&&<OrganizationBadge name={identity.dealership} iconUrl={identity.organizationIconUrl} hidden={identity.organizationHideIcon}/>}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : floorManager ? "Floor Manager" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div><ChevronDown size={18}/></summary><div className={styles.accountMenu}><label className={styles.viewPicker}>Workspace view <select aria-label="Workspace view" value={activeView} onChange={event => switchView(event.target.value)}>{availableViews.filter(validWorkspaceRole).map(role => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label></div></details>:<div className={styles.profileIdentity}><span className={styles.profilePhoto}><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span>{identity?.dealership&&<OrganizationBadge name={identity.dealership} iconUrl={identity.organizationIconUrl} hidden={identity.organizationHideIcon}/>}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : floorManager ? "Floor Manager" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div></div>}
 
@@ -121,6 +124,7 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
             {floorManager && <Link prefetch={false} href="/role-views/floor_manager" onClick={close} className={`${styles.navLink} ${pathname === "/role-views/floor_manager" ? styles.active : ""}`}><Table2 />FM View</Link>}
             {managementView && <><Link prefetch={false} href={`/role-views/${activeView}`} onClick={close} className={styles.navLink}><Home />{validWorkspaceRole(activeView) ? ROLE_LABELS[activeView] : "Workspace"}</Link>{activeView !== "district_manager" && <details open={pathname.startsWith("/manager-board")}><summary><Table2 />Manager Board</summary><div className={styles.subnav}>{!readOnlyBoard&&<Link prefetch={false} href="/manager-board/setup" onClick={close}>Manager Board Set Up</Link>}<Link prefetch={false} href="/manager-board/display" onClick={close}>Performance Display</Link><Link prefetch={false} href="/manager-board/sale-commander" onClick={close}>Sales Commander Stats</Link>{!readOnlyBoard&&<Link prefetch={false} href="/manager-board/schedule" onClick={close}>Team Schedule</Link>}</div></details>}</>}
             {activeView === "fni" && <Link prefetch={false} href="/role-views/fni" onClick={close} className={styles.navLink}><Home />F&amp;I</Link>}
+            <Link prefetch={false} href="/notifications" onClick={close} className={`${styles.navLink} ${pathname === "/notifications" ? styles.active : ""}`}><Bell />Notifications{announcementUnread.length>0&&<span className={styles.navBadge} aria-label={`${announcementUnread.length} new`}>{announcementUnread.length}</span>}</Link>
             <Link prefetch={false} data-consultant-tour="messenger" href="/messenger" onClick={close} className={`${styles.navLink} ${pathname === "/messenger" ? styles.active : ""}`}><MessageCircle />Messenger</Link>
             {!pathname.startsWith("/deal-sheet")&&<Link prefetch={false} href="/documents" onClick={close} className={`${styles.navLink} ${pathname === "/documents" ? styles.active : ""}`}><Files />Documents</Link>}
             {pathname.startsWith("/deal-sheet") && <button onClick={() => { close(); onDocuments(); }} className={styles.navButton}><FilePlus2 />Deal Documents</button>}
