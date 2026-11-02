@@ -103,9 +103,9 @@ function parseColumnExpr(expr: string): { column: string; path: JsonStep[] } {
 export function parseSelect(text: string): SelectItem[] {
   return splitTopLevel(text.replace(/\s+/g, " ")).map((part): SelectItem => {
     if (part === "*") return { kind: "star" };
-    const embed = part.match(/^(?:([A-Za-z_][\w]*):)?([A-Za-z_][\w]*)(?:!([\w]+))?\s*\((.*)\)$/s);
+    const embed = part.match(/^(?:([A-Za-z_][\w]*):)?([A-Za-z_][\w]*)(?:!([\w]+))?\s*\(([\s\S]*)\)$/);
     if (embed) return { kind: "embed", alias: embed[1] || embed[2], table: embed[2], hint: embed[3], items: parseSelect(embed[4]) };
-    const aliased = part.match(/^([A-Za-z_][\w]*):(.*)$/s);
+    const aliased = part.match(/^([A-Za-z_][\w]*):([\s\S]*)$/);
     const alias = aliased?.[1];
     const { column, path } = parseColumnExpr(aliased ? aliased[2] : part);
     const lastKey = path.length ? path[path.length - 1].key : column;
@@ -212,6 +212,19 @@ export class QueryBuilder<T = any[]> implements PromiseLike<DbResult<T>> {
     const expr = columnExpr(this.table, column, params);
     this.filters.push({ sql: value === null ? `${expr.sql} IS NULL` : `${expr.sql} = ${value ? 1 : 0}`, params });
     return this;
+  }
+  not(column: string, operator: string, value: unknown) {
+    const params: unknown[] = [];
+    const expr = columnExpr(this.table, column, params);
+    if (operator === "is") { this.filters.push({ sql: value === null || value === "null" ? `${expr.sql} IS NOT NULL` : `NOT (${expr.sql} <=> ${value === true || value === "true" ? 1 : 0})`, params }); return this; }
+    if (operator === "eq") { params.push(toDb(expr.type, value)); this.filters.push({ sql: `NOT (${expr.sql} = ?)`, params }); return this; }
+    if (operator === "in") {
+      const list = Array.isArray(value) ? value : String(value).replace(/^\(|\)$/g, "").split(",").map(v => v.trim().replace(/^"(.*)"$/, "$1"));
+      if (!list.length) return this;
+      this.filters.push({ sql: `${expr.sql} NOT IN (${list.map(() => "?").join(",")})`, params: [...params, ...list.map(v => toDb(expr.type, v))] });
+      return this;
+    }
+    throw new Error(`Unsupported not() operator ${operator}`);
   }
   match(query: Record<string, unknown>) { for (const [k, v] of Object.entries(query)) this.eq(k, v); return this; }
   filter(column: string, operator: string, value: unknown) {

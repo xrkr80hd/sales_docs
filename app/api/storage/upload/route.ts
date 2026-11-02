@@ -33,7 +33,7 @@ export async function PUT(request: Request) {
       if (done) break;
       size += value.byteLength;
       if (size > MAX_UPLOAD_BYTES) throw new Error("too_large");
-      if (!out.write(value)) await new Promise(resolve => out.once("drain", resolve));
+      if (!out.write(value)) await new Promise<void>(resolve => out.once("drain", () => resolve()));
     }
     await new Promise<void>((resolve, reject) => out.end((error?: Error | null) => error ? reject(error) : resolve()));
     await rename(temporary, full);

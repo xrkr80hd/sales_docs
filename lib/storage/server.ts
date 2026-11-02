@@ -18,6 +18,7 @@ export const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gi
 const PUBLIC_PREFIX = "/storage/v1/object/public/";
 
 type StorageError = { message: string; statusCode?: string };
+type StorageResult<T = any> = Promise<{ data: T; error: StorageError | null }>;
 const err = (message: string, statusCode = "400"): StorageError => ({ message, statusCode });
 
 /** Rejects anything that could escape the media folder. */
@@ -75,11 +76,11 @@ export async function writeObject(bucket: string, objectPath: string, bytes: Buf
 
 /** Same method names the app called on supabase.storage. */
 export const storage = {
-  async getBucket(bucket: string) { return /^[a-z0-9][a-z0-9-]{0,190}$/.test(bucket) ? { data: { id: bucket, name: bucket, public: true }, error: null } : { data: null, error: err("Bucket not found", "404") }; },
-  async createBucket(bucket: string, _options?: Record<string, unknown>) { await mkdir(path.join(/*turbopackIgnore: true*/ MEDIA_ROOT, bucket), { recursive: true }); return { data: { name: bucket }, error: null }; },
+  async getBucket(bucket: string): StorageResult { return /^[a-z0-9][a-z0-9-]{0,190}$/.test(bucket) ? { data: { id: bucket, name: bucket, public: true }, error: null } : { data: null, error: err("Bucket not found", "404") }; },
+  async createBucket(bucket: string, _options?: Record<string, unknown>): StorageResult { await mkdir(path.join(/*turbopackIgnore: true*/ MEDIA_ROOT, bucket), { recursive: true }); return { data: { name: bucket }, error: null }; },
   from(bucket: string) {
     return {
-      async upload(objectPath: string, body: Buffer | ArrayBuffer | Blob | Uint8Array, options: { contentType?: string; upsert?: boolean } = {}) {
+      async upload(objectPath: string, body: Buffer | ArrayBuffer | Blob | Uint8Array, options: { contentType?: string; upsert?: boolean } = {}): StorageResult {
         const bytes = body instanceof Blob ? Buffer.from(await body.arrayBuffer()) : Buffer.from(body as ArrayBuffer);
         const contentType = options.contentType || (body instanceof Blob ? body.type : "application/octet-stream");
         const owner = objectPath.match(/^([0-9a-f-]{36})\//i)?.[1] || null;
@@ -87,12 +88,12 @@ export const storage = {
         return failed ? { data: null, error: failed } : { data: { path: objectPath, fullPath: `${bucket}/${objectPath}` }, error: null };
       },
       getPublicUrl(objectPath: string) { return { data: { publicUrl: publicUrlFor(bucket, objectPath) } }; },
-      async createSignedUploadUrl(objectPath: string) {
+      async createSignedUploadUrl(objectPath: string): StorageResult<{ signedUrl: string; path: string; token: string }> {
         if (!safeObjectPath(bucket, objectPath)) return { data: null, error: err("Invalid file path.") };
         const token = createUploadToken(bucket, objectPath);
         return { data: { signedUrl: `${appUrl()}/api/storage/upload?bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(objectPath)}&token=${encodeURIComponent(token)}`, path: objectPath, token }, error: null };
       },
-      async remove(paths: string[]) {
+      async remove(paths: string[]): StorageResult<{ name: string }[]> {
         const removed: { name: string }[] = [];
         for (const objectPath of paths) {
           const full = safeObjectPath(bucket, objectPath);

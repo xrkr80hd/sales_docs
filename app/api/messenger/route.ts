@@ -60,7 +60,7 @@ export async function GET(request: Request) {
     const counts = [];
     for (let offset = 0; offset < conversations.length; offset += 4) {
       counts.push(...await Promise.all(conversations.slice(offset, offset + 4).map(async c => {
-      const since = c.messenger_participants.find(p => p.user_id === user.id)?.last_read_at || "1970-01-01T00:00:00Z";
+      const since = c.messenger_participants.find((p: { user_id: string; last_read_at: string }) => p.user_id === user.id)?.last_read_at || "1970-01-01T00:00:00Z";
       const result = await db.from("messenger_messages").select("id", { count: "exact", head: true }).eq("conversation_id", c.id).neq("sender_id", user.id).is("deleted_at", null).gt("created_at", since);
       if (result.error) throw new ApiError("Unread counts could not be loaded.");
       return { ...c, title: c.kind === "organization" ? c.channel === "management" ? "Management Chat" : "Consultant Chat" : c.title, unread: result.count || 0 };
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
       allowedIds.length ? db.from("organization_memberships").select("user_id,organization_id,can_dm,chat_nickname").in("organization_id", allowedIds).eq("chat_enabled", true).then(result => checked(result) || []) : Promise.resolve([]),
       scoped.from("messenger_conversations").select("id,kind,channel,title,organization_id,updated_at,messenger_participants(user_id,last_read_at)").order("updated_at", { ascending: false }).then(result => checked(result) || []),
     ]);
-    const personIds = [...new Set([...members.map(m => m.user_id), ...conversations.flatMap(c => c.messenger_participants.map(p => p.user_id)), user.id])];
+    const personIds = [...new Set([...members.map(m => m.user_id), ...conversations.flatMap(c => c.messenger_participants.map((p: { user_id: string }) => p.user_id)), user.id])];
     const profiles = personIds.length ? checked(await db.from("profiles").select("id,display_name,role").in("id", personIds)) || [] : [];
     const people = profiles.map(p => {
       const member = members.find(m => m.user_id === p.id);
