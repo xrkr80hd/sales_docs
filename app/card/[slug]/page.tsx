@@ -11,7 +11,7 @@ import { getPublishedConsultantProfile } from "@/lib/public-consultant-profile";
 import styles from "../trav/page.module.css";
 
 export const dynamic = "force-dynamic";
-const SITE_URL = "https://nextdocs.xrkr80hd.studio";
+const SITE_URL = "https://nextdox.app";
 
 function getVideoEmbedUrl(rawUrl: string) {
   if (!rawUrl) return null;

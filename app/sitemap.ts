@@ -4,7 +4,7 @@ import { getSupabaseServiceClient } from "@/lib/supabase-server";
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl = "https://nextdocs.xrkr80hd.studio";
+  const siteUrl = "https://nextdox.app";
   try {
     const supabase = getSupabaseServiceClient();
     const { data: cards } = await supabase

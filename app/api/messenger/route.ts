@@ -1,8 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { organizationBranding } from "@/lib/organization-branding";
 import { moderateChatText } from "@/lib/chat-moderation";
-import { createSupabaseFetch } from "@/lib/supabase-fetch";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 class ApiError extends Error { constructor(message: string, public status = 500) { super(message); } }
@@ -20,10 +18,8 @@ async function context(request: Request) {
     if (error && (!error.status || error.status >= 500)) throw new ApiError("Messenger account verification is temporarily unavailable. Please retry.", 503);
     throw new ApiError("Your session has expired. Sign in again.", 401);
   }
-  // Every conversation check runs as the caller, with database RLS enforced.
-  const scoped = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    global: { headers: { Authorization: `Bearer ${token}` }, fetch: createSupabaseFetch({ signal }) }, auth: { persistSession: false, autoRefreshToken: false },
-  });
+  // Every conversation check runs as the caller, with Messenger privacy rules applied.
+  const scoped = db.asUser(user.id);
   const [profile, membership] = await Promise.all([
     db.from("profiles").select("role").eq("id", user.id).single().then(checked),
     db.from("organization_memberships").select("*").eq("user_id", user.id).maybeSingle().then(checked),

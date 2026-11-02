@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   if (direct && (typeof body.password !== "string" || body.password.length < 8 || body.password.length > 128)) return Response.json({ error: "Use 8–128 characters, including an uppercase letter and a special character." }, { status: 400 });
   if (direct && (!/[A-Z]/.test(body.password) || !/[^A-Za-z0-9]/.test(body.password))) return Response.json({ error: "Include at least one uppercase letter and one special character." }, { status: 400 });
   // Existing app domain is used for the invitation, never a caller-supplied redirect.
-  const { data: invitation, error: inviteError } = (direct ? await db.auth.admin.createUser({ email, password: body.password, email_confirm: true, user_metadata: { display_name: name }, app_metadata: { workspace_role: body.role, must_change_password: false } }) : await db.auth.admin.inviteUserByEmail(email, { data: { display_name: name }, redirectTo: "https://nextdocs.xrkr80hd.studio/dashboard" }));
+  const { data: invitation, error: inviteError } = (direct ? await db.auth.admin.createUser({ email, password: body.password, email_confirm: true, user_metadata: { display_name: name }, app_metadata: { workspace_role: body.role, must_change_password: false } }) : await db.auth.admin.inviteUserByEmail(email, { data: { display_name: name }, redirectTo: "https://nextdox.app/dashboard" }));
   if (inviteError || !invitation.user) return Response.json({ error: inviteError?.message || "Invitation could not be sent." }, { status: 500 });
   const id = invitation.user.id;
   // Every new consultant receives the standard tool bundle by default. Higher roles retain explicitly selected permissions.

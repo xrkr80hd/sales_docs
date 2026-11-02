@@ -346,3 +346,12 @@ CREATE TABLE IF NOT EXISTS media_files (
   UNIQUE KEY media_files_location (bucket, path),
   KEY media_files_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── Live updates (replaces Supabase Realtime broadcast) ─────────────────
+-- A counter per channel; saving a board bumps it and other open screens reload.
+CREATE TABLE IF NOT EXISTS app_live_events (
+  channel    VARCHAR(191) NOT NULL,
+  version    BIGINT       NOT NULL DEFAULT 0,
+  updated_at DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (channel)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

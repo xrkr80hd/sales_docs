@@ -12,7 +12,7 @@ function bearer(request: NextRequest) {
 function visitorHash(request: NextRequest, day: string) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const agent = request.headers.get("user-agent") || "unknown";
-  const salt = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(-24) || "nxtdocs";
+  const salt = process.env.APP_SECRET?.slice(-24) || "nxtdocs";
   return createHash("sha256").update(`${day}|${ip}|${agent}|${salt}`).digest("hex");
 }
 

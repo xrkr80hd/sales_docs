@@ -41,7 +41,7 @@ const initialForm: VehicleForm = {
   feature1: "", feature2: "", feature3: "",
 };
 
-const CARD_BASE_URL = "https://nextdocs.xrkr80hd.studio";
+const CARD_BASE_URL = "https://nextdox.app";
 const consultantCardUrl = (slug: string) => `${CARD_BASE_URL}/card/${encodeURIComponent(slug)}`;
 
 const PHOTO_HEIGHT = 810;

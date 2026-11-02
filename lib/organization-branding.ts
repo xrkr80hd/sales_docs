@@ -1,8 +1,11 @@
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
+import { sql } from "@/lib/db/pool";
 export type OrganizationBranding={iconUrl?:string;theme?:string;hideIcon?:boolean;address?:{street:string;city:string;state:string;zip:string};deletedAt?:string;fallbackOrganizationId?:string};
 let owner:Promise<string>|undefined;
 export async function brandingOwner(db:ReturnType<typeof getSupabaseServiceClient>){
-  if(!owner)owner=(async()=>{for(let page=1;page<=50;page++){const {data,error}=await db.auth.admin.listUsers({page,perPage:200});if(error)throw error;const found=data.users.find(user=>user.email?.toLowerCase()==="xrkr80hd@gmail.com");if(found)return found.id;if(data.users.length<200)break;}throw new Error("Master Admin account not found.");})().catch(error=>{owner=undefined;throw error;});
+  // One indexed lookup by email (previously paged through every account).
+  void db;
+  if(!owner)owner=(async()=>{const rows=await sql<{id:string}>("SELECT id FROM app_users WHERE email = ? LIMIT 1",["xrkr80hd@gmail.com"]);if(!rows[0])throw new Error("Master Admin account not found.");return rows[0].id;})().catch(error=>{owner=undefined;throw error;});
   return owner;
 }
 // Each API request creates its own service client. Reuse one settings read

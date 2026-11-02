@@ -16,7 +16,7 @@ const plexMono = localFont({variable:"--font-plex-mono",display:"swap",src:[
 ]});
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://nextdocs.xrkr80hd.studio"),
+  metadataBase: new URL("https://nextdox.app"),
   title: { default: "NXTDOX", template: "%s | NXTDOX" },
   description: "NXTDOX consultant profiles and dealership tools.",
   applicationName: "NXTDOX",

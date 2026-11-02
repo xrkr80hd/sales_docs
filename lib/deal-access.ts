@@ -1,4 +1,4 @@
-import type { User } from "@supabase/supabase-js";
+import type { User } from "@/lib/auth/types";
 import { getSupabaseServiceClient } from "./supabase-server";
 
 // Service clients bypass RLS. Apply this scope before queue reads and manager actions.

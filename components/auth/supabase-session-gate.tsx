@@ -3,7 +3,7 @@
 import {requestWorkspaceExit} from "@/lib/workspace-exit";
 import { SoftwareLogo } from "@/components/branding/software-logo";
 import { PasswordRequirement } from "./required-password-change";
-import type { Session } from "@supabase/supabase-js";
+import type { Session } from "@/lib/auth/types";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { BROWSER_IDLE_MS, staySignedInEnabled,preferredStaySignedIn,setStaySignedIn, browserLastActiveAt, browserSessionExpired, recordBrowserActivity } from "@/lib/browser-activity";

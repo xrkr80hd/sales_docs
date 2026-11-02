@@ -1,30 +1,11 @@
 import "server-only";
-import { createClient, AuthError } from "@supabase/supabase-js";
-import { createSupabaseFetch } from "@/lib/supabase-fetch";
+import { createDbClient } from "@/lib/db/client";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? "";
-
+/*
+ * Kept under its old name so every route keeps working unchanged.
+ * It no longer talks to Supabase: it returns the MySQL-backed client
+ * (lib/db/client.ts), which runs on the same server as the app.
+ */
 export function getSupabaseServiceClient(options: { allowPasswordChange?: boolean; signal?: AbortSignal } = {}) {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error(
-      "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.",
-    );
-  }
-
-  const client = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    global: { fetch: createSupabaseFetch({ signal: options.signal }) },
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  if (!options.allowPasswordChange) {
-    const getUser = client.auth.getUser.bind(client.auth);
-    client.auth.getUser = async (token?: string) => {
-      const result = await getUser(token);
-      if (result.data.user?.app_metadata?.must_change_password === true) {
-        return { data: { user: null }, error: new AuthError("Change your password before continuing.", 403, "password_change_required") };
-      }
-      return result;
-    };
-  }
-  return client;
+  return createDbClient(options);
 }

@@ -3,7 +3,7 @@ import { readDisplayHandoff } from "@/lib/display-handoff";
 import { requestJson } from "@/lib/request-json";
 import { SoftwareLogo } from "@/components/branding/software-logo";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Session } from "@supabase/supabase-js";
+import type { Session } from "@/lib/auth/types";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { WorkspaceIdentity } from "@/components/command-center/workspace-context";
 const VerifiedAccountContext = createContext<WorkspaceIdentity | null>(null);
