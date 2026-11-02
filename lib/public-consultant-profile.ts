@@ -8,7 +8,7 @@ type Membership={organization_id?:string|null;organizations?:unknown}|null;
 // The retired NXTDOX default logo was a large graphic loaded on every card that had no logo of its own.
 const RETIRED_DEFAULT_LOGO="/branding/nxtdox-by-eben.png";
 const cardLogo=(url:unknown)=>typeof url==="string"&&url&&url!==RETIRED_DEFAULT_LOGO?url:"";
-const readMembership=(db:Db,userId:string)=>db.from("organization_memberships").select("organization_id,organizations(name)").eq("user_id",userId).maybeSingle().then(({data})=>data as Membership);
+async function readMembership(db:Db,userId:string):Promise<Membership>{const {data}=await db.from("organization_memberships").select("organization_id,organizations(name)").eq("user_id",userId).maybeSingle();return data as Membership;}
 
 async function useAssignedOrganization(membershipRequest:Promise<Membership>,brandingRequest:Promise<Record<string,OrganizationBranding>>,profile:ConsultantProfileContent){
   const membership=await membershipRequest;
@@ -39,7 +39,7 @@ async function loadPublishedConsultantProfile(slug: string): Promise<ConsultantP
       .maybeSingle();
 
     if (card) {
-      const membership = readMembership(supabase, card.user_id);
+      const membership = readMembership(supabase, card.user_id).catch(() => null);
       const [
         { data: reviews },
         { data: vehicles },
