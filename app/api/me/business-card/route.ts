@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
         email: cardRow.email || "",
         profileImageUrl: cardRow.profile_image_url || "",
         callingCardImageUrl: cardRow.calling_card_image_url || "",
-        logoUrl: cardRow.logo_url || "/branding/nxtdox-by-eben.png",
+        logoUrl: cardRow.logo_url && cardRow.logo_url !== "/branding/nxtdox-by-eben.png" ? cardRow.logo_url : "",
         languageLabel: cardRow.language_label || "EN · ES",
       },
       content: {

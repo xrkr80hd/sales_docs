@@ -1,21 +1,34 @@
+import { cache } from "react";
 import { ConsultantProfileContent, normalizeProfileContent } from "@/lib/consultant-profile";
-import { organizationBranding } from "@/lib/organization-branding";
+import { organizationBranding, type OrganizationBranding } from "@/lib/organization-branding";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 
-async function useAssignedOrganization(db:ReturnType<typeof getSupabaseServiceClient>,userId:string,profile:ConsultantProfileContent){
-  const {data:membership}=await db.from("organization_memberships").select("organization_id,organizations(name)").eq("user_id",userId).maybeSingle();
+type Db=ReturnType<typeof getSupabaseServiceClient>;
+type Membership={organization_id?:string|null;organizations?:unknown}|null;
+// The retired NXTDOX default logo was a large graphic loaded on every card that had no logo of its own.
+const RETIRED_DEFAULT_LOGO="/branding/nxtdox-by-eben.png";
+const cardLogo=(url:unknown)=>typeof url==="string"&&url&&url!==RETIRED_DEFAULT_LOGO?url:"";
+const readMembership=(db:Db,userId:string)=>db.from("organization_memberships").select("organization_id,organizations(name)").eq("user_id",userId).maybeSingle().then(({data})=>data as Membership);
+
+async function useAssignedOrganization(membershipRequest:Promise<Membership>,brandingRequest:Promise<Record<string,OrganizationBranding>>,profile:ConsultantProfileContent){
+  const membership=await membershipRequest;
   const organization=membership?.organizations as unknown as {name?:string}|null;
   if(!organization?.name)return profile;
-  const branding=membership?.organization_id?(await organizationBranding(db))[membership.organization_id]:undefined;
+  const branding=membership?.organization_id?(await brandingRequest)[membership.organization_id]:undefined;
   const address=branding?.address;
   const location=address?[address.street,[address.city,address.state].filter(Boolean).join(", "),address.zip].filter(Boolean).join(", "):"";
   return {...profile,identity:{...profile.identity,dealership:organization.name,location}};
 }
 
-export async function getPublishedConsultantProfile(slug: string): Promise<ConsultantProfileContent | null> {
+/** One lookup per request: metadata, page and manifest share the result instead of re-querying. */
+export const getPublishedConsultantProfile = cache(loadPublishedConsultantProfile);
+
+async function loadPublishedConsultantProfile(slug: string): Promise<ConsultantProfileContent | null> {
   const isTrav = slug === "trav";
   try {
     const supabase = getSupabaseServiceClient();
+    // Branding does not depend on the card, so it loads alongside the card lookup instead of after it.
+    const branding = organizationBranding(supabase).catch(() => ({} as Record<string, OrganizationBranding>));
 
     // 1. Try querying consultant_cards relational table
     const { data: card } = await supabase
@@ -26,6 +39,7 @@ export async function getPublishedConsultantProfile(slug: string): Promise<Consu
       .maybeSingle();
 
     if (card) {
+      const membership = readMembership(supabase, card.user_id);
       const [
         { data: reviews },
         { data: vehicles },
@@ -40,7 +54,7 @@ export async function getPublishedConsultantProfile(slug: string): Promise<Consu
         supabase.from("consultant_social_links").select("*").eq("card_id", card.id).order("sort_order", { ascending: true }),
       ]);
 
-      return useAssignedOrganization(supabase,card.user_id,{
+      return useAssignedOrganization(membership,branding,{
         identity: {
           displayName: card.display_name,
           jobTitle: card.job_title || "Sales Consultant",
@@ -50,7 +64,7 @@ export async function getPublishedConsultantProfile(slug: string): Promise<Consu
           email: card.email || "",
           profileImageUrl: card.profile_image_url || "",
           callingCardImageUrl: card.calling_card_image_url || "",
-          logoUrl: card.logo_url || "/branding/nxtdox-by-eben.png",
+          logoUrl: cardLogo(card.logo_url),
           languageLabel: card.language_label || "EN · ES",
         },
         content: {
@@ -110,15 +124,16 @@ export async function getPublishedConsultantProfile(slug: string): Promise<Consu
       });
     }
 
-    // 2. Fallback: check legacy user_settings json
-    const { data } = await supabase.from("user_settings").select("user_id,consultant_info");
+    // 2. Fallback: check legacy user_settings json, filtered in the database instead of downloading every row.
+    const { data } = await supabase.from("user_settings").select("user_id,consultant_info").eq("consultant_info->business_card->>slug", slug);
     const match = data?.find((row) => {
       const c = (row.consultant_info as Record<string, unknown> | null)?.business_card as Record<string, unknown> | undefined;
       return c?.slug === slug && Boolean(c.publishedAt);
     });
     const legacyCard = (match?.consultant_info as Record<string, unknown> | null)?.business_card as Record<string, unknown> | undefined;
     if (legacyCard?.published) {
-      return useAssignedOrganization(supabase,match!.user_id,normalizeProfileContent(legacyCard.published, isTrav));
+      const legacy = normalizeProfileContent(legacyCard.published, isTrav);
+      return useAssignedOrganization(readMembership(supabase,match!.user_id),branding,{...legacy,identity:{...legacy.identity,logoUrl:cardLogo(legacy.identity.logoUrl)}});
     }
 
     return null;
