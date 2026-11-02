@@ -28,6 +28,9 @@ jobs:
       - name: Install
         run: npm install --no-audit --no-fund
 
+      - name: Type check (lists every error at once)
+        run: npx tsc --noEmit -p . --pretty false
+
       - name: Build
         run: npm run build
         env:

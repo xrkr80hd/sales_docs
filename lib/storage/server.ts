@@ -76,7 +76,7 @@ export async function writeObject(bucket: string, objectPath: string, bytes: Buf
 /** Same method names the app called on supabase.storage. */
 export const storage = {
   async getBucket(bucket: string) { return /^[a-z0-9][a-z0-9-]{0,190}$/.test(bucket) ? { data: { id: bucket, name: bucket, public: true }, error: null } : { data: null, error: err("Bucket not found", "404") }; },
-  async createBucket(bucket: string) { await mkdir(path.join(/*turbopackIgnore: true*/ MEDIA_ROOT, bucket), { recursive: true }); return { data: { name: bucket }, error: null }; },
+  async createBucket(bucket: string, _options?: Record<string, unknown>) { await mkdir(path.join(/*turbopackIgnore: true*/ MEDIA_ROOT, bucket), { recursive: true }); return { data: { name: bucket }, error: null }; },
   from(bucket: string) {
     return {
       async upload(objectPath: string, body: Buffer | ArrayBuffer | Blob | Uint8Array, options: { contentType?: string; upsert?: boolean } = {}) {

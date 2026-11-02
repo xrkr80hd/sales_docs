@@ -24,6 +24,10 @@ export type AuthUser = {
 export type AuthError = { message: string; status: number; code?: string; name: "AuthError" };
 export type Session = { access_token: string; refresh_token: string; token_type: "bearer"; expires_in: number; expires_at: number; user: AuthUser };
 
+export type UserResponse = { data: { user: AuthUser }; error: null } | { data: { user: null }; error: AuthError };
+const ok = (user: AuthUser): UserResponse => ({ data: { user }, error: null });
+const fail = (error: AuthError): UserResponse => ({ data: { user: null }, error });
+
 export const authError = (message: string, status: number, code?: string): AuthError => ({ message, status, code, name: "AuthError" });
 export const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 const parse = (value: unknown) => { if (!value) return {}; if (typeof value !== "string") return value as Record<string, any>; try { return JSON.parse(value) || {}; } catch { return {}; } };
@@ -52,21 +56,21 @@ export async function createSession(user: AuthUser): Promise<Session> {
 }
 
 /** Resolves a session token to its user. Extends the session at most once an hour. */
-export async function getUser(token?: string | null): Promise<{ data: { user: AuthUser | null }; error: AuthError | null }> {
-  if (!token) return { data: { user: null }, error: authError("Auth session missing!", 401, "session_not_found") };
+export async function getUser(token?: string | null): Promise<UserResponse> {
+  if (!token) return fail(authError("Auth session missing!", 401, "session_not_found"));
   try {
     const hash = hashToken(token);
     const rows = await sql<UserRow & { expires_at: string; last_seen_at: string }>(
       `SELECT u.*, s.expires_at, s.last_seen_at FROM app_sessions s JOIN app_users u ON u.id = s.user_id
         WHERE s.token_hash = ? AND s.expires_at > UTC_TIMESTAMP(6) LIMIT 1`, [hash]);
     const row = rows[0];
-    if (!row) return { data: { user: null }, error: authError("Invalid or expired session. Sign in again.", 401, "session_expired") };
+    if (!row) return fail(authError("Invalid or expired session. Sign in again.", 401, "session_expired"));
     if (Date.now() - new Date(toIso(row.last_seen_at)!).getTime() > 3600e3) {
       void exec(`UPDATE app_sessions SET last_seen_at = UTC_TIMESTAMP(6), expires_at = UTC_TIMESTAMP(6) + INTERVAL ${SESSION_DAYS} DAY WHERE token_hash = ?`, [hash]).catch(() => undefined);
     }
-    return { data: { user: toUser(row) }, error: null };
+    return ok(toUser(row));
   } catch {
-    return { data: { user: null }, error: authError("Account verification is temporarily unavailable.", 503) };
+    return fail(authError("Account verification is temporarily unavailable.", 503));
   }
 }
 
@@ -163,9 +167,9 @@ async function provisionNewUser(conn: PoolConnection, id: string, email: string,
 }
 
 type CreateUserInput = { email: string; password?: string; email_confirm?: boolean; user_metadata?: Record<string, any>; app_metadata?: Record<string, any> };
-export async function createUser(input: CreateUserInput): Promise<{ data: { user: AuthUser | null }; error: AuthError | null }> {
+export async function createUser(input: CreateUserInput): Promise<UserResponse> {
   const email = input.email.trim().toLowerCase();
-  if (await findUser("email = ?", email)) return { data: { user: null }, error: authError("A user with this email address has already been registered", 422, "email_exists") };
+  if (await findUser("email = ?", email)) return fail(authError("A user with this email address has already been registered", 422, "email_exists"));
   const id = randomUUID();
   const hash = input.password ? await bcrypt.hash(input.password, 10) : null;
   try {
@@ -176,15 +180,15 @@ export async function createUser(input: CreateUserInput): Promise<{ data: { user
     });
   } catch (error) {
     console.error("auth_create_user_failed");
-    return { data: { user: null }, error: authError("Could not create the account.", 500) };
+    return fail(authError("Could not create the account.", 500));
   }
-  return { data: { user: toUser((await findUser("id = ?", id))!) }, error: null };
+  return ok(toUser((await findUser("id = ?", id))!));
 }
 
-export async function inviteUserByEmail(email: string, options: { data?: Record<string, any>; redirectTo?: string } = {}) {
+export async function inviteUserByEmail(email: string, options: { data?: Record<string, any>; redirectTo?: string } = {}): Promise<UserResponse> {
   const lower = email.trim().toLowerCase();
   const existing = await findUser("email = ?", lower);
-  const created = existing ? { data: { user: toUser(existing) }, error: null } : await createUser({ email: lower, user_metadata: options.data || {} });
+  const created = existing ? ok(toUser(existing)) : await createUser({ email: lower, user_metadata: options.data || {} });
   if (created.error || !created.data.user) return created;
   const link = await createResetLink(created.data.user.id, `${appUrl()}/auth/callback?type=recovery`, 24 * 7);
   try {
@@ -193,37 +197,37 @@ export async function inviteUserByEmail(email: string, options: { data?: Record<
       text: `You've been invited to NXTDOX.\n\nSet your password to get started (this link works for 7 days):\n${link}`,
     });
   } catch {
-    return { data: { user: created.data.user }, error: authError("The account was created, but the invitation email could not be sent.", 500) };
+    return fail(authError("The account was created, but the invitation email could not be sent.", 500));
   }
   return created;
 }
 
 // ── admin API (same names Supabase used) ────────────────────────────────────
 export const admin = {
-  async getUserById(id: string) {
+  async getUserById(id: string): Promise<UserResponse> {
     const row = await findUser("id = ?", id);
-    return row ? { data: { user: toUser(row) }, error: null } : { data: { user: null }, error: authError("User not found", 404, "user_not_found") };
+    return row ? ok(toUser(row)) : fail(authError("User not found", 404, "user_not_found"));
   },
-  async listUsers(options: { page?: number; perPage?: number } = {}) {
+  async listUsers(options: { page?: number; perPage?: number } = {}): Promise<{ data: { users: AuthUser[]; aud: string; total: number; nextPage: number | null; lastPage: number }; error: null } | { data: { users: [] }; error: AuthError }> {
     const perPage = Math.min(Math.max(options.perPage || 50, 1), 1000), page = Math.max(options.page || 1, 1);
     const rows = await sql<UserRow>("SELECT * FROM app_users ORDER BY created_at LIMIT ? OFFSET ?", [perPage, (page - 1) * perPage]);
     const [{ n }] = await sql<{ n: number }>("SELECT COUNT(*) AS n FROM app_users");
     return { data: { users: rows.map(toUser), aud: "authenticated", total: Number(n), nextPage: page * perPage < Number(n) ? page + 1 : null, lastPage: Math.ceil(Number(n) / perPage) }, error: null };
   },
-  async updateUserById(id: string, attrs: { email?: string; password?: string; email_confirm?: boolean; app_metadata?: Record<string, any>; user_metadata?: Record<string, any>; ban_duration?: string }) {
+  async updateUserById(id: string, attrs: { email?: string; password?: string; email_confirm?: boolean; app_metadata?: Record<string, any>; user_metadata?: Record<string, any>; ban_duration?: string }): Promise<UserResponse> {
     const row = await findUser("id = ?", id);
-    if (!row) return { data: { user: null }, error: authError("User not found", 404, "user_not_found") };
+    if (!row) return fail(authError("User not found", 404, "user_not_found"));
     const sets: string[] = [], params: unknown[] = [];
     if (attrs.email) { sets.push("email = ?"); params.push(attrs.email.trim().toLowerCase()); }
-    if (attrs.password) { if (attrs.password.length < 6) return { data: { user: null }, error: authError("Password should be at least 6 characters.", 422, "weak_password") }; sets.push("encrypted_password = ?"); params.push(await bcrypt.hash(attrs.password, 10)); }
+    if (attrs.password) { if (attrs.password.length < 6) return fail(authError("Password should be at least 6 characters.", 422, "weak_password")); sets.push("encrypted_password = ?"); params.push(await bcrypt.hash(attrs.password, 10)); }
     if (attrs.email_confirm) sets.push("email_confirmed_at = COALESCE(email_confirmed_at, UTC_TIMESTAMP(6))");
     // Supabase merges metadata on update; so do we.
     if (attrs.app_metadata) { sets.push("app_metadata = ?"); params.push(JSON.stringify({ ...parse(row.app_metadata), ...attrs.app_metadata })); }
     if (attrs.user_metadata) { sets.push("user_metadata = ?"); params.push(JSON.stringify({ ...parse(row.user_metadata), ...attrs.user_metadata })); }
     if (sets.length) await exec(`UPDATE app_users SET ${sets.join(", ")} WHERE id = ?`, [...params, id]);
-    return { data: { user: toUser((await findUser("id = ?", id))!) }, error: null };
+    return ok(toUser((await findUser("id = ?", id))!));
   },
-  async deleteUser(id: string) {
+  async deleteUser(id: string): Promise<{ data: { user: null }; error: AuthError | null }> {
     const result = await exec("DELETE FROM app_users WHERE id = ?", [id]);
     return result.affectedRows ? { data: { user: null }, error: null } : { data: { user: null }, error: authError("User not found", 404, "user_not_found") };
   },

@@ -2,7 +2,7 @@ import "server-only";
 import type { Queryable } from "./pool";
 import { QueryBuilder, type ScopeFilter } from "./query";
 import { messengerAccess, markRead, startDirectMessage } from "./messenger-access";
-import { admin, authError, getUser, type AuthUser } from "@/lib/auth/server";
+import { admin, authError, getUser, type UserResponse } from "@/lib/auth/server";
 import { storage } from "@/lib/storage/server";
 
 /*
@@ -50,7 +50,7 @@ export function createDbClient(options: Options = {}) {
     },
 
     auth: {
-      async getUser(token?: string): Promise<{ data: { user: AuthUser | null }; error: ReturnType<typeof authError> | null }> {
+      async getUser(token?: string): Promise<UserResponse> {
         const result = await getUser(token);
         if (!options.allowPasswordChange && result.data.user?.app_metadata?.must_change_password === true) {
           return { data: { user: null }, error: authError("Change your password before continuing.", 403, "password_change_required") };
