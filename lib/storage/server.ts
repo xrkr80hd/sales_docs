@@ -88,7 +88,7 @@ export const storage = {
         return failed ? { data: null, error: failed } : { data: { path: objectPath, fullPath: `${bucket}/${objectPath}` }, error: null };
       },
       getPublicUrl(objectPath: string) { return { data: { publicUrl: publicUrlFor(bucket, objectPath) } }; },
-      async createSignedUploadUrl(objectPath: string): StorageResult<{ signedUrl: string; path: string; token: string }> {
+      async createSignedUploadUrl(objectPath: string): StorageResult<{ signedUrl: string; path: string; token: string } | null> {
         if (!safeObjectPath(bucket, objectPath)) return { data: null, error: err("Invalid file path.") };
         const token = createUploadToken(bucket, objectPath);
         return { data: { signedUrl: `${appUrl()}/api/storage/upload?bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(objectPath)}&token=${encodeURIComponent(token)}`, path: objectPath, token }, error: null };
