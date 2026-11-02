@@ -1,0 +1,61 @@
+# Builds NXTDOX and publishes a ready-to-run copy to the `deploy` branch.
+# On the server, cPanel's Git Version Control pulls `deploy` and restarts the
+# Node.js app, so the hosting account never has to build anything itself.
+name: Build for nextdox.app
+
+on:
+  push:
+    branches: [main, mysql-migration]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-cpanel
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: Assemble the server bundle
+        run: |
+          rm -rf dist
+          cp -R .next/standalone dist
+          mkdir -p dist/.next
+          cp -R .next/static dist/.next/static
+          cp -R public dist/public
+          # cPanel runs these after each pull: restart the app so the new build is live.
+          cat > dist/.cpanel.yml <<'YAML'
+          ---
+          deployment:
+            tasks:
+              - /bin/mkdir -p tmp
+              - /bin/touch tmp/restart.txt
+          YAML
+          echo "${GITHUB_SHA}" > dist/BUILD_COMMIT
+
+      - name: Publish to the deploy branch
+        run: |
+          cd dist
+          git init -q
+          git config user.name "nxtdox-deploy"
+          git config user.email "deploy@nextdox.app"
+          git add -A -f
+          git commit -q -m "Build ${GITHUB_SHA} from ${GITHUB_REF_NAME}"
+          git push -q --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:deploy

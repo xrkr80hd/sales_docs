@@ -12,7 +12,7 @@ import { appUrl } from "@/lib/auth/server";
  * <APP_URL>/storage/v1/object/public/<bucket>/<path> — the same URL shape
  * Supabase used, so stored links only need their host changed.
  */
-export const MEDIA_ROOT = process.env.MEDIA_ROOT || path.join(os.homedir(), "nextdox_media");
+export const MEDIA_ROOT = process.env.MEDIA_ROOT || path.join(/*turbopackIgnore: true*/ os.homedir(), "nextdox_media");
 export const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 export const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm", "video/quicktime"];
 const PUBLIC_PREFIX = "/storage/v1/object/public/";
@@ -26,8 +26,8 @@ export function safeObjectPath(bucket: string, objectPath: string): string | nul
   if (!objectPath || objectPath.length > 512 || objectPath.includes("\\") || objectPath.includes("\0")) return null;
   const parts = objectPath.split("/");
   if (parts.some(p => !p || p === "." || p === "..")) return null;
-  const full = path.resolve(MEDIA_ROOT, bucket, ...parts);
-  return full.startsWith(path.resolve(MEDIA_ROOT) + path.sep) ? full : null;
+  const full = path.resolve(/*turbopackIgnore: true*/ MEDIA_ROOT, bucket, ...parts);
+  return full.startsWith(path.resolve(/*turbopackIgnore: true*/ MEDIA_ROOT) + path.sep) ? full : null;
 }
 
 export function publicUrlFor(bucket: string, objectPath: string) {
@@ -76,7 +76,7 @@ export async function writeObject(bucket: string, objectPath: string, bytes: Buf
 /** Same method names the app called on supabase.storage. */
 export const storage = {
   async getBucket(bucket: string) { return /^[a-z0-9][a-z0-9-]{0,190}$/.test(bucket) ? { data: { id: bucket, name: bucket, public: true }, error: null } : { data: null, error: err("Bucket not found", "404") }; },
-  async createBucket(bucket: string) { await mkdir(path.join(MEDIA_ROOT, bucket), { recursive: true }); return { data: { name: bucket }, error: null }; },
+  async createBucket(bucket: string) { await mkdir(path.join(/*turbopackIgnore: true*/ MEDIA_ROOT, bucket), { recursive: true }); return { data: { name: bucket }, error: null }; },
   from(bucket: string) {
     return {
       async upload(objectPath: string, body: Buffer | ArrayBuffer | Blob | Uint8Array, options: { contentType?: string; upsert?: boolean } = {}) {

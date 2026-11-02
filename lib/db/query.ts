@@ -149,7 +149,7 @@ type Order = { expr: string; ascending: boolean; nullsFirst?: boolean };
 type Mode = "select" | "insert" | "upsert" | "update" | "delete";
 type Hooks = { afterInsert?: (table: string, rows: Record<string, unknown>[], conn: Queryable) => Promise<void> };
 
-export class QueryBuilder<T = any> implements PromiseLike<DbResult<T>> {
+export class QueryBuilder<T = any[]> implements PromiseLike<DbResult<T>> {
   private mode: Mode = "select";
   private selectText: string | null = null;
   private returning = false;

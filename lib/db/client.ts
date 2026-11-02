@@ -33,9 +33,9 @@ export function createDbClient(options: Options = {}) {
   } : undefined;
 
   return {
-    from<T = any>(table: string) { return new QueryBuilder<T>(table, scope, { afterInsert }); },
+    from<T = any[]>(table: string) { return new QueryBuilder<T>(table, scope, { afterInsert }); },
 
-    async rpc(name: string, args: Record<string, unknown> = {}) {
+    async rpc(name: string, args: Record<string, unknown> = {}): Promise<{ data: any; error: { message: string; code: string } | null }> {
       const userId = options.actingUserId;
       try {
         if (!userId) throw Object.assign(new Error("Sign in required."), { code: "42501" });
