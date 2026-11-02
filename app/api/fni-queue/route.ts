@@ -45,5 +45,5 @@ export async function GET(request: Request) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  return Response.json({ deals: (deals ?? []).map((deal: { workflow_data: unknown } & Record<string, unknown>) => ({ ...deal, workflow_data: normalizeWorkflowData(deal.workflow_data) })) }, { headers: { "Cache-Control": "private, no-store" } });
+  return Response.json({ deals: (deals ?? []).map((deal: any) => ({ ...deal, workflow_data: normalizeWorkflowData(deal.workflow_data) })) }, { headers: { "Cache-Control": "private, no-store" } });
 }
