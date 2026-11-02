@@ -277,11 +277,10 @@ CREATE TABLE IF NOT EXISTS messenger_conversations (
   created_at      DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   updated_at      DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   channel         VARCHAR(16)  NULL,
-  -- One organization channel per kind: NULL for DMs, so DMs never collide.
-  org_channel_key VARCHAR(64) GENERATED ALWAYS AS (IF(kind = 'organization', CONCAT(organization_id, ':', channel), NULL)) STORED,
   PRIMARY KEY (id),
   UNIQUE KEY messenger_conversations_dm_key (dm_key),
-  UNIQUE KEY messenger_one_org_channel (org_channel_key),
+  -- One channel of each kind per organization. DMs have channel NULL, and NULLs never collide.
+  UNIQUE KEY messenger_one_org_channel (organization_id, channel),
   KEY messenger_conversations_org (organization_id),
   CONSTRAINT messenger_conv_org_fk FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
   CONSTRAINT messenger_conv_by_fk  FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL,
