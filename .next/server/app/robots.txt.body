@@ -1,0 +1,16 @@
+User-Agent: *
+Allow: /card/
+Disallow: /admin
+Disallow: /api
+Disallow: /auth
+Disallow: /business-card
+Disallow: /dashboard
+Disallow: /deal-sheet
+Disallow: /deals
+Disallow: /documents
+Disallow: /messenger
+Disallow: /print
+Disallow: /vehicle-collage
+
+Host: https://nextdox.app
+Sitemap: https://nextdox.app/sitemap.xml

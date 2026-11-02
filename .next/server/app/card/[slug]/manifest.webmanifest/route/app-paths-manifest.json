@@ -1,0 +1,3 @@
+{
+  "/card/[slug]/manifest.webmanifest/route": "app/card/[slug]/manifest.webmanifest/route.js"
+}

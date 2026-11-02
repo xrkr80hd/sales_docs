@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(app)/layout,_N_T_/(app)/vehicle-collage/layout,_N_T_/(app)/vehicle-collage/page,_N_T_/vehicle-collage"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGFwcCk/vehicle-collage/__PAGE__",
+    "/!KGFwcCk/vehicle-collage",
+    "/!KGFwcCk",
+    "/_index",
+    "/_head"
+  ]
+}

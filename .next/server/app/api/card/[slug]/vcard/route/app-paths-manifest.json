@@ -1,0 +1,3 @@
+{
+  "/api/card/[slug]/vcard/route": "app/api/card/[slug]/vcard/route.js"
+}

@@ -1,0 +1,18 @@
+{
+  "pages": {},
+  "app": {
+    "[project]/app/(app)/deal-sheet/new/page": [
+      "static/media/barlow_400-s.p.0sn9ngvzer_19.woff2",
+      "static/media/barlow_500-s.p.0g0ouzzez-60v.woff2",
+      "static/media/barlow_600-s.p.0npmbs6qquuu-.woff2",
+      "static/media/barlow_700-s.p.14qb6jrk9y5tk.woff2",
+      "static/media/barlow_800-s.p.0vwmiaixc9gv7.woff2",
+      "static/media/ibm_plex_mono_400-s.p.15bn-bt6r468-.woff2",
+      "static/media/ibm_plex_mono_500-s.p.0c7_spa399b67.woff2",
+      "static/media/ibm_plex_mono_600-s.p.0z63851379qlg.woff2",
+      "static/media/ibm_plex_mono_700-s.p.0rj6t6pzym06r.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pagesUsingSizeAdjust": false
+}

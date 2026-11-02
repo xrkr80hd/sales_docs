@@ -1,0 +1,335 @@
+.sheet {
+  --paper: #ffffff;
+  --ink: #171717;
+  --pageShadow: 0 24px 60px rgba(0, 0, 0, 0.14);
+  --pageWidth: 8.5in;
+  --pageMinHeight: 11in;
+  --frameStroke: 1.5px solid #202020;
+  width: var(--pageWidth);
+  min-height: var(--pageMinHeight);
+  height: var(--pageMinHeight);
+  margin: 0 auto;
+  padding: 0.26in 0.28in 0.3in;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--pageShadow);
+  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.frame {
+  height: calc(var(--pageMinHeight) - 0.56in);
+  min-height: calc(var(--pageMinHeight) - 0.56in);
+  border: var(--frameStroke);
+  padding: 0.2in 0.2in 0.22in;
+  overflow: hidden;
+}
+
+.fieldRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 5px 0;
+  font-size: 15px;
+}
+
+.fieldRowLarge {
+  font-size: 17px;
+}
+
+.fieldRowCompact {
+  margin: 0;
+}
+
+.dateRow {
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.fieldLabel {
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.fieldLabelRegular {
+  font-weight: 500;
+}
+
+.fieldLine {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-bottom: 1.3px solid var(--ink);
+  height: 1.2em;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 4px 1px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fieldLineSm {
+  flex: 0 0 1.15in;
+}
+
+.fieldLineMd {
+  flex: 0 0 1.8in;
+}
+
+.fieldLineLg {
+  flex: 0 0 2.6in;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+}
+
+.grid2Contact {
+  gap: 0 24px;
+  align-items: start;
+}
+
+.headerStack {
+  display: grid;
+  gap: 4px;
+}
+
+.headerLine {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.headerLabel {
+  white-space: nowrap;
+  font-weight: 400;
+  margin-right: 6px;
+}
+
+.headerFill {
+  border-bottom: 1.3px solid var(--ink);
+  height: 1.2em;
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 4px 1px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerGap {
+  flex: 0 0 6px;
+}
+
+.headerFillCustomer {
+  flex-basis: 2.45in;
+}
+
+.headerFillCoBuyer {
+  flex-basis: 2.45in;
+  flex-grow: 0;
+}
+
+.headerFillSalesperson {
+  flex-basis: 2.2in;
+}
+
+.headerFillNumber {
+  flex: 0 0 1in;
+}
+
+.headerFillDeal {
+  flex: 0 0 2in;
+}
+
+.headerFillStock {
+  flex: 0 0 1.35in;
+}
+
+.headerFillEmail {
+  flex: 1 1 2.4in;
+}
+
+.headerFillLast8 {
+  flex: 0 0 2.18in;
+}
+
+.headerFillSource {
+  flex: 1 1 auto;
+}
+
+.docTitle {
+  margin: 0;
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.sectionHeading {
+  margin: 0;
+  padding: 5px 0;
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 17px;
+  font-weight: 800;
+  border-top: 1.8px solid var(--ink);
+  border-bottom: 1.8px solid var(--ink);
+}
+
+.spacerSm {
+  height: 4px;
+}
+
+.spacerMd {
+  height: 8px;
+}
+
+.spacerLg {
+  height: 14px;
+}
+
+.checkGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 28px;
+}
+
+.lineList {
+  display: grid;
+  gap: 5px;
+}
+
+.lineItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.lineItemValue {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 80px;
+  border-bottom: 1.2px solid var(--ink);
+  margin-left: 4px;
+}
+
+.fillLine {
+  flex: 0 0 76px;
+  border-bottom: 1.2px solid var(--ink);
+  height: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.isChecked::before {
+  content: "X";
+}
+
+.entryList {
+  display: grid;
+  gap: 5px;
+}
+
+.entryItem {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font-size: 14px;
+}
+
+.entryLabel {
+  white-space: nowrap;
+}
+
+.entryLine {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-bottom: 1.2px solid var(--ink);
+  height: 1.2em;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 4px 1px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.taxBox {
+  width: 0.65in;
+  border-bottom: 1.2px solid var(--ink);
+  height: 1.2em;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 2px 1px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.stackedLines {
+  display: grid;
+  gap: 5px;
+}
+
+.officeDate {
+  max-width: 340px;
+}
+
+.editable {
+  cursor: text;
+}
+
+.editable:focus {
+  outline: 2px dashed rgba(199, 27, 27, 0.55);
+  outline-offset: 2px;
+}
+
+@media print {
+  .sheet {
+    width: 8.5in;
+    min-height: 11in;
+    height: 11in;
+    margin: 0;
+    box-shadow: none;
+    padding: 0.26in 0.28in 0.3in;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .frame {
+    min-height: calc(11in - 0.56in);
+    height: calc(11in - 0.56in);
+    padding: 0.2in 0.2in 0.22in;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

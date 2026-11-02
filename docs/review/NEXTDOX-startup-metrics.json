@@ -1,0 +1,101 @@
+{
+  "environment": "Local Next.js development server; synthetic API responses with 100ms delay; separate browser contexts; not a production load test",
+  "baselineCommit": "e9ba362",
+  "baseline": [
+    {
+      "role": "admin",
+      "startupRequests": [
+        "/api/me?access=1",
+        "/api/me/settings",
+        "/api/manager-board?district=1",
+        "/api/messenger?summary=1",
+        "/api/me",
+        "/api/messenger?summary=1",
+        "/api/consultant-links",
+        "/api/consultant-links",
+        "/api/manager-board",
+        "/api/deals",
+        "/api/deals"
+      ],
+      "initialVisibleMs": 2558,
+      "pageErrors": []
+    },
+    {
+      "role": "user",
+      "startupRequests": [
+        "/api/me?access=1",
+        "/api/me/settings",
+        "/api/messenger?summary=1",
+        "/api/me",
+        "/api/messenger?summary=1",
+        "/api/consultant-links",
+        "/api/consultant-links",
+        "/api/manager-board",
+        "/api/deals",
+        "/api/deals"
+      ],
+      "initialVisibleMs": 1925,
+      "pageErrors": []
+    }
+  ],
+  "optimized": [
+    {
+      "role": "admin",
+      "startupRequests": [
+        "/api/me?access=1",
+        "/api/manager-board?view=consultant",
+        "/api/deals?summary=1",
+        "/api/me",
+        "/api/messenger?summary=1"
+      ],
+      "initialVisibleMs": 2019,
+      "returnBoardRequests": 0,
+      "appearanceReloadRequests": 0,
+      "idle8h": "expired before protected requests",
+      "login": "consultant dashboard",
+      "pageErrors": []
+    },
+    {
+      "role": "user",
+      "startupRequests": [
+        "/api/me?access=1",
+        "/api/manager-board?view=consultant",
+        "/api/deals?summary=1",
+        "/api/me",
+        "/api/messenger?summary=1"
+      ],
+      "initialVisibleMs": 1689,
+      "returnBoardRequests": 0,
+      "appearanceReloadRequests": 0,
+      "idle8h": "expired before protected requests",
+      "login": "consultant dashboard",
+      "pageErrors": []
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "requests": 89,
+      "chat": "send visible",
+      "commander": "12 restored",
+      "training": "unified theme readable for Honda",
+      "payoff": "account/per diem retained; SSN absent",
+      "pageErrors": [],
+      "additionalPages": 23
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "requests": 95,
+      "chat": "send visible",
+      "commander": "12 restored",
+      "training": "unified theme readable for Honda",
+      "payoff": "account/per diem retained; SSN absent",
+      "pageErrors": [],
+      "additionalPages": 23
+    }
+  ]
+}

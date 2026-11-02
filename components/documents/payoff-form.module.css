@@ -1,0 +1,201 @@
+.sheet {
+  --paper: #ffffff;
+  --ink: #171717;
+  --pageShadow: 0 24px 60px rgba(0, 0, 0, 0.14);
+  --pageWidth: 8.5in;
+  --pageMinHeight: 11in;
+  width: var(--pageWidth);
+  min-height: var(--pageMinHeight);
+  height: var(--pageMinHeight);
+  margin: 0 auto;
+  padding: 0.35in 0.4in 0.35in;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--pageShadow);
+  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.logoBlock {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.logoImg {
+  display: inline-block;
+  height: auto;
+  max-width: 100%;
+}
+
+.logoTitle {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.docTitle {
+  margin: 0;
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.spacerSm {
+  height: 6px;
+}
+
+.spacerMd {
+  height: 12px;
+}
+
+.spacerLg {
+  height: 20px;
+}
+
+.bodyText {
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.vehicleRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 2fr;
+  gap: 0 16px;
+  margin: 12px 0;
+}
+
+.vehicleCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vehicleLine {
+  border-bottom: 1.3px solid var(--ink);
+  min-height: 1.2em;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 4px 1px;
+}
+
+.vehicleLabel {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.signatureGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 40px;
+  margin: 16px 0;
+}
+
+.signatureBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.signatureLine {
+  border-bottom: 1.3px solid var(--ink);
+  min-height: 1.4em;
+}
+
+.signatureImg {
+  height: 40px;
+  border-bottom: 1.3px solid var(--ink);
+  object-fit: contain;
+  object-position: left bottom;
+  cursor: pointer;
+}
+
+.signatureLabel {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.witnessRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 40px;
+}
+
+.solidLine {
+  border-top: 1.5px solid var(--ink);
+  margin: 8px 0;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-transform: capitalize;
+  margin: 0;
+  text-align: center;
+}
+
+.fieldRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+.fieldLabel {
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.fieldLine {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-bottom: 1.2px solid var(--ink);
+  height: 1.2em;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 4px 1px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+}
+
+.accountingTitle {
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-align: center;
+  margin: 0;
+}
+
+@media print {
+  .sheet {
+    width: 8.5in;
+    min-height: 11in;
+    height: 11in;
+    margin: 0;
+    box-shadow: none;
+    padding: 0.35in 0.4in 0.35in;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

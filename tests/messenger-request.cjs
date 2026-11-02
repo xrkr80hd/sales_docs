@@ -1,0 +1,6 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const ts=require('typescript');const fs=require('node:fs');const vm=require('node:vm');
+function harness(fetch){const exports={};vm.runInNewContext(ts.transpileModule(fs.readFileSync('lib/messenger-request.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,fetch,AbortController,setTimeout,clearTimeout});return exports.messengerRequest;}
+test('stalled network exits loading and aborts request',async()=>{let signal;const request=harness((p,o)=>{signal=o.signal;return new Promise(()=>{})});await assert.rejects(request('token',undefined,undefined,10),/tap Retry/);assert(signal.aborted)});
+test('stalled response body also times out',async()=>{const request=harness(async()=>({ok:true,json:()=>new Promise(()=>{})}));await assert.rejects(request('token',undefined,undefined,10),/tap Retry/)});
+test('session missing fails immediately without network',async()=>{await assert.rejects(harness(()=>{throw Error('network called')})(undefined),/Sign in again/)});
+test('success and server errors are returned',async()=>{assert.equal((await harness(async()=>({ok:true,json:async()=>({ok:true})}))('token')).ok,true);await assert.rejects(harness(async()=>({ok:false,json:async()=>({error:'Denied'})}))('token'),/Denied/)});

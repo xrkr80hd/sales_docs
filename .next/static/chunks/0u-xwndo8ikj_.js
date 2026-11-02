@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,16547,e=>{"use strict";let t=(0,e.i(70703).default)(()=>e.A(4513).then(e=>e.MyDealsScreen),{loadableGenerated:{modules:[17242]},ssr:!1});e.s(["default",0,t])},4513,e=>{e.v(t=>Promise.all(["static/chunks/0wkfimkne0n~i.js"].map(t=>e.l(t))).then(()=>t(17242)))}]);

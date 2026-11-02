@@ -1,0 +1,31 @@
+{
+  "id": "/dashboard",
+  "name": "NXTDOX",
+  "short_name": "NXTDOX",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/nxtdox-app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/nxtdox-app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/nxtdox-app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "theme_color": "#020713",
+  "background_color": "#020713",
+  "display": "standalone",
+  "orientation": "any"
+}

@@ -1,0 +1,167 @@
+.sheet {
+  --paper: #ffffff;
+  --ink: #171717;
+  --pageShadow: 0 24px 60px rgba(0, 0, 0, 0.14);
+  --pageWidth: 8.5in;
+  --pageMinHeight: 11in;
+  width: var(--pageWidth);
+  min-height: var(--pageMinHeight);
+  height: var(--pageMinHeight);
+  margin: 0 auto;
+  padding: 0.7in 0.55in 0.5in;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--pageShadow);
+  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.docTitle {
+  margin: 0;
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.spacerSm {
+  height: 8px;
+}
+
+.spacerMd {
+  height: 18px;
+}
+
+.spacerLg {
+  height: 30px;
+}
+
+.paragraph {
+  font-size: 15px;
+  line-height: 2.0;
+  margin: 0;
+}
+
+.inlineField {
+  display: inline-block;
+  border-bottom: 1.3px solid var(--ink);
+  min-width: 140px;
+  padding: 0 4px 1px;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1;
+  vertical-align: baseline;
+}
+
+.inlineFieldWide {
+  composes: inlineField;
+  min-width: 200px;
+}
+
+.inlineFieldShort {
+  composes: inlineField;
+  min-width: 50px;
+}
+
+.vehicleRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 0 20px;
+  margin: 24px 0;
+}
+
+.vehicleCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vehicleLine {
+  border-bottom: 1.5px solid var(--ink);
+  min-height: 1.3em;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 4px 2px;
+}
+
+.vehicleLabel {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.vinRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.vinLabel {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.vinLine {
+  flex: 1;
+  border-bottom: 1.5px solid var(--ink);
+  min-height: 1.3em;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 4px 2px;
+}
+
+.signatureBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 36px 0 8px;
+}
+
+.signatureLine {
+  border-bottom: 1.5px solid var(--ink);
+  min-height: 1.5em;
+}
+
+.signatureLabel {
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.printedNameBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 24px 0 0;
+}
+
+.signatureImg {
+  height: 40px;
+  border-bottom: 1.5px solid var(--ink);
+  object-fit: contain;
+  object-position: left bottom;
+  cursor: pointer;
+}
+
+@media print {
+  .sheet {
+    width: 8.5in;
+    min-height: 11in;
+    height: 11in;
+    margin: 0;
+    box-shadow: none;
+    padding: 0.7in 0.55in 0.5in;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

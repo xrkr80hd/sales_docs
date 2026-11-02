@@ -1,0 +1,3 @@
+{
+  "/api/deals/[id]/send-fni/route": "app/api/deals/[id]/send-fni/route.js"
+}

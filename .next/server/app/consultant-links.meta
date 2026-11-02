@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(app)/layout,_N_T_/(app)/consultant-links/layout,_N_T_/(app)/consultant-links/page,_N_T_/consultant-links"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGFwcCk/consultant-links/__PAGE__",
+    "/!KGFwcCk/consultant-links",
+    "/!KGFwcCk",
+    "/_index",
+    "/_head"
+  ]
+}

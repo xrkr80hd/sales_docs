@@ -1,0 +1,171 @@
+.sheet {
+  --paper: #ffffff;
+  --ink: #171717;
+  --pageShadow: 0 24px 60px rgba(0, 0, 0, 0.14);
+  --pageWidth: 8.5in;
+  --pageMinHeight: 11in;
+  --labelCol: 200px;
+  width: var(--pageWidth);
+  min-height: var(--pageMinHeight);
+  height: var(--pageMinHeight);
+  margin: 0 auto;
+  padding: 0.25in 0.5in 0.35in;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--pageShadow);
+  overflow: hidden;
+  font-family: "Times New Roman", Times, serif;
+}
+
+.logoBlock {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.logoImg {
+  display: inline-block;
+  height: auto;
+  max-width: 320px;
+}
+
+/* Top fields — grid with fixed label column */
+.fieldGrid {
+  display: grid;
+  grid-template-columns: var(--labelCol) 1fr;
+  align-items: end;
+  margin: 8px 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.fieldLabel {
+  white-space: nowrap;
+}
+
+.fieldLine {
+  min-width: 0;
+  border-bottom: 1.3px solid var(--ink);
+  height: 1.2em;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 4px 1px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fieldRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.spacerSm {
+  height: 4px;
+}
+
+.spacerMd {
+  height: 10px;
+}
+
+.spacerLg {
+  height: 18px;
+}
+
+/* Trade section */
+.tradeRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  margin: 8px 0 0;
+}
+
+.tradeRow .fieldRow {
+  flex: 1;
+  margin: 0;
+}
+
+.tradeRow .fieldLine {
+  flex: 1 1 auto;
+}
+
+.tradeSection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tradeLabel {
+  font-weight: 700;
+}
+
+.tradeOption {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.questionLine {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 12px 0 4px;
+  text-transform: uppercase;
+}
+
+/* Priority items — label column aligned */
+.priorityRow {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  align-items: start;
+  margin: 7px 0;
+  font-size: 15px;
+}
+
+.priorityLabel {
+  font-weight: 700;
+  padding-top: 1px;
+}
+
+.priorityLine {
+  border-bottom: 1.3px solid var(--ink);
+  min-height: 1.2em;
+  padding: 0 4px 2px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.checkbox {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+@media print {
+  .sheet {
+    width: 8.5in;
+    min-height: 11in;
+    height: 11in;
+    margin: 0;
+    box-shadow: none;
+    padding: 0.25in 0.5in 0.35in;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

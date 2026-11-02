@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "functions": {
+    "/api/profile/vehicle-preview": {},
+    "/api/storage/upload": {},
+    "/storage/v1/object/public/[...path]": {}
+  }
+}

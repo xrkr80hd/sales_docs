@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(app)/layout,_N_T_/(app)/deal-commander/layout,_N_T_/(app)/deal-commander/page,_N_T_/deal-commander"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGFwcCk/deal-commander/__PAGE__",
+    "/!KGFwcCk/deal-commander",
+    "/!KGFwcCk",
+    "/_index",
+    "/_head"
+  ]
+}

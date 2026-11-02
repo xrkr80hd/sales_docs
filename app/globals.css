@@ -1,0 +1,232 @@
+@import "tailwindcss";
+
+
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-barlow);
+  --font-mono: var(--font-plex-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(190, 23, 23, 0.24), transparent 32rem),
+    #0d0e10;
+  min-height: 100vh;
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(190, 23, 23, 0.24), transparent 32rem),
+    #0d0e10;
+  color: var(--foreground);
+  font-family: var(--font-barlow), Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+a,
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+input.bg-white,
+select.bg-white,
+textarea.bg-white {
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+  caret-color: #000 !important;
+  color-scheme: light;
+}
+
+input.bg-white::placeholder,
+textarea.bg-white::placeholder {
+  color: #525252 !important;
+  -webkit-text-fill-color: #525252 !important;
+  opacity: 1;
+}
+
+input.bg-white:-webkit-autofill,
+input.bg-white:-webkit-autofill:hover,
+input.bg-white:-webkit-autofill:focus,
+textarea.bg-white:-webkit-autofill,
+select.bg-white:-webkit-autofill {
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+  box-shadow: 0 0 0 1000px #fff inset !important;
+  caret-color: #000 !important;
+}
+
+select.bg-white option {
+  background: #fff;
+  color: #000;
+}
+
+::selection {
+  background: rgba(190, 23, 23, 0.35);
+  color: #fff;
+}
+
+.card-panel {
+  border: 1px solid #2e3035;
+  border-radius: 24px;
+  background: linear-gradient(155deg, #22252a, #131519 68%);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .print\:bg-none {
+    background-image: none !important;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Shared app chrome. Printed/exported document paper is intentionally outside this skin. */
+:root {
+  --background: #090f12;
+  --foreground: #f5f7f8;
+  --panel: #131b1f;
+  --panel-strong: #1c272d;
+  --border: #303c44;
+  --muted: #aebbc4;
+  --accent: #c41024;
+  --accent-strong: #f32135;
+  --field: #0e161a;
+  --accent-text: #ff7180;
+  --accent-soft: #391a23;
+  --on-accent: #ffffff;
+  --success: #82d9a0;
+  --warn: #f9c06e;
+}
+html, body { background: var(--background); }
+@media screen {
+  .nxt-ui { color: var(--foreground); color-scheme: dark; }
+  .nxt-ui :is(button, a, input, select, textarea, summary):focus-visible { outline: 2px solid var(--accent-text); outline-offset: 3px; }
+  .nxt-ui :is(button, a, summary) { transition: background-color 150ms, border-color 150ms, color 150ms; }
+  .nxt-ui button:disabled { cursor: not-allowed; }
+  .nxt-ui :is(.rounded-full, .rounded-3xl, .rounded-2xl, .rounded-xl, .rounded-lg):not([class*="sheet_"] *) { border-radius: 5px; }
+  .nxt-ui .card-panel { border-radius: 6px; border-color: var(--border); background: var(--panel); box-shadow: none; }
+  .nxt-ui :is(.border-black\/10, .border-neutral-300):not([class*="sheet_"] *) { border-color: var(--border); }
+  .nxt-ui :is(input, select, textarea).bg-white:not([class*="sheet_"] *) {
+    background: #0e161a; color: #f5f7f8 !important; -webkit-text-fill-color: #f5f7f8 !important;
+    caret-color: #fff !important; color-scheme: dark; border-color: #46555e; border-radius: 4px;
+  }
+  .nxt-ui :is(input,textarea).bg-white::placeholder { color: #899ca9 !important; -webkit-text-fill-color: #899ca9 !important; }
+  .nxt-ui :is(input,select,textarea).bg-white:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #0e161a inset !important; box-shadow: 0 0 0 1000px #0e161a inset !important; }
+  .nxt-ui select.bg-white option { background: #0e161a; color: #f5f7f8; }
+  .nxt-auth-screen { width: 100%; min-height: 100dvh; display: grid; place-items: center; padding: 32px 20px; }
+  .nxt-auth-panel { width: min(100%,460px); overflow: hidden; border: 1px solid #35424a; border-top: 3px solid var(--accent-strong); border-radius: 8px; background: var(--panel); box-shadow: 0 24px 70px #0006; }
+  .nxt-auth-header { padding: 34px 32px 24px; text-align: center; border-bottom: 1px solid var(--border); background: #10171a; }
+  .nxt-auth-wordmark { color: #fff; font-size: 46px; line-height: 1; font-weight: 800; letter-spacing: -2px; }
+  .nxt-auth-wordmark span { color: var(--accent-strong); }
+  .nxt-auth-dealer { width: min(100%,280px); height: 76px; object-fit: cover; object-position: center; display: block; margin: 16px auto 0; }
+  .nxt-auth-header h2 { font-size: 30px; margin-top: 16px; }
+  .nxt-auth-header p { color: var(--muted); font-size: 10px; letter-spacing: .18em; }
+  .nxt-auth-form { padding: 28px 32px; }
+  .nxt-auth-form form > button[type="submit"] { border-radius: 5px; font-size: 16px; text-transform: none; letter-spacing: 0; }
+  .nxt-auth-form input { min-width: 0; }
+  .nxt-auth-form button.bg-white { background: #1c272d; color: #c3ced5 !important; -webkit-text-fill-color: #c3ced5 !important; }
+  .nxt-auth-form .text-\[var\(--accent\)\] { color: #ff6473; }
+  @media (max-width: 480px) { .nxt-auth-screen { padding: 20px 16px; } .nxt-auth-header, .nxt-auth-form { padding: 24px; } }
+}
+@media (prefers-reduced-motion: reduce) { .nxt-ui *, .nxt-ui *::before, .nxt-ui *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; scroll-behavior: auto !important; } }
+.nxt-chat {
+  display: flex; flex: 1; flex-direction: column; min-height: 0; overflow: hidden;
+  --chat-bg-sidebar: #18232a; --chat-bg-main: #0d1519; --chat-bg-composer: #131d23;
+  --chat-bubble-outgoing: var(--accent); --chat-bubble-outgoing-text: var(--on-accent); --chat-bubble-incoming: #202e36; --chat-bubble-incoming-text: #edf2f5;
+  --chat-accent: var(--accent-text); --chat-accent-soft: var(--accent-soft); --chat-text-primary: #f5f7f8; --chat-text-secondary: #b1c0cb; --chat-text-tertiary: #91a4b2;
+  --chat-border: #2a3943; --chat-border-strong: #43535f; --chat-bg-content-card: #18232a; --chat-bg-code: #18232a; --chat-red: #ff7180;
+  --chat-shadow-toolbar: 0 8px 20px #0006; --chat-shadow-md: 0 6px 16px #0004; --chat-bubble-radius: 7px; --chat-bubble-radius-grouped: 3px;
+  --chat-spacing-messages: 12px; --chat-spacing-grouped: 3px;
+}
+.nxt-chat .chat-message-actions, .nxt-chat [aria-label="More actions"] { opacity: 1; }
+.nxt-chat .chat-composer > div > div > div > div { border-radius: 6px; }
+.nxt-chat .chat-toolbar-enter { opacity: 1; }
+.nxt-chat .chat-message:focus-within .chat-toolbar-enter { opacity: 1; }
+
+/* Compact software branding; Walker remains the dealership identity. */
+.nxt-auth-wordmark { display: flex; justify-content: center; }
+
+.nxt-auth-dealer { width: min(100%, 340px); height: 96px; }
+/* One shared screen palette for every organization. Document paper keeps its own styles. */
+@media screen {
+ .organization-theme { min-height:100dvh; background:var(--background); color:var(--foreground); }
+ .organization-theme .nxt-ui { color-scheme:dark; }
+ .organization-theme .nxt-ui [class*="__shell"], .organization-theme .nxt-ui [class*="__main"] { color:var(--foreground); }
+ .organization-theme .nxt-ui :is([class*="__header"],[class*="__sidebar"],[class*="__panel"],[class*="__drawer"],[class*="__member"],[class*="__storeCard"],[class*="__accountMenu"]) { background:var(--panel); color:var(--foreground); border-color:var(--border); }
+ .organization-theme .nxt-ui :is([class*="__table"],[class*="__stat"],[class*="__kpi"],[class*="__total"],[class*="__tool"],[class*="__vehicleButton"],[class*="__navLink"],[class*="__navButton"]) { color:var(--foreground); border-color:var(--border); }
+ .organization-theme .nxt-ui :is([class*="__table"] td,[class*="__table"] th,[class*="__identity"] strong,[class*="__wordmark"],[class*="__sidebar"] summary) { color:var(--foreground); }
+ .organization-theme .nxt-ui :is([class*="__muted"],[class*="__eyebrow"],[class*="__subtitle"],[class*="__identity"] small,[class*="__stat"] span,[class*="__kpi"] span,[class*="__total"] span,[class*="__subnav"] a) { color:var(--muted); }
+ .organization-theme .nxt-ui :is([class*="__rowInput"],[class*="__goalInput"],[class*="__boardText"],[class*="__projectionForm"] input,[class*="__fields"] input,[class*="__editGrid"] select,[class*="__filters"] input,[class*="__filters"] select) { color:var(--foreground); background:var(--field); border-color:var(--border); }
+ .organization-theme .nxt-ui :is([class*="__primary"],[class*="__save"],[class*="__confirmButton"]) { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+ .organization-theme .nxt-ui [class*="__vehicleButton"]:first-child { background:var(--accent); color:var(--on-accent); }
+ .organization-theme .nxt-ui [class*="__active"] { background:var(--accent-soft); border-left-color:var(--accent); }
+ .organization-theme .nxt-ui [class*="__storeCard"] { border-top:3px solid var(--accent); }
+ .organization-theme .nxt-ui :is([class*="__textLink"],[class*="__panelHeader"] svg,[class*="__tool"] > svg:first-child,[class*="__storeCard"] > svg:first-child) { color:var(--accent-text); }
+}
+
+.organization-badge { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; flex-shrink:0; border:0; border-radius:0; background:transparent; padding:0; }
+.organization-badge img { width:100%; height:100%; object-fit:contain; }
+@media(max-width:680px) { .organization-badge { width:20px; height:20px; } }
+
+/* Shared screen controls, including print preview navigation. Never style the paper. */
+.nxt-print-preview { display: contents; }
+@media screen {
+  .nxt-ui :is(a,button).bg-white {
+    background: var(--panel-strong); color: var(--foreground);
+    border-color: var(--border);
+  }
+  .nxt-ui :is(a,button)[class~="bg-[var(--foreground)]"] {
+    background: var(--accent); color: var(--on-accent); border-color: var(--accent);
+  }
+  .nxt-print-preview [class~="print:hidden"] {
+    --foreground: #171d23; --muted: #535f69;
+    color: #171d23; color-scheme: light;
+  }
+}
+
+/* Preserve the submitted sign-in card's exact dimensions through account verification. */
+.nxt-auth-panel { height: var(--nxt-auth-panel-height,auto); max-height: calc(100dvh - 40px); display: flex; flex-direction: column; }
+.nxt-auth-header { flex-shrink: 0; }
+.nxt-auth-form { flex: 1; min-height: 0; overflow-y: auto; }
+.nxt-auth-feedback { min-height: 86px; max-height: 140px; overflow-y: auto; }
+.nxt-auth-feedback > :first-child { margin-top: 12px; }
+
+.nxt-stay-signed-in {display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#e5ebef;}
+.nxt-stay-signed-in input {width:16px;height:16px;min-height:0;margin-top:2px;accent-color:var(--accent-strong);}
+.nxt-stay-signed-in small {display:block;font-size:11px;line-height:1.4;color:#b5c1ca;margin-top:3px;}
+
+@media (max-width: 680px) {
+  .sales-leave-actions { flex-direction: column; align-items: stretch; }
+  .sales-leave-actions > button { width: 100%; min-height: 44px; margin: 0; }
+}
+
+.deal-input-screen *, .vehicle-field-grid > * {min-width:0;}
+.deal-input-screen input, .deal-input-screen select, .deal-input-screen textarea {max-width:100%;box-sizing:border-box;}
+.vehicle-field-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
