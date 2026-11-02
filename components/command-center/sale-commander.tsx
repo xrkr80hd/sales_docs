@@ -24,15 +24,16 @@ export function SaleCommander(){
  const [state,setState]=useState<State>(defaults);const latest=useRef<State>(defaults);const [assignedGoal,setAssignedGoal]=useState<number|null>(()=>cachedResource<number|null>(accessToken||"","sales-commander-assigned-goal")??null);const [ready,setReady]=useState(false);const [busy,setBusy]=useState(false);const [notice,setNotice]=useState("");const [win,setWin]=useState("");
  const day=chicagoDay();
  const [month,setMonth]=useState(()=>new Date().toLocaleDateString("en-CA",{timeZone:"America/Chicago",year:"numeric",month:"2-digit"}).slice(0,7));
- const request=useCallback(async(method:"GET"|"PUT",body?:State)=>{
+ const request=useCallback(async(method:"GET"|"PUT",body?:State,keepalive=false)=>{
   let token=tokenRef.current;
-  if(method==="PUT"){
+  // A page that is closing cannot wait for a session refresh, so it sends with the current token.
+  if(method==="PUT"&&!keepalive){
    const {data,error}=await withDeadline(getSupabaseBrowserClient().auth.getSession(),"Your connection is taking too long. Your changes are still here.",5000);
    if(error||!data.session||data.session.user.id!==accountId)throw Error("Your session ended. Keep this page open and sign in again before saving.");
    token=data.session.access_token;
   }
   if(!token)throw Error("Sign in to use Sales Commander.");
-  const value=await requestJson<{commander:unknown;assignedGoal?:number}>("/api/me/sale-commander",{method,headers:{Authorization:`Bearer ${token}`,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined});
+  const value=await requestJson<{commander:unknown;assignedGoal?:number}>("/api/me/sale-commander",{method,headers:{Authorization:`Bearer ${token}`,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,...(keepalive?{keepalive:true}:{})});
   if(!value.commander||typeof value.commander!=="object"||Array.isArray(value.commander))throw Error("Save could not be confirmed. Your changes are still here.");
   if(method==="GET"){const goal=typeof value.assignedGoal==="number"?value.assignedGoal:null;setAssignedGoal(goal);primeResource(token,"sales-commander-assigned-goal",goal);}
   const saved=normalize(value.commander);publishSalesTargets(token,saved);return saved;
@@ -42,13 +43,44 @@ export function SaleCommander(){
 
  const p=useMemo(()=>pace(state,day),[state,day]);const proj=p.plan;const suggested=useMemo(()=>actualRates(state,day),[state,day]);const today=state.days[day]||blank();
  const monthTotals=useMemo(()=>Object.entries(state.days).filter(([date])=>date.startsWith(month)).reduce((out,[,v])=>{for(const k of keys)out[k]+=v[k]||0;return out;},blank()),[state.days,month]);
+ const [,setSavedVersion]=useState(0);
  const dirty=ready&&JSON.stringify(state)!==baseline.current;
+ const readyRef=useRef(false);readyRef.current=ready;
+ const inFlight=useRef<Promise<void>|null>(null);
+ // Sends the newest local changes. Safe to call from any exit path: it does nothing when there is nothing new,
+ // waits for a save already in progress, and never replaces edits made while a save was in flight.
+ const commit=useCallback(async(keepalive=false):Promise<void>=>{
+  if(!readyRef.current)return;
+  while(inFlight.current)await inFlight.current.catch(()=>undefined);
+  const body=latest.current;if(JSON.stringify(body)===baseline.current)return;
+  // Browsers drop keepalive requests over 64 KB; very large records use a normal request instead.
+  const run=(async()=>{const saved=await request("PUT",body,keepalive&&JSON.stringify(body).length<60000);baseline.current=JSON.stringify(saved);if(latest.current===body){latest.current=saved;setState(saved);}primeResource(tokenRef.current||"","sales-commander",latest.current);setSavedVersion(v=>v+1);})();
+  const tracked:Promise<void>=run.finally(()=>{if(inFlight.current===tracked)inFlight.current=null;});
+  inFlight.current=tracked;await tracked;
+ },[request]);
+ const commitRef=useRef(commit);commitRef.current=commit;
+ async function saveNow(){
+  if(busy)return;setBusy(true);setNotice("");
+  try{await commit();notifySave("success","Sales Commander saved");}
+  catch(error){const message=error instanceof Error?error.message:"Could not save. Your changes are still here.";setNotice(message);notifySave("error",message);}
+  finally{setBusy(false);}
+ }
  const change=(fn:(s:State)=>State)=>{if(!ready||busy)return;const next=fn(latest.current);latest.current=next;setState(next);publishSalesTargets(accessToken||"",next);};
+ // Save on exit for every way out of the page that does not go through the leave dialog:
+ // browser/phone back button (unmount), switching apps or locking the phone (hidden), and closing or reloading the tab (pagehide).
+ useEffect(()=>{
+  const background=(keepalive:boolean,report:boolean)=>{void commitRef.current(keepalive).catch(error=>{const message=error instanceof Error?error.message:"Could not save.";if(report)setNotice(message);else notifySave("error",`Sales Commander changes were not saved: ${message}`);});};
+  const hidden=()=>{if(document.visibilityState==="hidden")background(true,true);};
+  const pagehide=()=>background(true,true);
+  document.addEventListener("visibilitychange",hidden);window.addEventListener("pagehide",pagehide);
+  return()=>{document.removeEventListener("visibilitychange",hidden);window.removeEventListener("pagehide",pagehide);background(false,false);};
+ },[]);
  useEffect(()=>{
   if(!dirty)return;
   const ask=()=>{if(leave.current)return leave.current.promise;let resolve!:(value:boolean)=>void;const promise=new Promise<boolean>(done=>{resolve=done;});leave.current={promise,resolve};setLeaving(true);return promise;};
   const cleanup=installWorkspaceExitGuard(ask);
-  const unload=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue="";};
+  // Closing or reloading the tab starts the save immediately; only a record too large to send while closing still warns.
+  const unload=(event:BeforeUnloadEvent)=>{if(JSON.stringify(latest.current).length>=60000){event.preventDefault();event.returnValue="";return;}void commitRef.current(true).catch(()=>undefined);};
   const click=(event:MouseEvent)=>{
    if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
    const anchor=(event.target as Element).closest<HTMLAnchorElement>('a[href]');if(!anchor||anchor.target==='_blank'||anchor.hasAttribute('download'))return;
@@ -64,24 +96,25 @@ export function SaleCommander(){
  function finishLeave(allowed:boolean){dialog.current?.close();setLeaving(false);leave.current?.resolve(allowed);leave.current=null;}
  async function saveAndExit(){
   if(busy)return;setBusy(true);setNotice("");
-  try{const saved=await request("PUT",latest.current);baseline.current=JSON.stringify(saved);latest.current=saved;setState(saved);primeResource(accessToken||"","sales-commander",saved);primeResource(accessToken||"","sales-commander-assigned-goal",assignedGoal);notifySave("success","Saved");finishLeave(true);}
+  try{await commit();primeResource(accessToken||"","sales-commander-assigned-goal",assignedGoal);notifySave("success","Sales Commander saved");finishLeave(true);}
   catch(error){setNotice(error instanceof Error?error.message:"Could not save. Your changes are still here.");}
   finally{setBusy(false);}
  }
- function discardAndExit(){const saved=normalize(JSON.parse(baseline.current));latest.current=saved;setState(saved);publishSalesTargets(accessToken||"",saved);primeResource(accessToken||"","sales-commander-assigned-goal",assignedGoal);notifySave("success","Saved");finishLeave(true);}
+ function discardAndExit(){const saved=normalize(JSON.parse(baseline.current));latest.current=saved;setState(saved);publishSalesTargets(accessToken||"",saved);primeResource(accessToken||"","sales-commander",saved);primeResource(accessToken||"","sales-commander-assigned-goal",assignedGoal);notifySave("success","Changes discarded");finishLeave(true);}
  const tile=(key:keyof Counts,target:number)=><div key={key} style={style.panel}><small style={{color:"#aebdcd"}}>{names[key]}</small><h2 style={{margin:"8px 0"}}>{today[key]} <small style={{fontSize:13,color:"#9caabd"}}>/ {target} today</small></h2><div style={{display:"flex",gap:8}}><button type="button" disabled={!ready} style={style.button} onClick={()=>change(s=>({...s,days:{...s.days,[day]:{...(s.days[day]||blank()),[key]:Math.max(0,(s.days[day]?.[key]||0)-1)}}}))}>−</button><button type="button" disabled={busy} style={style.button} onClick={()=>change(s=>({...s,days:{...s.days,[day]:{...(s.days[day]||blank()),[key]:(s.days[day]?.[key]||0)+1}}}))}>+</button></div></div>;
  return <div style={{maxWidth:980,margin:"auto",padding:"16px 14px 90px",color:"#f4f7fa"}}>
   <dialog ref={dialog} onCancel={event=>{event.preventDefault();if(!busy)finishLeave(false);}} style={{margin:"auto",width:"min(420px,calc(100vw - 32px))",padding:22,background:"#121a25",color:"#f4f7fa",border:"1px solid #526072",borderRadius:8}} aria-labelledby="sales-leave-title">
-    <h2 id="sales-leave-title">Unsaved Sales Commander changes</h2><p style={{margin:"12px 0"}}>Your changes are going to be lost. Are you sure you want to exit?</p>
+    <h2 id="sales-leave-title">Unsaved Sales Commander changes</h2><p style={{margin:"12px 0"}}>You have unsaved changes. Save them before you leave?</p>
     {notice&&<p role="alert">{notice}</p>}<div className="sales-leave-actions" style={{display:"flex",gap:8,flexWrap:"wrap"}}><button style={style.button} disabled={busy} onClick={()=>void saveAndExit()}>{busy?"Saving…":"Save & Exit"}</button><button style={style.button} disabled={busy} onClick={discardAndExit}>Discard & Exit</button><button style={style.button} disabled={busy} onClick={()=>finishLeave(false)}>Stay Here</button></div>
   </dialog>
   <header><p style={{color:"#fa6969",fontWeight:800,letterSpacing:2}}>WALKER AUTOMOTIVE · CONSULTANT DASHBOARD</p><h1 style={{fontSize:32,margin:"5px 0"}}>Sales Commander</h1><p style={{color:"#aebdcd"}}>Sales goals converted into measurable daily activity. Projections are estimates, never guaranteed sales.</p></header>
   {notice&&<div role="alert" style={{color:"#f9c06e"}}><p>{notice}</p>{!ready&&<button type="button" style={style.button} onClick={()=>setAttempt(value=>value+1)}>Retry saved activity</button>}</div>}
   {!ready?<p>{notice?"Saved activity is unavailable. Retry before making changes.":"Loading your saved command center…"}</p>:<>
-  <section style={{...style.panel,marginBottom:12}}><label htmlFor="sales-goal">Monthly sales objective</label><NumberInput id="sales-goal" aria-label="Monthly sales goal" type="number" min={1} max={250} style={{...style.input,fontSize:23,maxWidth:160,display:"block",margin:"9px 0"}} value={state.goal} disabled={busy||assignedGoal!==null} onChange={e=>change(current=>({...current,goal:number(Number(e.target.value),5,1,250)}))} /><p style={{fontSize:12,color:"#aebdcd"}}>{assignedGoal!==null?"Your manager sets this monthly objective. Sales Commander automatically calculates your required activity.":"Changes stay local while you work. You can save them when you leave this page."}</p></section>
+  <div role="region" aria-label="Save Sales Commander" style={{...style.panel,position:"sticky",top:8,zIndex:5,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",marginBottom:12,padding:"10px 14px"}}><span role="status" aria-live="polite" style={{fontWeight:700,color:busy?"#c9d3df":dirty?"#f9c06e":"#5fd59a"}}>{busy?"Saving…":dirty?"Unsaved changes":"All changes saved"}</span><button type="button" style={{...style.button,minWidth:110,opacity:busy||!dirty?.6:1}} disabled={busy||!dirty} onClick={()=>void saveNow()}>{busy?"Saving…":"Save"}</button></div>
+  <section style={{...style.panel,marginBottom:12}}><label htmlFor="sales-goal">Monthly sales objective</label><NumberInput id="sales-goal" aria-label="Monthly sales goal" type="number" min={1} max={250} style={{...style.input,fontSize:23,maxWidth:160,display:"block",margin:"9px 0"}} value={state.goal} disabled={busy||assignedGoal!==null} onChange={e=>change(current=>({...current,goal:number(Number(e.target.value),5,1,250)}))} /><p style={{fontSize:12,color:"#aebdcd"}}>{assignedGoal!==null?"Your manager sets this monthly objective. Sales Commander automatically calculates your required activity.":"Tap Save anytime. Unsaved changes are also saved automatically when you leave this page."}</p></section>
   <section style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:9,marginBottom:15}}>{keys.map(k=>tile(k,p.targets[k]))}</section>
   <section style={style.panel}><h2>Monthly activity required</h2><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(125px,1fr))",gap:10}}>{keys.map(k=><div key={k}><small>{names[k]}</small><h2>{proj.adjusted[k]}</h2></div>)}</div><p style={{color:"#aebdcd"}}>Where the {state.goal} sales come from: about {proj.sources.walkin.toFixed(1)} from walk-in ups, {proj.sources.appt.toFixed(1)} from appointments, {proj.sources.owner.toFixed(1)} from owners, repeat and referrals. Based on {p.total} scheduled selling days and a {state.rates.buffer}% activity cushion. Daily targets rise automatically when you fall behind pace.</p><details style={{marginTop:10}}><summary style={{cursor:"pointer",fontWeight:700}}>My ratios <small style={{color:"#a1aec1"}}>· set these to how you actually sell</small></summary><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:10,marginTop:10}}>{rateFields.map(([k,label,unit])=><label key={k} style={{display:"grid",gap:5,fontSize:13}}>{label}<span style={{display:"flex",alignItems:"center",gap:6}}><NumberInput aria-label={label} min={0} max={100} style={{...style.input,maxWidth:110}} value={state.rates[k]} disabled={busy} onChange={e=>{const value=Number(e.target.value);if(!Number.isFinite(value))return;change(current=>({...current,rates:normalizeRates({...current.rates,[k]:value})}));}}/>{unit}</span></label>)}</div><p style={{fontSize:12,color:"#aebdcd"}}>Last 30 days from your own log: {suggested.contact!==null?`${suggested.contact}% of calls became conversations`:"log 40+ calls to see your contact rate"} · {suggested.set!==null?`${suggested.set}% of conversations set appointments`:"log 15+ conversations to see your set rate"} · {suggested.show!==null?`${suggested.show}% of appointments showed`:"log 8+ appointments to see your show rate"}.</p><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button type="button" style={style.button} disabled={busy||(suggested.contact===null&&suggested.set===null&&suggested.show===null)} onClick={()=>change(current=>({...current,rates:normalizeRates({...current.rates,...(suggested.contact!==null?{contact:suggested.contact}:{}),...(suggested.set!==null?{set:suggested.set}:{}),...(suggested.show!==null?{show:suggested.show}:{})})}))}>Use my actual ratios</button><button type="button" style={style.button} disabled={busy} onClick={()=>change(current=>({...current,rates:normalizeRates({workdays:current.rates.workdays})}))}>Reset to dealership defaults</button></div></details></section>
-  <RoutinePlanner earlyDays={state.earlyDays} onEarlyDays={earlyDays=>change(current=>({...current,earlyDays}))} schedule={state.schedule} weekendAnchor={state.weekendAnchor} onWeekendAnchor={weekendAnchor=>change(current=>({...current,weekendAnchor}))} disabled={busy} onSave={schedule=>change(current=>({...current,schedule}))}/>
+  <RoutinePlanner earlyDays={state.earlyDays} onEarlyDays={earlyDays=>change(current=>({...current,earlyDays}))} schedule={state.schedule} weekendAnchor={state.weekendAnchor} onWeekendAnchor={weekendAnchor=>change(current=>({...current,weekendAnchor}))} disabled={busy} onSave={schedule=>{change(current=>({...current,schedule}));void saveNow();}}/>
   <section style={{...style.panel,marginTop:12}}><h2>Monthly scoreboard</h2><label>Month <input type="month" style={{...style.input,maxWidth:210,marginLeft:8}} value={month} onChange={e=>setMonth(e.target.value)} /></label><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8,marginTop:15}}>{keys.map(k=><div key={k}><small>{names[k]}</small><h2>{monthTotals[k]}</h2></div>)}</div></section>
   <section style={{...style.panel,marginTop:12}}><h2>Win log</h2><form onSubmit={e=>{e.preventDefault();if(!win.trim())return;change(s=>({...s,wins:[...s.wins,`${day}: ${win.trim()}`].slice(-100)}));setWin("");}} style={{display:"flex",gap:8}}><input aria-label="Record a win" style={style.input} value={win} onChange={e=>setWin(e.target.value)} placeholder="Appointment, customer follow-up, delivery…" /><button disabled={busy} style={style.button}>Add</button></form>{state.wins.slice().reverse().map((w,i)=><p key={i} style={{borderBottom:"1px solid #344152",paddingBottom:8}}>{w}</p>)}</section>
   </>}
