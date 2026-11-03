@@ -76,7 +76,44 @@ function observed(y: number, m: number, day: number, date: Date) { const v = new
 export function isHoliday(d: Date) { const y = d.getFullYear(), m = d.getMonth(), n = d.getDate(); return [[0, 1], [5, 19], [6, 4], [10, 11], [11, 25]].some(([mm, dd]) => observed(y, mm, dd, d)) || (m === 0 && n === nth(y, 0, 1, 3)) || (m === 1 && n === nth(y, 1, 1, 3)) || (m === 4 && n === last(y, 4, 1)) || (m === 8 && n === nth(y, 8, 1, 1)) || (m === 9 && n === nth(y, 9, 1, 2)) || (m === 10 && n === nth(y, 10, 4, 4)); }
 export function isClosedDay(d: Date) { return d.getDay() === 0 || isHoliday(d); }
 export function isOffSaturday(d: Date, anchor: string) { const a = parseDay(anchor); const delta = Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) / 86400000); return ((delta % 14) + 14) % 14 === 0; }
-export function planFromTemplate(id: string): PlanDay { if (id === "off") return { kind: "off", items: [] }; const t = routineTemplates.find(t => t.id === id) || routineTemplates[0]; return { kind: t.kind, items: t.items.map(([time, name], i) => ({ id: id + "-" + i, time, name, done: false })) }; }
+/*
+ * Seasonal hours. When the clocks fall back (first Sunday in November) the store
+ * runs its winter schedule: early days close at 5 PM and late days at 6 PM. In
+ * "auto" mode that switches by date; consultants can also force either schedule.
+ */
+export type SeasonMode = "auto" | "daylight" | "standard";
+export type SeasonalHours = { mode: SeasonMode; shortClose: string; longClose: string };
+export const defaultHours: SeasonalHours = { mode: "auto", shortClose: "17:00", longClose: "18:00" };
+const clock = (value: unknown, fallback: string) => typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : fallback;
+export function normalizeHours(value: unknown): SeasonalHours {
+  const v = value && typeof value === "object" ? value as Partial<SeasonalHours> : {};
+  return { mode: v.mode === "daylight" || v.mode === "standard" ? v.mode : "auto", shortClose: clock(v.shortClose, defaultHours.shortClose), longClose: clock(v.longClose, defaultHours.longClose) };
+}
+/** US daylight saving time: second Sunday in March through the day before the first Sunday in November. */
+export function isDaylightTime(d: Date) {
+  const y = d.getFullYear(), m = d.getMonth(), n = d.getDate();
+  if (m < 2 || m > 10) return false;
+  if (m > 2 && m < 10) return true;
+  return m === 2 ? n >= nth(y, 2, 0, 2) : n < nth(y, 10, 0, 1);
+}
+export function winterHoursOn(d: Date, hours?: SeasonalHours) { return !!hours && (hours.mode === "standard" || (hours.mode === "auto" && !isDaylightTime(d))); }
+const toMinutes = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
+const toClock = (minutes: number) => { const v = Math.min(23 * 60 + 59, Math.max(0, minutes)); return pad(Math.floor(v / 60)) + ":" + pad(v % 60); };
+/** Template end times before any seasonal shift (9 AM starts: 5-hour and 7-hour days). */
+const naturalClose: Record<"short" | "long", string> = { short: "14:00", long: "16:00" };
+/** The closing time for a day kind on a date, when the winter schedule applies. */
+export function closingTime(kind: PlanKind, d?: Date, hours?: SeasonalHours) {
+  if (!d || !winterHoursOn(d, hours) || (kind !== "short" && kind !== "long")) return null;
+  return kind === "short" ? hours!.shortClose : hours!.longClose;
+}
+export function formatClock(value: string) { const [h, m] = value.split(":").map(Number); return `${((h + 11) % 12) + 1}${m ? ":" + pad(m) : ""} ${h < 12 ? "AM" : "PM"}`; }
+export function planFromTemplate(id: string, d?: Date, hours?: SeasonalHours): PlanDay {
+  if (id === "off") return { kind: "off", items: [] };
+  const t = routineTemplates.find(t => t.id === id) || routineTemplates[0];
+  const close = closingTime(t.kind, d, hours);
+  const shift = close && (t.kind === "short" || t.kind === "long") ? toMinutes(close) - toMinutes(naturalClose[t.kind]) : 0;
+  return { kind: t.kind, items: t.items.map(([time, name], i) => ({ id: id + "-" + i, time: shift ? toClock(toMinutes(time) + shift) : time, name, done: false })) };
+}
 export function defaultDayKind(d: Date, anchor: string, earlyDays: EarlyDays): PlanKind {
   if (isClosedDay(d) || (d.getDay() === 6 && isOffSaturday(d, anchor))) return "off";
   if (d.getDay() === 5) return "friday";
@@ -86,7 +123,7 @@ export function defaultDayKind(d: Date, anchor: string, earlyDays: EarlyDays): P
   return index % 2 === 0 ? "short" : "long";
 }
 /** The routine a consultant works on a date: their saved plan, or the default for that day. */
-export function planFor(d: Date, schedule: Record<string, PlanDay>, anchor: string, earlyDays: EarlyDays): PlanDay {
+export function planFor(d: Date, schedule: Record<string, PlanDay>, anchor: string, earlyDays: EarlyDays, hours?: SeasonalHours): PlanDay {
   if (isClosedDay(d)) return { kind: "off", items: [] };
-  return schedule[dateKey(d)] || planFromTemplate(defaultDayKind(d, anchor, earlyDays));
+  return schedule[dateKey(d)] || planFromTemplate(defaultDayKind(d, anchor, earlyDays), d, hours);
 }

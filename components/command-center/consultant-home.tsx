@@ -8,7 +8,7 @@ import { cachedResource, loadResource, primeResource } from "@/lib/client-resour
 import { requestJson, withDeadline } from "@/lib/request-json";
 import { publishSalesTargets } from "@/lib/sales-target-reminder";
 import { blank, chicagoDay, countKeys, countNames, normalize, pace, type Counts, type DayLog, type State } from "@/lib/sales-commander-model";
-import { dateKey, parseDay, planFor, startOfWeek } from "@/lib/routine-schedule";
+import { closingTime, dateKey, formatClock, parseDay, planFor, startOfWeek } from "@/lib/routine-schedule";
 import styles from "./consultant-home.module.css";
 
 /* The daily checklist from the consultant Daily Planner sheet. */
@@ -145,11 +145,11 @@ export function ConsultantHome() {
   }, []);
 
   const p = useMemo(() => state ? pace(state, today) : null, [state, today]);
-  const plan = useMemo(() => state ? planFor(parseDay(today), state.schedule, state.weekendAnchor, state.earlyDays) : null, [state, today]);
+  const plan = useMemo(() => state ? planFor(parseDay(today), state.schedule, state.weekendAnchor, state.earlyDays, state.hours) : null, [state, today]);
   const nextShift = useMemo(() => {
     if (!state) return null;
     const d = parseDay(today);
-    for (let i = 0; i < 10; i++) { d.setDate(d.getDate() + 1); if (planFor(d, state.schedule, state.weekendAnchor, state.earlyDays).kind !== "off") return dateKey(d); }
+    for (let i = 0; i < 10; i++) { d.setDate(d.getDate() + 1); if (planFor(d, state.schedule, state.weekendAnchor, state.earlyDays, state.hours).kind !== "off") return dateKey(d); }
     return null;
   }, [state, today]);
   const week = useMemo(() => { const start = startOfWeek(parseDay(today)); return Array.from({ length: 6 }, (_, i) => { const d = new Date(start); d.setDate(d.getDate() + i); return dateKey(d); }); }, [today]);
@@ -209,7 +209,7 @@ export function ConsultantHome() {
 
   return <div className={`nxt-house ${styles.page}`}>
     <header className={styles.header}>
-      <p className={styles.kicker}>{dayLabel(today).toUpperCase()} · {plan.kind === "off" ? "DAY OFF" : plan.kind === "friday" ? "EARLY FINISH" : plan.kind === "long" ? "LATE DAY · 7 HR" : "EARLY DAY · 5 HR"}</p>
+      <p className={styles.kicker}>{dayLabel(today).toUpperCase()} · {plan.kind === "off" ? "DAY OFF" : plan.kind === "friday" ? "EARLY FINISH" : plan.kind === "long" ? "LATE DAY · 7 HR" : "EARLY DAY · 5 HR"}{(() => { const close = closingTime(plan.kind, parseDay(today), state.hours); return close ? ` · UNTIL ${formatClock(close)}` : ""; })()}</p>
       <h1>{greeting}{firstName ? `, ${firstName}` : ""}</h1>
       <div className={styles.saveRow}>
         <button type="button" className={styles.saveButton} onClick={saveNow} disabled={status === "saving"}>{status === "saving" ? "Saving…" : "Save"}</button>

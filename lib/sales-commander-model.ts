@@ -1,4 +1,4 @@
-import { dateKey, normalizeEarlyDays, parseDay, planFor, type EarlyDays, type PlanDay } from "@/lib/routine-schedule";
+import { dateKey, defaultHours, normalizeEarlyDays, normalizeHours, parseDay, planFor, type EarlyDays, type PlanDay, type SeasonalHours } from "@/lib/routine-schedule";
 
 /*
  * Rates are percentages. contact/set/show/sold describe the appointment funnel
@@ -11,10 +11,10 @@ export type Rates = { contact: number; set: number; show: number; sold: number; 
 export type Counts = { calls: number; talks: number; appts: number; shows: number; sold: number; ups: number };
 export type Todo = { id: string; text: string; done: boolean };
 export type DayLog = { checks: string[]; todos: Todo[] };
-export type State = { goal: number; rates: Rates; days: Record<string, Counts>; wins: string[]; weekendAnchor: string; earlyDays: EarlyDays; schedule: Record<string, PlanDay>; log: Record<string, DayLog> };
+export type State = { goal: number; rates: Rates; days: Record<string, Counts>; wins: string[]; weekendAnchor: string; earlyDays: EarlyDays; hours: SeasonalHours; schedule: Record<string, PlanDay>; log: Record<string, DayLog> };
 
 export const defaultRates: Rates = { contact: 22, set: 40, show: 60, sold: 45, buffer: 2, workdays: 22, walkin: 40, upClose: 20, owner: 15 };
-export const defaults: State = { goal: 5, rates: defaultRates, days: {}, wins: [], weekendAnchor: "2026-08-08", earlyDays: "mon-wed", schedule: {}, log: {} };
+export const defaults: State = { goal: 5, rates: defaultRates, days: {}, wins: [], weekendAnchor: "2026-08-08", earlyDays: "mon-wed", hours: defaultHours, schedule: {}, log: {} };
 export const countKeys = ["calls", "talks", "appts", "shows", "ups", "sold"] as const;
 export const countNames: { [K in keyof Counts]: string } = { calls: "Calls made", talks: "Real conversations", appts: "Appointments set", shows: "Appointments shown", ups: "Walk-in ups", sold: "Vehicles sold" };
 export const blank = (): Counts => ({ calls: 0, talks: 0, appts: 0, shows: 0, sold: 0, ups: 0 });
@@ -47,7 +47,7 @@ export function normalize(value: unknown): State {
   const v = value && typeof value === "object" ? value as Partial<State> : {};
   const days: Record<string, Counts> = {};
   if (v.days && typeof v.days === "object") for (const [date, counts] of Object.entries(v.days)) { if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !counts || typeof counts !== "object") continue; days[date] = Object.fromEntries((Object.keys(blank()) as (keyof Counts)[]).map(k => [k, number(counts[k], 0, 0, 100000)])) as unknown as Counts; }
-  return { goal: number(v.goal, 5, 1, 250), rates: normalizeRates(v.rates), days, wins: Array.isArray(v.wins) ? v.wins.filter(x => typeof x === "string").slice(-100) : [], weekendAnchor: typeof v.weekendAnchor === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.weekendAnchor) ? v.weekendAnchor : "2026-08-08", earlyDays: normalizeEarlyDays(v.earlyDays), schedule: v.schedule && typeof v.schedule === "object" ? v.schedule : {}, log: normalizeLog(v.log) };
+  return { goal: number(v.goal, 5, 1, 250), rates: normalizeRates(v.rates), days, wins: Array.isArray(v.wins) ? v.wins.filter(x => typeof x === "string").slice(-100) : [], weekendAnchor: typeof v.weekendAnchor === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.weekendAnchor) ? v.weekendAnchor : "2026-08-08", earlyDays: normalizeEarlyDays(v.earlyDays), hours: normalizeHours(v.hours), schedule: v.schedule && typeof v.schedule === "object" ? v.schedule : {}, log: normalizeLog(v.log) };
 }
 
 /** Monthly activity a goal requires, split by where the sales come from. */
@@ -80,12 +80,12 @@ export function pace(s: State, today: string) {
   let total = 0, elapsed = 0, remaining = 0;
   for (let d = 1; d <= lastDay; d++) {
     const date = new Date(y, m - 1, d, 12);
-    if (planFor(date, s.schedule, s.weekendAnchor, s.earlyDays).kind === "off") continue;
+    if (planFor(date, s.schedule, s.weekendAnchor, s.earlyDays, s.hours).kind === "off") continue;
     total++;
     if (dateKey(date) < today) elapsed++; else remaining++;
   }
   if (!total) { total = s.rates.workdays; remaining = Math.max(1, total - elapsed); }
-  const todayOff = planFor(parseDay(today), s.schedule, s.weekendAnchor, s.earlyDays).kind === "off";
+  const todayOff = planFor(parseDay(today), s.schedule, s.weekendAnchor, s.earlyDays, s.hours).kind === "off";
   const plan = projection({ goal: s.goal, rates: { ...s.rates, workdays: total } });
   const month = today.slice(0, 7);
   const before = blank(), mtd = blank();
