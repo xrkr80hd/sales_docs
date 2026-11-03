@@ -117,6 +117,12 @@ export async function PATCH(
       return Response.json({ error: error.message }, { status: 500 });
     }
 
+    // A rename from Your Team also renames that person's public card (the card link stays the same).
+    if (typeof updates.display_name === "string") {
+      const { error: cardNameError } = await supabase.from("consultant_cards").update({ display_name: updates.display_name, updated_at: new Date().toISOString() }).eq("user_id", id);
+      if (cardNameError) return Response.json({ error: cardNameError.message }, { status: 500 });
+    }
+
     if (body?.role) {
       const { data: target, error: targetError } = await supabase.auth.admin.getUserById(id);
       if (targetError) return Response.json({ error: targetError.message }, { status: 500 });
