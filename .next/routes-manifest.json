@@ -423,6 +423,12 @@
       "namedRegex": "^/api/tickets(?:/)?$"
     },
     {
+      "page": "/api/version",
+      "regex": "^/api/version(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/version(?:/)?$"
+    },
+    {
       "page": "/api/workspace/directory",
       "regex": "^/api/workspace/directory(?:/)?$",
       "routeKeys": {},

@@ -98,6 +98,7 @@
   "/api/sm-queue/route": "/api/sm-queue",
   "/api/storage/upload/route": "/api/storage/upload",
   "/api/tickets/route": "/api/tickets",
+  "/api/version/route": "/api/version",
   "/api/workspace/directory/route": "/api/workspace/directory",
   "/api/workspace/queue/route": "/api/workspace/queue",
   "/auth/callback/page": "/auth/callback",

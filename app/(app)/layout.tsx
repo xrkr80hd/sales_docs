@@ -15,6 +15,7 @@ import { fetchServerSettings, saveConsultant, saveDealer } from "@/lib/dealer-co
 import { WorkspaceProvider } from "@/components/command-center/workspace-context";
 import { MessengerUnreadProvider } from "@/components/messenger/unread-context";
 import { WorkspaceShell } from "@/components/command-center/workspace-shell";
+import { UpdatePrompt } from "@/components/ui/update-prompt";
 
 function SessionSettingsSync() {
   const { accessToken } = useSession();
@@ -68,6 +69,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </MessengerUnreadProvider></CommandCenterProvider>}</WorkspaceProvider></div>
       </DisclosureGate>
       <SaveToastHost />
+      <UpdatePrompt />
       {pathname !== "/office-display" && <NotificationPrompt />}
     </SupabaseSessionGate>
   );

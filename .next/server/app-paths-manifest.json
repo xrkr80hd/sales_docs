@@ -98,6 +98,7 @@
   "/api/sm-queue/route": "app/api/sm-queue/route.js",
   "/api/storage/upload/route": "app/api/storage/upload/route.js",
   "/api/tickets/route": "app/api/tickets/route.js",
+  "/api/version/route": "app/api/version/route.js",
   "/api/workspace/directory/route": "app/api/workspace/directory/route.js",
   "/api/workspace/queue/route": "app/api/workspace/queue/route.js",
   "/auth/callback/page": "app/auth/callback/page.js",
