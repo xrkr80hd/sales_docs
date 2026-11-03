@@ -110,7 +110,14 @@ function useCommanderRecord() {
   }, [flush]);
 
   const retrySave = useCallback(() => { failed.current = false; void flush(); }, [flush]);
-  return { state, assignedGoal, loadError, retryLoad: () => setAttempt(a => a + 1), status, saveError, retrySave, update, displayName: identity?.displayName || "" };
+  /** Save button: sends the current numbers right now (even if nothing changed) so the consultant gets a real confirmation. */
+  const saveNow = useCallback(() => {
+    if (!latest.current) return;
+    window.clearTimeout(timer.current);
+    failed.current = false; dirty.current = true; setStatus("saving");
+    void flush();
+  }, [flush]);
+  return { state, assignedGoal, loadError, retryLoad: () => setAttempt(a => a + 1), status, saveError, retrySave, saveNow, update, displayName: identity?.displayName || "" };
 }
 
 function chicagoClock() {
@@ -124,7 +131,7 @@ function formatTime(value: string) {
 function dayLabel(key: string) { return parseDay(key).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }); }
 
 export function ConsultantHome() {
-  const { state, assignedGoal, loadError, retryLoad, status, saveError, retrySave, update, displayName } = useCommanderRecord();
+  const { state, assignedGoal, loadError, retryLoad, status, saveError, retrySave, saveNow, update, displayName } = useCommanderRecord();
   const [today, setToday] = useState(() => chicagoDay());
   const [clock, setClock] = useState("");
   const [todoTab, setTodoTab] = useState<"today" | "next">("today");
@@ -204,9 +211,12 @@ export function ConsultantHome() {
     <header className={styles.header}>
       <p className={styles.kicker}>{dayLabel(today).toUpperCase()} · {plan.kind === "off" ? "DAY OFF" : plan.kind === "friday" ? "EARLY FINISH" : plan.kind === "long" ? "LATE DAY · 7 HR" : "EARLY DAY · 5 HR"}</p>
       <h1>{greeting}{firstName ? `, ${firstName}` : ""}</h1>
-      <p className={styles.saveLine} role="status" aria-live="polite">
-        {status === "saving" ? "Saving…" : status === "saved" ? "All changes saved" : status === "error" ? <>{saveError} <button type="button" className={styles.linkButton} onClick={retrySave}>Retry save</button></> : "Changes save automatically"}
-      </p>
+      <div className={styles.saveRow}>
+        <button type="button" className={styles.saveButton} onClick={saveNow} disabled={status === "saving"}>{status === "saving" ? "Saving…" : "Save"}</button>
+        <p className={styles.saveLine} role="status" aria-live="polite">
+          {status === "saving" ? "Saving…" : status === "saved" ? "Saved · your manager can see it" : status === "error" ? <>{saveError} <button type="button" className={styles.linkButton} onClick={retrySave}>Retry save</button></> : "Changes also save automatically"}
+        </p>
+      </div>
     </header>
 
     <section className={`${styles.card} ${styles.pace}`} aria-labelledby="pace-title">

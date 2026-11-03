@@ -2,7 +2,10 @@
 .page > * { min-width: 0; }
 .header h1 { font-size: 30px; line-height: 1.1; margin: 4px 0 2px; }
 .kicker { color: #fa6969; font-weight: 800; letter-spacing: 2px; font-size: 13px; margin: 0; }
-.saveLine { color: #aebdcd; font-size: 13px; margin: 4px 0 0; min-height: 20px; }
+.saveLine { color: #aebdcd; font-size: 13px; margin: 0; min-height: 20px; }
+.saveRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.saveButton { background: #d93b3b; color: #fff; border: none; border-radius: 7px; padding: 9px 22px; font-weight: 800; font-size: 15px; cursor: pointer; min-height: 40px; }
+.saveButton:disabled { opacity: 0.6; cursor: default; }
 .muted { color: #aebdcd; font-size: 14px; }
 .small { font-size: 13px; margin: 10px 0 0; }
 .muted a, .small a { color: #fa8a8a; }
