@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { MovedBanner } from "@/components/branding/moved-banner";
 const barlow = localFont({variable:"--font-barlow",display:"swap",src:[
   {path:"../public/fonts/barlow-400.woff2",weight:"400",style:"normal"},
   {path:"../public/fonts/barlow-500.woff2",weight:"500",style:"normal"},
@@ -39,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${barlow.variable} ${plexMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col"><MovedBanner />{children}</body>
     </html>
   );
 }

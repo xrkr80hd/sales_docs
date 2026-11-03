@@ -13,6 +13,16 @@ export type Announcement = {
 
 export const announcements: Announcement[] = [
   {
+    id: "2026-11-moved-to-nextdox-app",
+    date: "2026-11-02",
+    title: "We've moved: NextDocs now lives at nextdox.app",
+    paragraphs: [
+      "NextDocs has moved to its new home at https://nextdox.app. Sign in there with the same email and password you use here.",
+      "Please use nextdox.app from now on. This old address will be turned off soon.",
+    ],
+    signoff: ["Thank you so much,", "Yours truly, XRKR80HD"],
+  },
+  {
     id: "2026-10-moving-off-supabase",
     date: "2026-10-25",
     title: "NextDocs is moving to a new home",
