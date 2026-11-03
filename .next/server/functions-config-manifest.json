@@ -5,6 +5,7 @@
     "/api/me/why": {},
     "/api/profile/vehicle-preview": {},
     "/api/storage/upload": {},
+    "/api/tickets": {},
     "/storage/v1/object/public/[...path]": {}
   }
 }

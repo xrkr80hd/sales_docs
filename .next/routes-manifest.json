@@ -213,6 +213,12 @@
       "namedRegex": "^/admin/notifications(?:/)?$"
     },
     {
+      "page": "/admin/tickets",
+      "regex": "^/admin/tickets(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/tickets(?:/)?$"
+    },
+    {
       "page": "/api/admin/invites",
       "regex": "^/api/admin/invites(?:/)?$",
       "routeKeys": {},
@@ -403,6 +409,12 @@
       "regex": "^/api/storage/upload(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/storage/upload(?:/)?$"
+    },
+    {
+      "page": "/api/tickets",
+      "regex": "^/api/tickets(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tickets(?:/)?$"
     },
     {
       "page": "/api/workspace/directory",
@@ -685,6 +697,12 @@
       "regex": "^/sitemap\\.xml(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/sitemap\\.xml(?:/)?$"
+    },
+    {
+      "page": "/support",
+      "regex": "^/support(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/support(?:/)?$"
     },
     {
       "page": "/team-board",
