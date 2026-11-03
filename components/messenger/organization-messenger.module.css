@@ -4,3 +4,14 @@
 @container(max-width:650px){.columns{display:flex}.organizations,.directory,.conversation{width:100%;border:0}.shell.organizations .organizations{display:flex}.shell.organizations .directory,.shell.organizations .conversation,.shell.directory .organizations,.shell.directory .conversation,.shell.conversation .organizations,.shell.conversation .directory{display:none}.shell.directory .directory,.shell.conversation .conversation{display:flex}.topbar{height:58px;padding:10px 15px}.topbar strong{font-size:20px}.messages{padding:16px 10px;gap:14px}.messageStack{max-width:89%}.panelHeader{min-height:69px;padding:8px}.composer{padding-left:8px;padding-right:8px}.row{min-height:63px}.accordion{display:none}.back{display:grid!important}}
 @keyframes reveal{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.accordion{animation:none}}
 .privateMessages{border-top:1px solid var(--line);margin-top:12px}.privateMessages summary{cursor:pointer;padding:16px 14px;min-height:48px;font-size:12px;font-weight:750;color:var(--foreground)}.privateMessages summary>span{display:inline-flex;margin-left:6px;vertical-align:middle}.privateMessages summary .badge{margin-left:10px}
+/* Team panel: hidden until an organization is chosen; on wide screens it can be tucked away with the arrow. */
+.conversation{position:relative}
+.teamToggle,.teamReopen{display:none!important}
+@container(min-width:1001px){
+.columns.noOrg,.columns.teamClosed{grid-template-columns:250px minmax(0,1fr)}
+.columns.noOrg .directory,.columns.teamClosed .directory{display:none}
+.teamToggle{display:grid!important;order:9;margin-left:auto;border:1px solid var(--border)!important;background:var(--panel-strong)!important;border-radius:10px!important;min-width:36px!important;min-height:36px!important}
+.teamToggle:hover,.teamReopen:hover{border-color:#be1717!important}
+.teamReopen{display:flex!important;align-items:center;gap:4px;position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:3;padding:10px 6px;border:1px solid var(--border);border-left:0;border-radius:0 10px 10px 0;background:var(--panel-strong);color:var(--foreground);font-size:11px;font-weight:800;writing-mode:vertical-rl}
+.teamReopen svg{writing-mode:horizontal-tb}
+}
