@@ -384,7 +384,9 @@ export function ProfileEditor() {
       <section className={styles.statusBar}>
         <span className={profile.is_published ? styles.live : styles.draft}>{profile.is_published ? "Live" : "Not live"}</span>
         <div>
-          {hasChanges && <button type="button" className={styles.publish} disabled={saving} onClick={saveChanges}>{saving ? "Saving…" : "Save"}</button>}
+          {/* A card that isn't live always has a Publish button, changes or not. */}
+          {!profile.is_published && <button type="button" className={styles.publish} disabled={saving} onClick={saveChanges}>{saving ? "Publishing…" : "Publish my card"}</button>}
+          {profile.is_published && hasChanges && <button type="button" className={styles.publish} disabled={saving} onClick={saveChanges}>{saving ? "Saving…" : "Save"}</button>}
           {hasChanges && <button type="button" className={styles.secondary} disabled={saving} onClick={cancelChanges}>Cancel</button>}
           {profile.is_published && <button type="button" className={styles.danger} onClick={unpublish}>Remove from site</button>}
         </div>
@@ -827,9 +829,9 @@ export function ProfileEditor() {
         />
       )}
 
-      {hasChanges && <section className={styles.bottomActions}>
-        <button type="button" className={styles.publish} disabled={saving} onClick={saveChanges}>{saving ? "Saving…" : "Save"}</button>
-        <button type="button" className={styles.secondary} disabled={saving} onClick={cancelChanges}>Cancel</button>
+      {(hasChanges || !profile.is_published) && <section className={styles.bottomActions}>
+        <button type="button" className={styles.publish} disabled={saving} onClick={saveChanges}>{saving ? (profile.is_published ? "Saving…" : "Publishing…") : profile.is_published ? "Save" : "Publish my card"}</button>
+        {hasChanges && <button type="button" className={styles.secondary} disabled={saving} onClick={cancelChanges}>Cancel</button>}
       </section>}
       {notice && <p className={styles.notice}>{notice}</p>}
 
