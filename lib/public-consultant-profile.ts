@@ -1,0 +1,143 @@
+import { cache } from "react";
+import { ConsultantProfileContent, normalizeProfileContent } from "@/lib/consultant-profile";
+import { organizationBranding, type OrganizationBranding } from "@/lib/organization-branding";
+import { getSupabaseServiceClient } from "@/lib/supabase-server";
+
+type Db=ReturnType<typeof getSupabaseServiceClient>;
+type Membership={organization_id?:string|null;organizations?:unknown}|null;
+// The retired NXTDOX default logo was a large graphic loaded on every card that had no logo of its own.
+const RETIRED_DEFAULT_LOGO="/branding/nxtdox-by-eben.png";
+const cardLogo=(url:unknown)=>typeof url==="string"&&url&&url!==RETIRED_DEFAULT_LOGO?url:"";
+async function readMembership(db:Db,userId:string):Promise<Membership>{const {data}=await db.from("organization_memberships").select("organization_id,organizations(name)").eq("user_id",userId).maybeSingle();return data as Membership;}
+
+async function useAssignedOrganization(membershipRequest:Promise<Membership>,brandingRequest:Promise<Record<string,OrganizationBranding>>,profile:ConsultantProfileContent){
+  const membership=await membershipRequest;
+  const organization=membership?.organizations as unknown as {name?:string}|null;
+  if(!organization?.name)return profile;
+  const branding=membership?.organization_id?(await brandingRequest)[membership.organization_id]:undefined;
+  const address=branding?.address;
+  const location=address?[address.street,[address.city,address.state].filter(Boolean).join(", "),address.zip].filter(Boolean).join(", "):"";
+  return {...profile,identity:{...profile.identity,dealership:organization.name,location}};
+}
+
+/** One lookup per request: metadata, page and manifest share the result instead of re-querying. */
+export const getPublishedConsultantProfile = cache(loadPublishedConsultantProfile);
+
+async function loadPublishedConsultantProfile(slug: string): Promise<ConsultantProfileContent | null> {
+  const isTrav = slug === "trav";
+  try {
+    const supabase = getSupabaseServiceClient();
+    // Branding does not depend on the card, so it loads alongside the card lookup instead of after it.
+    const branding = organizationBranding(supabase).catch(() => ({} as Record<string, OrganizationBranding>));
+
+    // 1. Try querying consultant_cards relational table
+    const { data: card } = await supabase
+      .from("consultant_cards")
+      .select("*")
+      .eq("slug", slug)
+      .eq("is_published", true)
+      .maybeSingle();
+
+    if (card) {
+      const membership = readMembership(supabase, card.user_id).catch(() => null);
+      const [
+        { data: reviews },
+        { data: vehicles },
+        { data: videos },
+        { data: soldGallery },
+        { data: socialLinks },
+      ] = await Promise.all([
+        supabase.from("consultant_reviews").select("*").eq("card_id", card.id).order("sort_order", { ascending: true }),
+        supabase.from("consultant_vehicles").select("*").eq("card_id", card.id).order("sort_order", { ascending: true }),
+        supabase.from("consultant_videos").select("*").eq("card_id", card.id).order("sort_order", { ascending: true }),
+        supabase.from("consultant_sold_gallery").select("*").eq("card_id", card.id).order("sort_order", { ascending: true }),
+        supabase.from("consultant_social_links").select("*").eq("card_id", card.id).order("sort_order", { ascending: true }),
+      ]);
+
+      return useAssignedOrganization(membership,branding,{
+        identity: {
+          displayName: card.display_name,
+          jobTitle: card.job_title || "Sales Consultant",
+          dealership: card.dealership || "Walker Automotive",
+          location: card.location || "Alexandria, Louisiana",
+          phone: card.phone || "",
+          email: card.email || "",
+          profileImageUrl: card.profile_image_url || "",
+          callingCardImageUrl: card.calling_card_image_url || "",
+          logoUrl: cardLogo(card.logo_url),
+          languageLabel: card.language_label || "EN · ES",
+        },
+        content: {
+          primaryPhrase: card.primary_phrase || "",
+          salesQuote: card.sales_quote || "",
+          bio: card.bio || "",
+          inventoryUrl: card.inventory_url || "https://www.walkerautomotive.com/",
+          inventoryButtonLabel: card.inventory_button_label || "Browse Walker Inventory",
+        },
+        contact: {
+          callLabel: card.call_label || "Call",
+          textLabel: card.text_label || "Text",
+          emailLabel: card.email_label || "Email",
+        },
+        reviews: (reviews ?? []).map((r) => ({
+          id: r.id,
+          title: r.reviewer_name || "",
+          description: "",
+          url: "",
+          imageUrl: r.image_url || "",
+          meta: r.is_long ? "long" : undefined,
+        })),
+        vehicles: (vehicles ?? []).map((v) => ({
+          id: v.id,
+          title: v.title || "",
+          description: v.description || "",
+          url: v.url || "",
+          imageUrl: v.image_url || "",
+          secondaryUrl: v.vin || undefined,
+          meta: [v.price, v.stock ? `Stock ${v.stock}` : ""].filter(Boolean).join(" · "),
+        })),
+        videos: (videos ?? []).map((v) => {
+          const videoUrl = v.video_url || "";
+          const uploaded = /\.(mp4|webm|mov)(\?|$)/i.test(videoUrl);
+          return {
+            id: v.id,
+            title: v.title || "",
+            description: v.description || "",
+            url: uploaded ? "" : videoUrl,
+            imageUrl: uploaded ? videoUrl : "",
+          };
+        }),
+        soldGallery: (soldGallery ?? []).map((s) => ({
+          id: s.id,
+          title: s.title || "",
+          description: s.description || "",
+          url: "",
+          imageUrl: s.image_url || "",
+        })),
+        socialLinks: (socialLinks ?? []).map((s) => ({
+          id: s.id,
+          title: s.title || "",
+          description: "",
+          url: s.url || "",
+          imageUrl: "",
+        })),
+      });
+    }
+
+    // 2. Fallback: check legacy user_settings json, filtered in the database instead of downloading every row.
+    const { data } = await supabase.from("user_settings").select("user_id,consultant_info").eq("consultant_info->business_card->>slug", slug);
+    const match = data?.find((row) => {
+      const c = (row.consultant_info as Record<string, unknown> | null)?.business_card as Record<string, unknown> | undefined;
+      return c?.slug === slug && Boolean(c.publishedAt);
+    });
+    const legacyCard = (match?.consultant_info as Record<string, unknown> | null)?.business_card as Record<string, unknown> | undefined;
+    if (legacyCard?.published) {
+      const legacy = normalizeProfileContent(legacyCard.published, isTrav);
+      return useAssignedOrganization(readMembership(supabase,match!.user_id),branding,{...legacy,identity:{...legacy.identity,logoUrl:cardLogo(legacy.identity.logoUrl)}});
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}

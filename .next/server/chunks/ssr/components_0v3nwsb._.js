@@ -1,0 +1,3 @@
+module.exports=[38757,a=>{"use strict";var b=a.i(87924),c=a.i(72131);a.s(["NumberInput",0,function({value:a,onChange:d,onBlur:e,onFocus:f,...g}){let[h,i]=(0,c.useState)(null);return(0,b.jsx)("input",{...g,type:"number",value:h??a??"",onFocus:a=>{a.currentTarget.select(),f?.(a)},onChange:a=>{let b=a.currentTarget.value.replace(/^(-?)0+(?=\d)/,"$1");a.currentTarget.value=b,i(b),d?.(a)},onBlur:a=>{i(null),e?.(a)}})}])},82835,a=>{a.n(a.i(11131))}];
+
+//# sourceMappingURL=components_0v3nwsb._.js.map

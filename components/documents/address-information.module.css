@@ -1,0 +1,82 @@
+.sheet {
+  --paper: #ffffff;
+  --ink: #171717;
+  --pageShadow: 0 24px 60px rgba(0, 0, 0, 0.14);
+  --pageWidth: 8.5in;
+  --pageMinHeight: 11in;
+  width: var(--pageWidth);
+  min-height: var(--pageMinHeight);
+  height: var(--pageMinHeight);
+  margin: 0 auto;
+  padding: 0.5in 0.6in 0.5in;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--pageShadow);
+  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.docTitle {
+  margin: 0 0 40px;
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 22px;
+  font-weight: 900;
+  text-decoration: underline;
+  letter-spacing: 0.02em;
+}
+
+.sectionTitle {
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 30px;
+}
+
+.fieldRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 28px 0;
+  font-size: 15px;
+}
+
+.fieldLabel {
+  white-space: nowrap;
+  font-weight: 400;
+}
+
+.fieldLine {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-bottom: 1.3px solid var(--ink);
+  height: 1.2em;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 4px 1px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spacerLg {
+  height: 50px;
+}
+
+@media print {
+  .sheet {
+    width: 8.5in;
+    min-height: 11in;
+    height: 11in;
+    margin: 0;
+    box-shadow: none;
+    padding: 0.5in 0.6in 0.5in;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

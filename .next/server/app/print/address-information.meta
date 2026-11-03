@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(print)/layout,_N_T_/(print)/print/layout,_N_T_/(print)/print/address-information/layout,_N_T_/(print)/print/address-information/page,_N_T_/print/address-information"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KHByaW50KQ/print/address-information/__PAGE__",
+    "/!KHByaW50KQ/print/address-information",
+    "/!KHByaW50KQ/print",
+    "/!KHByaW50KQ",
+    "/_index",
+    "/_head"
+  ]
+}

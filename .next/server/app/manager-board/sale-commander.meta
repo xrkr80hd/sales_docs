@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(app)/layout,_N_T_/(app)/manager-board/layout,_N_T_/(app)/manager-board/sale-commander/layout,_N_T_/(app)/manager-board/sale-commander/page,_N_T_/manager-board/sale-commander"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGFwcCk/manager-board/sale-commander/__PAGE__",
+    "/!KGFwcCk/manager-board/sale-commander",
+    "/!KGFwcCk/manager-board",
+    "/!KGFwcCk",
+    "/_index",
+    "/_head"
+  ]
+}

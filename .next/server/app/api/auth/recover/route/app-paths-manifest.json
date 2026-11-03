@@ -1,0 +1,3 @@
+{
+  "/api/auth/recover/route": "app/api/auth/recover/route.js"
+}

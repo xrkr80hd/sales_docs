@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  "For God so loved the world that he gave his one and only Son,
+   that whoever believes in him shall not perish but have eternal life." - John 3:16
+
+  Lord, bless every visitor to this site. Draw them to Your heart.
+-->
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Liberty Church - Alexandria, LA | Home</title>
+  <!-- "In all your ways acknowledge him, and he will make your paths straight." - Proverbs 3:6 -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/live-indicator.css">
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon" />
+  <meta name="description" content="A thriving Spirit-filled church in Alexandria, LA. Join us Sundays for worship and the Word."/>
+  <!-- Father, let Your presence fill this digital space as it does our sanctuary -->
+</head>
+<body>
+  <header class="header">
+  <div class="container nav">
+  <a class="brand" href="https://www.golibertychurch.com/index.html">
+      <img src="assets/logo.png" alt="Liberty Church logo">
+      <span class="name">Liberty Church</span>
+    </a>
+  <!-- mobile nav toggle (hamburger) -->
+    <button class="nav-toggle" aria-expanded="false" aria-controls="mainNav">
+      <span class="hamburger" aria-hidden="true"></span>
+      <span class="sr-only">Open navigation</span>
+    </button>
+    <nav id="mainNav">
+      <ul>
+  <li><a href="https://www.golibertychurch.com/live.html">Watch Live</a></li>
+  <li><a class="active" href="https://www.golibertychurch.com/index.html">Home</a></li>
+  <li><a href="https://www.golibertychurch.com/youth.html">LC Youth</a></li>
+  <li><a href="https://www.golibertychurch.com/beliefs.html">Beliefs</a></li>
+  <li><a href="https://www.golibertychurch.com/sermons.html">Sermons</a></li>
+  <li><a href="https://www.golibertychurch.com/prayer.html">Prayer</a></li>
+  <li><a href="https://www.golibertychurch.com/give.html">Give</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+  <section class="hero">
+    <!-- Optional background video: replace src with your file or YouTube embed image -->
+    <video autoplay muted loop playsinline preload="metadata" poster="assets/hero.jpg" id="heroVideo" class="spawn"></video>
+    <div class="overlay"></div>
+    <div class="content container">
+      <div class="kicker">Welcome Home</div>
+      <h1 class="h1">Jesus‑centered. Spirit‑led.<br/>Family‑minded.</h1>
+      <p class="sub">Sundays @ 9:20 AM – Youth Devotion
+                               10:00 AM – Worship Service  • 100 McKeithen Dr, Alexandria, LA</p>
+      <div class="cta-row">
+        <a class="btn" href="#visit">Plan Your Visit</a>
+  <a class="btn ghost" href="https://www.golibertychurch.com/sermons.html">Watch Sermons</a>
+      </div>
+      <div class="mt-12">
+        <button id="reopenWelcome" class="btn ghost">A welcome message from Pastor Andrew Stokes</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt">
+    <div class="container">
+      <h2>Our Ministries and Service Times</h2>
+  <p class="sub">Below are our ministry highlights and service times; see announcements for updates.</p>
+      <div class="ann-list" id="ministries">
+        <div class="ann-item"><strong>Men's Fellowship</strong> — First Thursday each month, 6:00 PM. Come hang out, build friendships, dinner and fellowship.</div>
+        <div class="ann-item"><strong>Children's Church</strong> — Is offered during the sermon each Sunday, except for the last Sunday of the month.</div>
+        <div class="ann-item"><strong>Join a Serve Team</strong> — Media, worship, greeters, and kids teams are growing. Ask at the Info Table.</div>
+        <div class="ann-item"><strong>Nursery Available!</strong> — We'd love to care for your little ones! Our nursery is open during every service, offering a safe and loving place for them while you worship.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section announcements">
+    <div class="container">
+      <h2>📢 Announcements & Events</h2>
+      <p class="sub">Stay updated with the latest news and upcoming events at Liberty Church.</p>
+      <div class="announcements-container">
+        <div class="ann-item announcement-empty">Loading announcements...</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="pastor-wrap">
+        <div class="pastor-text">
+          <h2>Meet Our Pastor</h2>
+          <p>Pastor Andrew Stokes has led our church family since October 2013. He and his wife, Erin—our worship leader—serve side by side with their daughters, Ellington and Emery, who are active in media and worship. Though both Andrew and Erin are bi‑vocational, their hearts are fully committed to the church God has entrusted to their care. They long for Liberty Church to be a place where everyone can approach the throne of God freely and give Him the praise He deserves. Pastor Andrew teaches the Word with the guidance of the Holy Spirit, encouraging every person—member and guest alike—to pursue Christ wholeheartedly, just as He passionately pursues us.</p>
+        </div>
+        <div class="pastor-media">
+          <figure class="pastor-card raw" aria-hidden="true">
+            <img class="pastor-photo" src="assets/Pastor&Fam.jpg" alt="Pastor Andrew Stokes and family">
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="visit">
+    <div class="container">
+      <h2>Plan Your Visit</h2>
+      <p class="sub">We can't wait to meet you! Tell us when you're coming and we'll save you a seat and show you around.</p>
+  <form class="form" id="visitForm" data-endpoint="/api/visit/">
+        <input type="hidden" name="_captcha" value="false">
+        <div class="row">
+          <div><label>First & Last Name<br/><input required name="name" placeholder="Your name"></label></div>
+          <div><label>Email<br/><input required type="email" name="email" placeholder="you@example.com"></label></div>
+        </div>
+        <div class="row">
+          <div><label>Phone<br/><input name="phone" placeholder="(###) ###-####"></label></div>
+          <div><label>Visit Date<br/><input type="date" name="date"></label></div>
+        </div>
+        <label>How many are coming?<br/><select name="party"><option value="1">1</option><option>2</option><option>3</option><option>4</option><option>5+</option></select></label>
+        <label>Anything we can prepare for?<br/><textarea name="notes" rows="4" placeholder="Kids check‑in, accessibility needs, prayer requests…"></textarea></label>
+        <div>
+          <button class="btn" type="submit">Send</button>
+        </div>
+  </form>
+  <div id="visitMsg" class="mt-8"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2>Find Us</h2>
+      <div class="map">
+        <iframe title="Map to Liberty Church" frameborder="0"
+          src="https://www.google.com/maps?q=100%20McKeithen%20Dr%2C%20Alexandria%2C%20LA%2071303&output=embed" allowfullscreen></iframe>
+      </div>
+    </div>
+  </section>
+
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div>
+      <div class="brand brand-footer"><img class="footer-logo" src="assets/logo.png" alt="Liberty Church logo" /> <span class="brand-text">Liberty Church</span></div>
+      <p class="muted">© <span id="year"></span> Liberty Church. All rights reserved.</p>
+      <p class="muted" style="margin-top: 8px; font-size: 0.85rem; opacity: 0.7;">Made with love by <a href="https://www.xrkr80hd.studio" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">xrkr80hd designs</a></p>
+    </div>
+    <div>
+      <h4>Visit</h4>
+      <address id="footerAddress">100 McKeithen Dr, Alexandria, LA 71303</address>
+    </div>
+    <div>
+      <h4>Connect</h4>
+      <div class="social-footer">
+        <a id="youtubeLink" class="icon-btn" href="https://www.youtube.com/@GoLibertyChurch" target="_blank" rel="noopener" aria-label="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.5 6.2s-.2-1.7-.8-2.4c-.7-.9-1.5-.9-1.9-1C17.9 2.4 12 2.4 12 2.4h0s-5.9 0-8.8.4c-.4.1-1.2.1-1.9 1-.6.7-.8 2.4-.8 2.4S0 8.2 0 10.1v1.7c0 1.9.2 3.9.2 3.9s.2 1.7.8 2.4c.7.9 1.6.9 2 1 1.5.1 6.6.4 8.6.4h1.6c2-.1 7.1-.3 8.6-.4.4-.1 1.2-.1 1.9-1 .6-.7.8-2.4.8-2.4s.2-1.9.2-3.9v-1.7c0-1.9-.2-3.9-.2-3.9ZM9.6 13.9V7.8l6.2 3-6.2 3.1Z"/></svg></a>
+        <a id="facebookLink" class="icon-btn" href="https://www.facebook.com/GoLibertyChurch" target="_blank" rel="noopener" aria-label="Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22.675 0H1.325C.593 0 0 .593 0 1.326v21.348C0 23.406.593 24 1.325 24H12.82v-9.294H9.692V11.08h3.127V8.414c0-3.1 1.894-4.788 4.659-4.788 1.325 0 2.463.098 2.795.142v3.24l-1.918.001c-1.504 0-1.796.715-1.796 1.764v2.313h3.588l-.467 3.625h-3.12V24h6.116C23.406 24 24 23.406 24 22.674V1.326C24 .593 23.406 0 22.675 0Z"/></svg></a>
+        <a id="instagramLink" class="icon-btn" href="https://www.instagram.com/golibertychurch/" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.9.2 2.4.4.6.2 1 .5 1.5 1 .5.5.8.9 1 1.5.2.5.3 1.2.4 2.4.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.2 1.9-.4 2.4-.2.6-.5 1-1 1.5-.5.5-.9.8-1.5 1-.5.2-1.2.3-2.4.4-1.3.1-1.7.1-4.9.1s-3.3 0-4.9-.1c-1.2-.1-1.9-.2-2.4-.4-.6-.2-1-.5-1.5-1-.5-.5-.8-.9-1-1.5-.2-.5-.3-1.2-.4-2.4C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.2-1.9.4-2.4.2-.6.5-1 1-1.5.5-.5.9-.8 1.5-1 .5-.2 1.2-.3 2.4-.4C8.4 2.2 8.8 2.2 12 2.2m0-2.2C8.7 0 8.3 0 7 0 5.7.1 4.7.3 3.9.6c-.9.3-1.6.7-2.3 1.4C.9 2.7.5 3.4.2 4.3.0 5.1-.1 6.1 0 7.4c0 1.3 0 1.7 0 4.6 0 2.9 0 3.3.1 4.6.1 1.3.3 2.3.6 3.1.3.9.7 1.6 1.4 2.3.7.7 1.4 1.1 2.3 1.4.8.3 1.8.5 3.1.6 1.3.1 1.7.1 4.6.1s3.3 0 4.6-.1c1.3-.1 2.3-.3 3.1-.6.9-.3 1.6-.7 2.3-1.4.7-.7 1.1-1.4 1.4-2.3.3-.8.5-1.8.6-3.1.1-1.3.1-1.7.1-4.6s0-3.3-.1-4.6c-.1-1.3-.3-2.3-.6-3.1-.3-.9-.7-1.6-1.4-2.3-.7-.7-1.4-1.1-2.3-1.4-.8-.3-1.8-.5-3.1-.6C15.3.1 14.9 0 12 0Z"/><path d="M12 5.8a6.2 6.2 0 1 0 0 12.4 6.2 6.2 0 0 0 0-12.4Zm0 10.2a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm6.4-11.5a1.44 1.44 0 1 1 0-2.88 1.44 1.44 0 0 1 0 2.88Z"/></svg></a>
+      </div>
+    </div>
+  </div>
+</footer>
+<!-- Welcome modal markup -->
+<div id="welcomeModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="welcomeTitle">
+  <div class="modal-backdrop"></div>
+  <div class="modal-dialog" role="document">
+    <button class="modal-close" aria-label="Close">×</button>
+    <div class="modal-body">
+      <h2 id="welcomeTitle">We're so glad you're here!</h2>
+  <div id="welcomeContent" class="welcome-content mt-12"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Reopen welcome message button moved into hero -->
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+  (function(){
+    const form = document.getElementById('visitForm');
+    const msg = document.getElementById('visitMsg');
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      msg.textContent = 'Sending...';
+      const fd = new FormData(form);
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const resolveEndpoint = () => {
+        const endpoint = form.dataset.endpoint || '/api/visit/';
+        return endpoint.replace(/\/?$/, '/');
+      };
+      if (submitBtn) {
+        submitBtn.disabled = true;
+      }
+      try{
+        const res = await fetch(resolveEndpoint(), { method: 'POST', body: fd });
+        const j = await res.json();
+        if(j.success){ msg.textContent = '✅ Thanks! Your visit request has been received.'; form.reset(); }
+        else { msg.textContent = '❌ ' + (j.message || 'Unable to send. Please try again.'); }
+      }catch(err){ msg.textContent = 'Network error sending request.'; console.error(err); }
+      finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+        }
+      }
+    });
+  })();
+</script>
+
+  <script src="assets/site.js"></script>
+  <script src="assets/js/live-indicator.js"></script>
+  <script src="assets/js/announcements-main.js"></script>
+</body>
+</html>

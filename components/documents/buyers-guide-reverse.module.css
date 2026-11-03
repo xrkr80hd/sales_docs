@@ -1,0 +1,161 @@
+.sheet {
+  --paper: #ffffff;
+  --ink: #171717;
+  --pageShadow: 0 24px 60px rgba(0, 0, 0, 0.14);
+  --pageWidth: 8.5in;
+  --pageMinHeight: 11in;
+  --frameStroke: 1.5px solid #202020;
+  width: var(--pageWidth);
+  min-height: var(--pageMinHeight);
+  height: var(--pageMinHeight);
+  margin: 0 auto;
+  padding: 0.26in 0.28in 0.3in;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--pageShadow);
+  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.frame {
+  height: calc(var(--pageMinHeight) - 0.56in);
+  min-height: calc(var(--pageMinHeight) - 0.56in);
+  border: var(--frameStroke);
+  padding: 0.2in 0.22in 0.22in;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.importantBlock {
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.importantLabel {
+  font-weight: 700;
+}
+
+.contactSection {
+  margin-top: 10px;
+}
+
+.contactTitle {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.contactGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.contactCell {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.contactLabel {
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.contactLine {
+  border-bottom: 1.2px solid var(--ink);
+  min-height: 1.1em;
+}
+
+.spacerMd {
+  height: 10px;
+}
+
+.spacerLg {
+  height: 16px;
+}
+
+.defectTitle {
+  font-size: 11px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.defectIntro {
+  font-size: 10px;
+  line-height: 1.4;
+  margin: 4px 0 0;
+}
+
+.threeCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0 16px;
+  margin-top: 6px;
+}
+
+.defectColTitle {
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: underline;
+  margin: 0 0 4px;
+}
+
+.defectList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 9.5px;
+  line-height: 1.55;
+}
+
+.defectItem {
+  margin: 0;
+  padding: 0;
+}
+
+.signatureBlock {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.signatureLine {
+  border-bottom: 1.5px solid var(--ink);
+  height: 28px;
+}
+
+.signatureLabel {
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: uppercase;
+  margin: 2px 0 0;
+}
+
+@media print {
+  .sheet {
+    width: 8.5in;
+    min-height: 11in;
+    height: 11in;
+    margin: 0;
+    box-shadow: none;
+    padding: 0.26in 0.28in 0.3in;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .frame {
+    min-height: calc(11in - 0.56in);
+    height: calc(11in - 0.56in);
+    padding: 0.2in 0.22in 0.22in;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

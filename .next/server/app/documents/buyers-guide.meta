@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(app)/layout,_N_T_/(app)/documents/layout,_N_T_/(app)/documents/buyers-guide/layout,_N_T_/(app)/documents/buyers-guide/page,_N_T_/documents/buyers-guide"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGFwcCk/documents/buyers-guide/__PAGE__",
+    "/!KGFwcCk/documents/buyers-guide",
+    "/!KGFwcCk/documents",
+    "/!KGFwcCk",
+    "/_index",
+    "/_head"
+  ]
+}

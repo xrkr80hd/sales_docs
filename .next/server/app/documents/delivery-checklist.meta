@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(app)/layout,_N_T_/(app)/documents/layout,_N_T_/(app)/documents/delivery-checklist/layout,_N_T_/(app)/documents/delivery-checklist/page,_N_T_/documents/delivery-checklist"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGFwcCk/documents/delivery-checklist/__PAGE__",
+    "/!KGFwcCk/documents/delivery-checklist",
+    "/!KGFwcCk/documents",
+    "/!KGFwcCk",
+    "/_index",
+    "/_head"
+  ]
+}

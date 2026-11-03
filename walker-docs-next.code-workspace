@@ -1,0 +1,18 @@
+{
+  "folders": [
+    {
+      "name": "walker-docs-next",
+      "path": "."
+    },
+    {
+      "name": "reference-import",
+      "path": "../../Reference/Desktop_Import_2026-03-31"
+    }
+  ],
+  "settings": {
+    "terminal.integrated.cwd": "${workspaceFolder:walker-docs-next}",
+    "files.exclude": {
+      "**/.next": true
+    }
+  }
+}
