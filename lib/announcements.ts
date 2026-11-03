@@ -9,6 +9,10 @@ export type Announcement = {
   title: string;
   paragraphs: string[];
   signoff?: string[];
+  /** Exact send time for announcements from the Notification Center (orders same-day posts). */
+  postedAt?: string;
+  /** Optional button, e.g. "Go to nextdox.app". */
+  link?: { url: string; label: string };
 };
 
 export const announcements: Announcement[] = [
