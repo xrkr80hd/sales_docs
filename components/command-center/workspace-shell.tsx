@@ -120,7 +120,7 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
             {consultantView && <>
             {/* Home: the landing page, with the day's planner and account setup right under it. */}
             <div role="group" aria-label="Home">
-              <Link prefetch={false} href="/home" onClick={close} className={`${styles.navLink} ${pathname === "/home" ? styles.active : ""}`}><House />Home</Link>
+              <Link prefetch={false} data-consultant-tour="home" href="/home" onClick={close} className={`${styles.navLink} ${pathname === "/home" ? styles.active : ""}`}><House />Home</Link>
               <div className={styles.subnav}>
                 <Link prefetch={false} data-consultant-tour="planner" href="/dashboard" onClick={close} aria-current={pathname === "/dashboard" || pathname === "/role-views/user" ? "page" : undefined}>Daily Planner</Link>
                 <Link prefetch={false} data-consultant-tour="setup" href="/consultant-setup" onClick={close} aria-current={pathname === "/consultant-setup" ? "page" : undefined}>Consultant Set Up</Link>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore, type ReactNode } from "react";
-import { DISCLOSURE_VERSION, DISCLOSURE_SECTIONS, validDisclosureAcceptance } from "@/lib/disclosure";
+import { DISCLOSURE_VERSION, DISCLOSURE_SECTIONS, DISCLOSURE_SUMMARY, validDisclosureAcceptance } from "@/lib/disclosure";
 
 const DISCLOSURE_ACCEPTED_KEY = "walker.disclosure.accepted";
 
@@ -52,7 +52,11 @@ export function DisclosureGate({ children }: { children: ReactNode }) {
           Terms of Use
         </h1>
 
-        <div className="mt-5 space-y-4 text-sm leading-7 text-[var(--muted)]">
+        <ul className="mt-5 space-y-3 border-l-4 border-[var(--accent)] bg-[var(--panel-strong)] p-4 text-[15px] font-semibold leading-6 text-[var(--foreground)]">
+          {DISCLOSURE_SUMMARY.map(line => <li key={line}>{line}</li>)}
+        </ul>
+        <h2 className="mt-6 text-sm font-extrabold uppercase tracking-[0.16em] text-[var(--foreground)]">The full terms</h2>
+        <div className="mt-3 space-y-4 text-sm leading-7 text-[var(--muted)]">
           {DISCLOSURE_SECTIONS.map(section => <p key={section.title}><strong className="text-[var(--foreground)]">{section.title}.</strong>{" "}{section.text}</p>)}
         </div>
 
@@ -67,8 +71,10 @@ export function DisclosureGate({ children }: { children: ReactNode }) {
         </div>
 
         <p className="mt-4 text-xs leading-5 text-[var(--muted)]">
-          By clicking &ldquo;I Agree &mdash; Continue&rdquo; you confirm that
-          you have read, understood, and agree to the terms outlined above.
+          By clicking &ldquo;I Agree &mdash; Continue&rdquo; you confirm that you
+          have read and understood these terms, that you are choosing to use
+          NXTDOX, and that you understand it is a document preparation tool, not
+          a credit application.
         </p>
       </section>
     </div>

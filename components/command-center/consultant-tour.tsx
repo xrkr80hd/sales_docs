@@ -3,16 +3,18 @@
 import {useEffect, useRef, useState} from "react";
 import styles from "./consultant-tour.module.css";
 
+// Walks the left menu top to bottom. Plain words: what it is, what to do there.
 const steps = [
-  {target:"planner", title:"Home · Daily Planner", text:"Home is your landing page: your why, your photos and your numbers. Daily Planner is where you log today's calls, checklist and to-dos."},
-  {target:"setup", title:"Consultant Set Up", text:"Save your consultant details here so your paperwork can fill them in for you."},
-  {target:"command-center", title:"Command Center", text:"Open your saved business websites here. Use Command Center Settings to add or change shortcuts."},
-  {target:"commander", fallback:"command-center", title:"Sales Commander", text:"The first button inside Command Center: set your goals, ratios, daily routine and seasonal hours. Press Save, and your manager sees it."},
-  {target:"start-deal", fallback:"deal-folder", title:"Deal Folder · Start a Deal", text:"Open Deal Folder, choose Start a Deal, then pick New or Used and enter the customer and vehicle details once to fill your forms."},
-  {target:"resume-deal", fallback:"deal-folder", title:"Deal Folder · Resume Deal & Documents", text:"Resume Deal finds a saved deal so you can continue where you left off. Documents holds your blank forms."},
-  {target:"customer", title:"Customer Information", text:"Copy saved customer contact details into your dealership system without retyping them."},
-  {target:"tools", title:"Consultant Tools", text:"Build your business card, create a vehicle collage, or see how the sales targets are calculated."},
-  {target:"messenger", title:"Messenger", text:"Message coworkers and open the team conversations available to you."},
+  {target:"home", title:"Welcome to NXTDOX", text:"NXTDOX is an optional helper that fills in dealership paperwork for you. You type the deal once and it fills every form. It is not a credit application: it never runs credit or sends anything to lenders. Home shows your why, your photos and your month at a glance."},
+  {target:"planner", title:"Daily Planner", text:"Your day in one place: tap the counters as you make calls, set appointments and sell, check off your routine, and write tomorrow's to-dos. Press Save any time; your manager sees what you save."},
+  {target:"setup", title:"Consultant Set Up", text:"Do this first. Add your name, phone and salesperson number so your paperwork fills them in, then write Your Why and add photos for your Home page."},
+  {target:"command-center", title:"Command Center", text:"Your work tools in one tab: Sales Commander at the top, then your saved websites like DriveCentric. Add or reorder websites in Command Center Settings."},
+  {target:"commander", fallback:"command-center", title:"Sales Commander", text:"Set your monthly goal and ratios, build your daily routine, and set seasonal hours. It turns your goal into the calls and appointments you need each day. Press Save when you change something."},
+  {target:"start-deal", fallback:"deal-folder", title:"Deal Folder", text:"Start a Deal: choose New or Used, enter the customer, vehicle and trade once, and review the filled forms before you print. Resume Deal picks up a saved deal. Documents has the blank forms."},
+  {target:"customer", title:"Customer Information", text:"Copy a saved customer's contact details into your dealership system without retyping them."},
+  {target:"tools", title:"Consultant Tools", text:"Build your public business card, make a vehicle collage for social media, and see the sales numbers behind your targets."},
+  {target:"messenger", title:"Messenger", text:"Message your team and open the channels your organization allows. Keep customer paperwork and sensitive information out of messages."},
+  {target:"ticket", title:"Submit a Ticket", text:"Something not working, a question, or an idea? Send a ticket from anywhere in the app. It goes straight to the NXTDOX admin, and you'll see the reply on your ticket."},
 ];
 
 export function ConsultantTour({onClose}:{onClose:()=>void}) {
