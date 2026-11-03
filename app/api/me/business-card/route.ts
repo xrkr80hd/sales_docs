@@ -342,7 +342,9 @@ export async function PUT(request: NextRequest) {
   incomingDraft.videos = limitedVideos;
 
   const displayName = incomingDraft.identity.displayName || profile.display_name || user.email?.split("@")[0] || "Consultant";
-  const slug = isTrav ? "trav" : `${slugify(displayName)}-${user.id.slice(0, 6)}`;
+  // A card keeps the address it already has (NFC bands and shared links point at it), even if the name changes.
+  const { data: slugRow } = supabase ? await supabase.from("consultant_cards").select("slug").eq("user_id", user.id).maybeSingle() : { data: null };
+  const slug = isTrav ? "trav" : (slugRow?.slug as string | undefined) || `${slugify(displayName)}-${user.id.slice(0, 6)}`;
   const now = new Date().toISOString();
 
   if (!supabase) {
