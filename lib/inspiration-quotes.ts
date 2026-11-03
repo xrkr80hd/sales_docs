@@ -863,3 +863,19 @@ export function randomQuote(previous?: string): string {
   }
   return list[0];
 }
+
+export const QUOTE_WINDOW_MS = 5 * 60 * 60 * 1000;
+/**
+ * The quote for the current 5-hour window. It stays the same all window long and
+ * changes on its own; `seed` (the account id) gives each consultant their own order.
+ */
+export function quoteForWindow(now = Date.now(), seed = "") {
+  const list = INSPIRATION_QUOTES;
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  const window = Math.floor(now / QUOTE_WINDOW_MS);
+  // Stepping by a prime walks the whole list before any quote repeats.
+  return list[(window * 389 + hash) % list.length] || "";
+}
+/** Milliseconds until the next quote window starts. */
+export function msUntilNextQuote(now = Date.now()) { return QUOTE_WINDOW_MS - (now % QUOTE_WINDOW_MS) + 500; }

@@ -1,13 +1,12 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Shuffle } from "lucide-react";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { useWorkspaceIdentity } from "./workspace-context";
 import { cachedResource, loadResource, primeResource } from "@/lib/client-resource-cache";
 import { requestJson } from "@/lib/request-json";
 import { chicagoDay, normalize, pace, type State } from "@/lib/sales-commander-model";
-import { randomQuote } from "@/lib/inspiration-quotes";
+import { msUntilNextQuote, quoteForWindow } from "@/lib/inspiration-quotes";
 import { cachedWhy, loadWhy, type Why } from "@/lib/why-client";
 import styles from "./home-page.module.css";
 
@@ -24,8 +23,14 @@ export function HomePage() {
   const [slide, setSlide] = useState(0);
   const [today] = useState(() => chicagoDay());
 
-  // Picked in the browser so every visit gets a fresh one.
-  useEffect(() => { setQuote(randomQuote()); }, []);
+  // A new quote every 5 hours, on its own. Picked in the browser to avoid a hydration mismatch.
+  const seed = identity?.id || "";
+  useEffect(() => {
+    let timer = 0;
+    const show = () => { setQuote(quoteForWindow(Date.now(), seed)); timer = window.setTimeout(show, msUntilNextQuote()); };
+    show();
+    return () => window.clearTimeout(timer);
+  }, [seed]);
 
   useEffect(() => {
     if (!token) return;
@@ -51,6 +56,8 @@ export function HomePage() {
   const p = useMemo(() => state ? pace(state, today) : null, [state, today]);
   const firstName = (identity?.displayName || "").trim().split(/\s+/)[0] || "";
   const statement = why?.why.trim() || "";
+  // One reason per line shows as a list.
+  const reasons = statement.split(/\n+/).map(line => line.replace(/^\s*(?:[-•*]|\d+[.)])\s*/, "").trim()).filter(Boolean);
 
   return <div className={`nxt-house ${styles.page}`}>
     <section className={styles.hero} aria-label="Your why album">
@@ -62,7 +69,6 @@ export function HomePage() {
       <div className={styles.heroInner}>
         <p className={styles.kicker}>{firstName ? `WELCOME BACK, ${firstName.toUpperCase()}` : "WELCOME BACK"}</p>
         <blockquote className={styles.quote} aria-live="polite">{quote ? <>&ldquo;{quote}&rdquo;</> : " "}</blockquote>
-        <button type="button" className={styles.shuffle} onClick={() => setQuote(current => randomQuote(current))}><Shuffle size={15} />New quote</button>
         {!photos.length && why && <Link prefetch={false} href="/consultant-setup" className={styles.addPhotos}>Add the photos that keep you going →</Link>}
       </div>
       {photos.length > 1 && <div className={styles.dots} aria-hidden="true">{photos.map((url, index) => <span key={url} className={index === slide % photos.length ? styles.dotOn : undefined} />)}</div>}
@@ -70,7 +76,7 @@ export function HomePage() {
 
     <section className={`nxt-panel ${styles.why}`} aria-labelledby="why-title">
       <h2 id="why-title">Your Why:</h2>
-      {statement ? <p className={styles.statement}>{statement}</p> : <p className={styles.muted}>Write down the reason you show up. <Link prefetch={false} href="/consultant-setup">Add your why in Consultant Set Up</Link>.</p>}
+      {reasons.length > 1 ? <ul className={styles.reasons}>{reasons.map((reason, i) => <li key={i}>{reason}</li>)}</ul> : statement ? <p className={styles.statement}>{statement}</p> : <p className={styles.muted}>Write down the reason you show up. <Link prefetch={false} href="/consultant-setup">Add your why in Consultant Set Up</Link>.</p>}
       {statement && <Link prefetch={false} href="/consultant-setup" className={styles.edit}>Edit</Link>}
     </section>
 
