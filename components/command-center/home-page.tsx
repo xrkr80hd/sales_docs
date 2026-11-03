@@ -47,8 +47,7 @@ export function HomePage() {
   const photos = useMemo(() => why?.photos ?? [], [why]);
   useEffect(() => {
     if (photos.length < 2) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
+    // Keeps switching even with Reduce Motion on (phones, Low Power Mode); CSS drops the zoom there.
     const id = window.setInterval(() => setSlide(current => (current + 1) % photos.length), SLIDE_MS);
     return () => window.clearInterval(id);
   }, [photos.length]);

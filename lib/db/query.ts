@@ -331,7 +331,7 @@ export class QueryBuilder<T = any[]> implements PromiseLike<DbResult<T>> {
       } else {
         let statement = `${this.mode === "upsert" && this.ignoreDuplicates ? "INSERT IGNORE" : "INSERT"} INTO ${q(this.table)} (${columns.map(q).join(",")}) VALUES ${placeholders}`;
         if (this.mode === "upsert" && !this.ignoreDuplicates) {
-          const updatable = columns.filter(c => !this.conflict.includes(c));
+          const updatable = this.updatableColumns(columns);
           statement += " ON DUPLICATE KEY UPDATE " + (updatable.length ? updatable.map(c => `${q(c)} = VALUES(${q(c)})`).join(", ") : `${q(columns[0])} = ${q(columns[0])}`);
         }
         const [result] = await conn.query(statement, params);
@@ -365,12 +365,24 @@ export class QueryBuilder<T = any[]> implements PromiseLike<DbResult<T>> {
     return returnRows(keys);
   }
 
+  /**
+   * Columns an upsert may overwrite when the row already exists: only what the caller sent,
+   * never the primary key, the conflict columns, or values this layer filled in itself
+   * (a generated id or default timestamp). Overwriting the id gave an existing row a new id
+   * on every save, which broke rows that reference it (e.g. card analytics → Business Card save).
+   */
+  private updatableColumns(columns: string[]) {
+    const spec = tableSpec(this.table);
+    const supplied = new Set(this.values.flatMap(v => Object.keys(v).filter(k => v[k] !== undefined)));
+    return columns.filter(c => supplied.has(c) && !this.conflict.includes(c) && !spec.pk.includes(c));
+  }
+
   private async insertOne(conn: PoolConnection, row: Record<string, unknown>) {
     const spec = tableSpec(this.table);
     const columns = Object.keys(row).filter(c => row[c] !== undefined);
     let statement = `${this.mode === "upsert" && this.ignoreDuplicates ? "INSERT IGNORE" : "INSERT"} INTO ${q(this.table)} (${columns.map(q).join(",")}) VALUES (${columns.map(() => "?").join(",")})`;
     if (this.mode === "upsert" && !this.ignoreDuplicates) {
-      const updatable = columns.filter(c => !this.conflict.includes(c));
+      const updatable = this.updatableColumns(columns);
       statement += " ON DUPLICATE KEY UPDATE " + (updatable.length ? updatable.map(c => `${q(c)} = VALUES(${q(c)})`).join(", ") : `${q(columns[0])} = ${q(columns[0])}`);
     }
     const [result] = await conn.query(statement, columns.map(c => toDb(spec.columns[c], row[c])));
