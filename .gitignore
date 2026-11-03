@@ -1,0 +1,6 @@
+tmp/
+*.log
+stderr.log
+.htaccess
+.well-known/
+.cagefs/

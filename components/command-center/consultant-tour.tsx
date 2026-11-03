@@ -4,9 +4,9 @@ import {useEffect, useRef, useState} from "react";
 import styles from "./consultant-tour.module.css";
 
 const steps = [
-  {target:"commander", title:"Sales Commander", text:"Plan your daily calls, conversations, appointments, and sales. Save your changes when you leave."},
   {target:"setup", title:"Consultant Set Up", text:"Save your consultant details here so your paperwork can fill them in for you."},
   {target:"command-center", title:"Command Center", text:"Open your saved business websites here. Use Command Center Settings to add or change shortcuts."},
+  {target:"commander", fallback:"command-center", title:"Sales Commander", text:"Inside Command Center: set your goals, ratios and daily routine. Press Save, and your manager sees it."},
   {target:"start-deal", title:"Start a Deal", text:"Choose New or Used, then enter the customer and vehicle details once to fill your forms."},
   {target:"resume-deal", title:"Resume Deal", text:"Find a saved deal and continue where you left off."},
   {target:"customer", title:"Customer Information", text:"Copy saved customer contact details into your dealership system without retyping them."},
@@ -25,7 +25,7 @@ export function ConsultantTour({onClose}:{onClose:()=>void}) {
     return()=>element?.close();
   },[]);
   useEffect(()=>{
-    const target=document.querySelector<HTMLElement>(`[data-consultant-tour="${step.target}"]`);
+    const target=document.querySelector<HTMLElement>(`[data-consultant-tour="${step.target}"]`)||("fallback" in step&&step.fallback?document.querySelector<HTMLElement>(`[data-consultant-tour="${step.fallback}"]`):null);
     if(!target)return;
     target.scrollIntoView({block:"center",behavior:"instant"});
     let frame=0;
