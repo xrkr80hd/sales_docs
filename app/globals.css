@@ -230,3 +230,42 @@ html, body { background: var(--background); }
 .deal-input-screen *, .vehicle-field-grid > * {min-width:0;}
 .deal-input-screen input, .deal-input-screen select, .deal-input-screen textarea {max-width:100%;box-sizing:border-box;}
 .vehicle-field-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+
+/* ── NXTDOX house style ─────────────────────────────────────────────
+   The look of the Business Card editor, shared by every page that opts in
+   with className="nxt-house". Opt-in on purpose: deal documents and printed
+   paper never pick it up. :where() keeps it low-priority, so a page's own
+   styles still win. */
+:root {
+  --house-red: #be1717;
+  --house-red-deep: #851014;
+  --house-red-glow: rgba(190, 23, 23, 0.2);
+  --house-red-soft: #2b1214;
+  --house-radius: 10px;
+  --house-panel-radius: 6px;
+  --house-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+  --house-label: #d5d7dc;
+  --house-muted: #9aa0a6;
+}
+@media screen {
+  :where(.nxt-house) { color: #f7f7f7; }
+  :where(.nxt-house) :where(h1) { font-weight: 900; letter-spacing: -0.02em; }
+  :where(.nxt-house) :where(label) { color: var(--house-label); font-weight: 800; letter-spacing: 0.02em; }
+  :where(.nxt-house) :where(input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"]), textarea, select) {
+    border: 1px solid var(--border); border-radius: var(--house-radius); background: var(--field); color: #f7f7f7;
+    padding: 10px 12px; font: inherit; font-size: 0.88rem; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  :where(.nxt-house) :where(input, textarea, select):focus { outline: none; border-color: var(--house-red); box-shadow: 0 0 0 3px var(--house-red-glow); }
+  :where(.nxt-house) :where(button) { border-radius: var(--house-radius); font-weight: 800; cursor: pointer; transition: opacity 0.15s, transform 0.1s, background-color 0.15s, border-color 0.15s; }
+  :where(.nxt-house) :where(button:hover:not(:disabled)) { opacity: 0.94; }
+  :where(.nxt-house) :where(button:disabled) { cursor: not-allowed; opacity: 0.4; }
+  :where(.nxt-house) :where(input[type="checkbox"], input[type="radio"]) { accent-color: var(--house-red); }
+
+  /* Building blocks pages can use directly. */
+  .nxt-page-header { padding: 14px clamp(14px, 3vw, 32px) 20px; border-bottom: 1px solid var(--border); }
+  .nxt-page-header h1 { margin: 6px 0 2px; font-size: clamp(1.6rem, 5vw, 2.2rem); font-weight: 900; letter-spacing: -0.02em; }
+  .nxt-panel { border: 1px solid var(--border); border-radius: var(--house-panel-radius); background: var(--panel); box-shadow: var(--house-shadow); }
+  .nxt-btn, .nxt-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 8px 16px; border-radius: var(--house-radius); font-weight: 800; font-size: 0.84rem; text-decoration: none; cursor: pointer; }
+  .nxt-btn { border: 1px solid var(--border); background: var(--panel-strong); color: #f7f7f7; }
+  .nxt-btn-primary { border: 1px solid var(--house-red); background: var(--house-red); color: #fff; }
+}
