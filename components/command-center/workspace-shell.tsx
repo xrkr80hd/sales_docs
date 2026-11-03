@@ -68,9 +68,10 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
     : pathname.startsWith("/admin") ? "admin"
     : pathname.startsWith("/manager-board") ? (["sales_manager", "floor_manager", "district_manager", "bdm"].includes(storedView) ? storedView : "sales_manager")
     : consultantPage ? "user" : storedView;
-  // Floor managers sell too: they switch between Consultant and Floor Manager views like other managers.
-  const consultantView = activeView === "user";
-  const managementView = manager && ["sales_manager", "floor_manager", "district_manager", "bdm"].includes(activeView);
+  // Floor managers sell too: one menu with their consultant tools AND their floor-manager tools, no switch.
+  const consultantView = activeView === "user" || floorManager;
+  const managementView = manager && (floorManager || ["sales_manager", "floor_manager", "district_manager", "bdm"].includes(activeView));
+  const managementRole = floorManager ? "floor_manager" : activeView;
   const availableViews = admin ? ["user", "floor_manager", "sales_manager", "district_manager", "bdm", "fni", "admin"] : ["user", ...(identity?.workspaceRole && identity.workspaceRole !== "user" ? [identity.workspaceRole] : identity?.role && identity.role !== "user" ? [identity.role] : [])];
   useEffect(() => { writeView(viewKey, activeView); }, [viewKey, activeView]);
   // The profile / workspace-view menu closes on any click outside it, on Escape, and after a view is picked.
@@ -91,7 +92,7 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
     setNavigationOpen(false);
   }
   const readOnlyBoard = activeView === "bdm";
-  const canSwitchViews=admin||availableViews.length>1;
+  const canSwitchViews=!floorManager&&(admin||availableViews.length>1);
   const close = () => setNavigationOpen(false);
   if(display)return <div className="nxt-ui">{children}</div>;
   return <div className={`nxt-ui ${styles.shell}`}>
@@ -138,7 +139,7 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
             <details open={pathname === "/business-card" || pathname === "/vehicle-collage" || pathname === "/sale-commander/fun-facts"}><summary data-consultant-tour="tools"><Wrench />Consultant Tools</summary><div className={styles.subnav}>{[["Business Card", "/business-card"], ["Vehicle Collage", "/vehicle-collage"], ["Fun Facts · Sales Numbers", "/sale-commander/fun-facts"]].map(([label, href]) => <Link prefetch={false} key={href} href={href} onClick={close}>{label}</Link>)}</div></details>
             <Link prefetch={false} href="/training" onClick={close} className={`${styles.navLink} ${pathname === "/training" ? styles.active : ""}`}><GraduationCap />Training</Link>
             </>}
-            {managementView && <><Link prefetch={false} href={`/role-views/${activeView}`} onClick={close} className={styles.navLink}><Home />{validWorkspaceRole(activeView) ? ROLE_LABELS[activeView] : "Workspace"}</Link>{activeView !== "district_manager" && <details open={pathname.startsWith("/manager-board")}><summary><Table2 />Manager Board</summary><div className={styles.subnav}>{!readOnlyBoard&&<Link prefetch={false} href="/manager-board/setup" onClick={close}>Manager Board Set Up</Link>}<Link prefetch={false} href="/manager-board/display" onClick={close}>Performance Display</Link><Link prefetch={false} href="/manager-board/sale-commander" onClick={close}>Sales Commander Stats</Link>{!readOnlyBoard&&<Link prefetch={false} href="/manager-board/schedule" onClick={close}>Team Schedule</Link>}</div></details>}</>}
+            {managementView && <><Link prefetch={false} href={`/role-views/${managementRole}`} onClick={close} className={`${styles.navLink} ${pathname === `/role-views/${managementRole}` ? styles.active : ""}`}><Table2 />{floorManager ? "FM View" : validWorkspaceRole(managementRole) ? ROLE_LABELS[managementRole] : "Workspace"}</Link>{managementRole !== "district_manager" && <details open={pathname.startsWith("/manager-board")}><summary><Table2 />Manager Board</summary><div className={styles.subnav}>{!readOnlyBoard&&<Link prefetch={false} href="/manager-board/setup" onClick={close}>Manager Board Set Up</Link>}<Link prefetch={false} href="/manager-board/display" onClick={close}>Performance Display</Link><Link prefetch={false} href="/manager-board/sale-commander" onClick={close}>Sales Commander Stats</Link>{!readOnlyBoard&&<Link prefetch={false} href="/manager-board/schedule" onClick={close}>Team Schedule</Link>}</div></details>}</>}
             {activeView === "fni" && <Link prefetch={false} href="/role-views/fni" onClick={close} className={styles.navLink}><Home />F&amp;I</Link>}
             <Link prefetch={false} href="/notifications" onClick={close} className={`${styles.navLink} ${pathname === "/notifications" ? styles.active : ""}`}><Bell />Notifications{announcementUnread.length>0&&<span className={styles.navBadge} aria-label={`${announcementUnread.length} new`}>{announcementUnread.length}</span>}</Link>
             <Link prefetch={false} data-consultant-tour="messenger" href="/messenger" onClick={close} className={`${styles.navLink} ${pathname === "/messenger" ? styles.active : ""}`}><MessageCircle />Messenger</Link>
