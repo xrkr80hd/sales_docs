@@ -8,7 +8,7 @@ import { SoftwareLogo } from "@/components/branding/software-logo";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap, CircleHelp, Bell } from "lucide-react";
 import { NotificationCenter, useUnreadAnnouncements } from "./notification-center";
 import { useSession } from "@/components/auth/supabase-session-gate";
@@ -72,7 +72,18 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
   const managementView = !floorManager && manager && ["sales_manager", "floor_manager", "district_manager", "bdm"].includes(activeView);
   const availableViews = admin ? ["user", "floor_manager", "sales_manager", "district_manager", "bdm", "fni", "admin"] : ["user", ...(identity?.workspaceRole && identity.workspaceRole !== "user" ? [identity.workspaceRole] : identity?.role && identity.role !== "user" ? [identity.role] : [])];
   useEffect(() => { writeView(viewKey, activeView); }, [viewKey, activeView]);
+  // The profile / workspace-view menu closes on any click outside it, on Escape, and after a view is picked.
+  const accountMenu = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const outside = (event: PointerEvent) => { const menu = accountMenu.current; if (menu?.open && !menu.contains(event.target as Node)) menu.open = false; };
+    const escape = (event: KeyboardEvent) => { const menu = accountMenu.current; if (event.key === "Escape" && menu?.open) { menu.open = false; menu.querySelector("summary")?.focus(); } };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("pointerdown", outside); document.removeEventListener("keydown", escape); };
+  }, []);
+  useEffect(() => { if (accountMenu.current) accountMenu.current.open = false; }, [pathname]);
   async function switchView(role: string) {
+    if (accountMenu.current) accountMenu.current.open = false;
     if (!availableViews.includes(role)||!await requestWorkspaceExit()) return;
     writeView(viewKey, role);
     router.push(role === "user" ? "/dashboard" : role === "admin" ? "/admin" : `/role-views/${role}`);
@@ -93,7 +104,7 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
         <NotificationCenter userId={identity?.id || ""} className={styles.messageIndicator} />
         <Link prefetch={false} href="/messenger" className={`${styles.messageIndicator} ${styles.afterBell}`} aria-label={messageUnread ? `${messageUnread} unread messages. Open Messenger` : "Open Messenger. No unread messages"}><MessageCircle aria-hidden="true"/>{messageUnread>0&&<span aria-hidden="true">{messageUnread>99?"99+":messageUnread}</span>}</Link>
         <div className={styles.identity}>
-          {canSwitchViews?<details><summary><span className={styles.profilePhoto}><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span>{identity?.dealership&&<OrganizationBadge name={identity.dealership} iconUrl={identity.organizationIconUrl} hidden={identity.organizationHideIcon}/>}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : floorManager ? "Floor Manager" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div><ChevronDown size={18}/></summary><div className={styles.accountMenu}><label className={styles.viewPicker}>Workspace view <select aria-label="Workspace view" value={activeView} onChange={event => switchView(event.target.value)}>{availableViews.filter(validWorkspaceRole).map(role => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label></div></details>:<div className={styles.profileIdentity}><span className={styles.profilePhoto}><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span>{identity?.dealership&&<OrganizationBadge name={identity.dealership} iconUrl={identity.organizationIconUrl} hidden={identity.organizationHideIcon}/>}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : floorManager ? "Floor Manager" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div></div>}
+          {canSwitchViews?<details ref={accountMenu}><summary><span className={styles.profilePhoto}><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span>{identity?.dealership&&<OrganizationBadge name={identity.dealership} iconUrl={identity.organizationIconUrl} hidden={identity.organizationHideIcon}/>}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : floorManager ? "Floor Manager" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div><ChevronDown size={18}/></summary><div className={styles.accountMenu}><label className={styles.viewPicker}>Workspace view <select aria-label="Workspace view" value={activeView} onChange={event => switchView(event.target.value)}>{availableViews.filter(validWorkspaceRole).map(role => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label></div></details>:<div className={styles.profileIdentity}><span className={styles.profilePhoto}><span className={styles.avatar}>{identity?.profileImageUrl ? <Image src={identity.profileImageUrl} alt="Your profile" width={54} height={54} unoptimized /> : identity?.displayName?.charAt(0) || "—"}</span>{identity?.dealership&&<OrganizationBadge name={identity.dealership} iconUrl={identity.organizationIconUrl} hidden={identity.organizationHideIcon}/>}</span><div><small>Signed in as</small><strong>{identity?.displayName || session.sessionLabel || "Checking session"}</strong><small>{admin ? "Master Admin" : floorManager ? "Floor Manager" : manager ? "Sales Manager" : identity?.role === "fni" ? "Finance" : "Sales Consultant"}</small></div></div>}
 
           <WorkspaceClock />
         </div>
