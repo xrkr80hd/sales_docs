@@ -1,5 +1,6 @@
 {
   "/(app)/admin/messenger/page": "/admin/messenger",
+  "/(app)/admin/notifications/page": "/admin/notifications",
   "/(app)/admin/page": "/admin",
   "/(app)/business-card/page": "/business-card",
   "/(app)/consultant-links/[id]/page": "/consultant-links/[id]",
@@ -57,6 +58,7 @@
   "/api/admin/users/route": "/api/admin/users",
   "/api/admin/workspace/route": "/api/admin/workspace",
   "/api/analytics/route": "/api/analytics",
+  "/api/announcements/route": "/api/announcements",
   "/api/auth/login/route": "/api/auth/login",
   "/api/auth/logout/route": "/api/auth/logout",
   "/api/auth/password/route": "/api/auth/password",

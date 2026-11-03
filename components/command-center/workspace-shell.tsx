@@ -146,7 +146,7 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
             {!consultantView&&pathname.startsWith("/deal-sheet") && <button onClick={() => { close(); onDocuments(); }} className={styles.navButton}><FilePlus2 />Deal Documents</button>}
             <>{consultantView&&<button type="button" className={styles.navButton} onClick={()=>{setTourNavigationWasOpen(navigationOpen);setNavigationOpen(true);setSidebarCollapsed(false);setTourOpen(true);}}><CircleHelp />Quick Tour</button>}</>
             <button onClick={() => { close(); session.signOut(); }} className={styles.navButton}><LogOut />Sign Out</button>
-            {admin && activeView === "admin" && <details open><summary><Shield />Administration</summary><div className={styles.subnav}><Link prefetch={false} href="/admin" onClick={close}>People &amp; Organizations</Link><Link prefetch={false} href="/admin/messenger" onClick={close}>Messenger Permissions</Link></div></details>}
+            {admin && activeView === "admin" && <details open><summary><Shield />Administration</summary><div className={styles.subnav}><Link prefetch={false} href="/admin" onClick={close}>People &amp; Organizations</Link><Link prefetch={false} href="/admin/messenger" onClick={close}>Messenger Permissions</Link><Link prefetch={false} href="/admin/notifications" onClick={close} aria-current={pathname === "/admin/notifications" ? "page" : undefined}>Notification Center</Link></div></details>}
           </nav>
         </aside>
       </>}

@@ -2,11 +2,13 @@
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { announcements, formatAnnouncementDate, markAnnouncementsRead, readAnnouncementIds, type Announcement } from "@/lib/announcements";
+import { formatAnnouncementDate, markAnnouncementsRead, readAnnouncementIds, type Announcement } from "@/lib/announcements";
+import { useAnnouncements } from "@/lib/announcements-client";
 import styles from "./notification-center.module.css";
 
 /** Unread announcement ids for this account on this device. Empty until mounted, to avoid hydration mismatch. */
 export function useUnreadAnnouncements(userId: string) {
+  const announcements = useAnnouncements();
   const [unread, setUnread] = useState<string[]>([]);
   useEffect(() => {
     const refresh = () => { const read = readAnnouncementIds(userId); setUnread(announcements.filter(a => !read.has(a.id)).map(a => a.id)); };
@@ -14,7 +16,7 @@ export function useUnreadAnnouncements(userId: string) {
     window.addEventListener("announcements-read", refresh);
     window.addEventListener("storage", refresh);
     return () => { window.removeEventListener("announcements-read", refresh); window.removeEventListener("storage", refresh); };
-  }, [userId]);
+  }, [userId, announcements]);
   return unread;
 }
 
@@ -26,12 +28,14 @@ export function AnnouncementCard({ item, unread, headingLevel = 3 }: { item: Ann
       <time dateTime={item.date} className={styles.date}>{formatAnnouncementDate(item.date)}</time>
     </header>
     {item.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+    {item.link && <a className={styles.linkButton} href={item.link.url} target={item.link.url.startsWith("https://nextdox.app") ? undefined : "_blank"} rel="noopener noreferrer">{item.link.label}</a>}
     {item.signoff && <p className={styles.signoff}>{item.signoff.map((line, i) => <span key={i}>{line}</span>)}</p>}
   </article>;
 }
 
 export function NotificationCenter({ userId, className }: { userId: string; className?: string }) {
   const [open, setOpen] = useState(false);
+  const announcements = useAnnouncements();
   const unread = useUnreadAnnouncements(userId);
   const button = useRef<HTMLButtonElement>(null), panel = useRef<HTMLDivElement>(null);
   const panelId = useId();

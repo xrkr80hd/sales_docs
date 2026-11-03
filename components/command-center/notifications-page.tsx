@@ -1,18 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
-import { announcements, markAnnouncementsRead } from "@/lib/announcements";
+import { markAnnouncementsRead } from "@/lib/announcements";
+import { useAnnouncements } from "@/lib/announcements-client";
 import { AnnouncementCard, useUnreadAnnouncements } from "./notification-center";
 import { useWorkspaceIdentity } from "./workspace-context";
 import styles from "./notification-center.module.css";
 
 export function NotificationsPage() {
   const userId = useWorkspaceIdentity()?.id || "";
+  const announcements = useAnnouncements();
   const unread = useUnreadAnnouncements(userId);
   const [shownUnread, setShownUnread] = useState<string[] | null>(null);
   useEffect(() => {
     // Capture what was new on arrival, then mark it read.
     if (shownUnread === null && unread.length) { setShownUnread(unread); markAnnouncementsRead(userId, announcements.map(a => a.id)); }
-  }, [unread, userId, shownUnread]);
+  }, [unread, userId, shownUnread, announcements]);
   return <div className={styles.page}>
     <p className={styles.kicker}>NXTDOX · UPDATES</p>
     <h1>Notifications</h1>

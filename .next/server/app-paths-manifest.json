@@ -1,5 +1,6 @@
 {
   "/(app)/admin/messenger/page": "app/(app)/admin/messenger/page.js",
+  "/(app)/admin/notifications/page": "app/(app)/admin/notifications/page.js",
   "/(app)/admin/page": "app/(app)/admin/page.js",
   "/(app)/business-card/page": "app/(app)/business-card/page.js",
   "/(app)/consultant-links/[id]/page": "app/(app)/consultant-links/[id]/page.js",
@@ -57,6 +58,7 @@
   "/api/admin/users/route": "app/api/admin/users/route.js",
   "/api/admin/workspace/route": "app/api/admin/workspace/route.js",
   "/api/analytics/route": "app/api/analytics/route.js",
+  "/api/announcements/route": "app/api/announcements/route.js",
   "/api/auth/login/route": "app/api/auth/login/route.js",
   "/api/auth/logout/route": "app/api/auth/logout/route.js",
   "/api/auth/password/route": "app/api/auth/password/route.js",

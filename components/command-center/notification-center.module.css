@@ -41,3 +41,5 @@
 .unreadItem { display: grid; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
 .unreadItem:last-child { border-bottom: none; }
 .markOne { justify-self: end; background: #be1717; border: 1px solid #be1717; color: #fff; border-radius: 10px; padding: 6px 12px; font-size: 12px; font-weight: 800; cursor: pointer; }
+.linkButton { display: inline-flex; align-items: center; justify-content: center; margin: 4px 0 8px; min-height: 40px; padding: 8px 16px; border-radius: 10px; background: #be1717; border: 1px solid #be1717; color: #fff !important; font-weight: 800; font-size: 14px; text-decoration: none !important; }
+.linkButton:hover { opacity: .94; }

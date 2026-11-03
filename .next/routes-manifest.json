@@ -207,6 +207,12 @@
       "namedRegex": "^/admin/messenger(?:/)?$"
     },
     {
+      "page": "/admin/notifications",
+      "regex": "^/admin/notifications(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/notifications(?:/)?$"
+    },
+    {
       "page": "/api/admin/invites",
       "regex": "^/api/admin/invites(?:/)?$",
       "routeKeys": {},
@@ -241,6 +247,12 @@
       "regex": "^/api/analytics(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/analytics(?:/)?$"
+    },
+    {
+      "page": "/api/announcements",
+      "regex": "^/api/announcements(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/announcements(?:/)?$"
     },
     {
       "page": "/api/auth/login",
