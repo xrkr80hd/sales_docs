@@ -44,5 +44,5 @@
 .shortcut:hover { border-color: var(--house-red); background: var(--panel-strong); }
 .shortcut:hover small { color: #fff; }
 
-@media (prefers-reduced-motion: reduce) { .slide { transition: none; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .slide { transition: opacity 0.8s ease; transform: none; } }
 @media (max-width: 520px) { .tile strong { font-size: 1.6rem; } .shortcut strong { font-size: 1.1rem; } }
