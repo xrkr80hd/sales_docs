@@ -99,7 +99,6 @@ export function ProfileEditor() {
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [postedDialog, setPostedDialog] = useState(false);
   const [nfcLinkCopied, setNfcLinkCopied] = useState(false);
-  const [cardOrigin, setCardOrigin] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
 
   // Active Cropper Modal State
@@ -154,7 +153,6 @@ export function ProfileEditor() {
   }
 
   useEffect(() => {
-    setCardOrigin(window.location.origin);
     void loadProfile();
   }, []);
 
@@ -208,7 +206,7 @@ export function ProfileEditor() {
 
   async function copyNfcCardLink() {
     if (!profile) return;
-    const cardUrl = `${window.location.origin}/card/${profile.consultant_slug}`;
+    const cardUrl = `https://nextdox.app/card/${profile.consultant_slug}`;
     try {
       await navigator.clipboard.writeText(cardUrl);
       setNfcLinkCopied(true);
@@ -369,7 +367,7 @@ export function ProfileEditor() {
       <header className={styles.header}>
         <div>
           <h1>Business Card</h1>
-          <span>Your public card: /card/{profile.consultant_slug}</span>
+          <span>Your public card: https://nextdox.app/card/{profile.consultant_slug}</span>
         </div>
         {profile.is_published && <a className={styles.viewCard} href={`/card/${profile.consultant_slug}`} target="_blank" rel="noopener noreferrer">View card</a>}
       </header>
@@ -402,7 +400,7 @@ export function ProfileEditor() {
         <div className={styles.nfcLinkPanel}>
           <p>Use this as the only website link written to your NFC tag. It opens the same public business card on iPhone and Android.</p>
           <div className={styles.nfcLinkRow}>
-            <code>{cardOrigin ? `${cardOrigin}/card/${profile.consultant_slug}` : `/card/${profile.consultant_slug}`}</code>
+            <code>{`https://nextdox.app/card/${profile.consultant_slug}`}</code>
             <button type="button" className={styles.publish} onClick={copyNfcCardLink}>
               {nfcLinkCopied ? "Link copied" : "Copy NFC link"}
             </button>
@@ -840,7 +838,7 @@ export function ProfileEditor() {
           <section className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="posted-title">
             <span>✓</span>
             <h2 id="posted-title">Saved</h2>
-            <p>Your changes are now live at /card/{profile.consultant_slug}.</p>
+            <p>Your changes are now live at https://nextdox.app/card/{profile.consultant_slug}.</p>
             <button type="button" onClick={() => setPostedDialog(false)}>Done</button>
           </section>
         </div>
