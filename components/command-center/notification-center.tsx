@@ -3,12 +3,15 @@ import Link from "next/link";
 import { Bell } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { formatAnnouncementDate, markAnnouncementsRead, readAnnouncementIds, type Announcement } from "@/lib/announcements";
-import { useAnnouncements } from "@/lib/announcements-client";
+import { syncReadState, useAnnouncements } from "@/lib/announcements-client";
+import { useSession } from "@/components/auth/supabase-session-gate";
 import styles from "./notification-center.module.css";
 
 /** Unread announcement ids for this account on this device. Empty until mounted, to avoid hydration mismatch. */
 export function useUnreadAnnouncements(userId: string) {
   const announcements = useAnnouncements();
+  const { accessToken } = useSession();
+  useEffect(() => { syncReadState(userId, accessToken || ""); }, [userId, accessToken]);
   const [unread, setUnread] = useState<string[]>([]);
   useEffect(() => {
     const refresh = () => { const read = readAnnouncementIds(userId); setUnread(announcements.filter(a => !read.has(a.id)).map(a => a.id)); };

@@ -90,6 +90,7 @@
   "/api/me/route": "app/api/me/route.js",
   "/api/me/sale-commander/route": "app/api/me/sale-commander/route.js",
   "/api/me/settings/route": "app/api/me/settings/route.js",
+  "/api/me/state/route": "app/api/me/state/route.js",
   "/api/me/why/route": "app/api/me/why/route.js",
   "/api/messenger/route": "app/api/messenger/route.js",
   "/api/profile/vehicle-preview/route": "app/api/profile/vehicle-preview/route.js",

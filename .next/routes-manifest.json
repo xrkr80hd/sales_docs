@@ -375,6 +375,12 @@
       "namedRegex": "^/api/me/settings(?:/)?$"
     },
     {
+      "page": "/api/me/state",
+      "regex": "^/api/me/state(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/me/state(?:/)?$"
+    },
+    {
       "page": "/api/me/why",
       "regex": "^/api/me/why(?:/)?$",
       "routeKeys": {},

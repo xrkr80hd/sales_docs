@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useSession } from "@/components/auth/supabase-session-gate";
 import { DISCLOSURE_VERSION, DISCLOSURE_SECTIONS, DISCLOSURE_SUMMARY, validDisclosureAcceptance } from "@/lib/disclosure";
 
 const DISCLOSURE_ACCEPTED_KEY = "walker.disclosure.accepted";
@@ -27,19 +28,43 @@ function saveAcceptance() {
 
 const emptySubscribe = () => () => { };
 
+/*
+ * Asked once per account: agreeing is saved on the account (so it follows you to any
+ * browser or device) and in this browser as a fast path. Asked again only when the
+ * terms version changes.
+ */
 export function DisclosureGate({ children }: { children: ReactNode }) {
+  const { accessToken } = useSession();
   const initiallyAccepted = useSyncExternalStore(
     emptySubscribe,
     hasAcceptedDisclosure,
     () => false,
   );
   const [accepted, setAccepted] = useState(initiallyAccepted);
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    if (accepted || initiallyAccepted || !accessToken) return;
+    let alive = true;
+    fetch("/api/me/state", { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" })
+      .then(response => response.ok ? response.json() : null)
+      .then((state: { disclosureVersion?: string | null } | null) => {
+        if (!alive) return;
+        if (state?.disclosureVersion === DISCLOSURE_VERSION) { saveAcceptance(); setAccepted(true); }
+        setChecked(true);
+      })
+      .catch(() => { if (alive) setChecked(true); });
+    return () => { alive = false; };
+  }, [accepted, initiallyAccepted, accessToken]);
 
   if (accepted || initiallyAccepted) return <>{children}</>;
+  // Checking the account first, so people who already agreed never see the terms flash up.
+  if (!checked) return <div className="min-h-screen" aria-busy="true" />;
 
   function handleAccept() {
     saveAcceptance();
     setAccepted(true);
+    if (accessToken) void fetch("/api/me/state", { method: "POST", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ acceptDisclosure: true }) }).catch(() => undefined);
   }
 
   return (

@@ -2,7 +2,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { requestJson } from "@/lib/request-json";
-import { announcements as builtIn, type Announcement } from "@/lib/announcements";
+import { announcements as builtIn, mergeReadIds, type Announcement } from "@/lib/announcements";
 
 /*
  * Every announcement a user can see: the built-in ones plus those sent from the
@@ -43,4 +43,25 @@ export function useAnnouncements(): Announcement[] {
     return () => document.removeEventListener("visibilitychange", visible);
   }, [token]);
   return useSyncExternalStore(subscribe, () => all, () => serverSnapshot);
+}
+
+/*
+ * Read notifications follow the account: on sign-in, ids read on other devices are merged
+ * in; whenever something is marked read here, it's saved to the account.
+ */
+let syncToken = "", syncedFor = "";
+export function syncReadState(userId: string, token: string) {
+  syncToken = token;
+  if (!userId || !token || syncedFor === userId + token) return;
+  syncedFor = userId + token;
+  requestJson<{ readAnnouncements?: string[] }>("/api/me/state", { headers: { Authorization: `Bearer ${token}` } })
+    .then(state => { if (state.readAnnouncements?.length) mergeReadIds(userId, state.readAnnouncements); })
+    .catch(() => { syncedFor = ""; });
+}
+if (typeof window !== "undefined") {
+  window.addEventListener("announcements-read", event => {
+    const detail = (event as CustomEvent<{ ids?: string[]; fromServer?: boolean }>).detail;
+    if (!detail?.ids?.length || detail.fromServer || !syncToken) return;
+    void fetch("/api/me/state", { method: "POST", headers: { Authorization: `Bearer ${syncToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ read: detail.ids }) }).catch(() => undefined);
+  });
 }

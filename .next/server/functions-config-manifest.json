@@ -2,6 +2,7 @@
   "version": 1,
   "functions": {
     "/api/announcements": {},
+    "/api/me/state": {},
     "/api/me/why": {},
     "/api/profile/vehicle-preview": {},
     "/api/storage/upload": {},
