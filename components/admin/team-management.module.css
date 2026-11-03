@@ -105,3 +105,11 @@
 .passwordActions button:disabled { opacity:.45; cursor:not-allowed; }
 .passwordActions button:focus-visible { outline:2px solid white; outline-offset:-3px; }
 @media(max-width:390px) { .passwordActions { gap:3px; padding:3px; } .passwordActions button { min-width:46px; padding:4px; font-size:10px; } .page .passwordControl input { padding:8px; } }
+
+/* Your team: an accordion; opens to search, filters and the List / Grid layouts. */
+.teamFold > summary.teamFoldSummary { display: flex; align-items: center; gap: 12px; padding: 18px; cursor: pointer; list-style: none; font-size: 18px; font-weight: 800; }
+.teamFold > summary.teamFoldSummary::-webkit-details-marker { display: none; }
+.teamFoldSummary small { margin-left: auto; color: var(--muted); font-size: 13px; font-weight: 600; }
+.teamFoldSummary > svg:last-child { transition: transform .2s; }
+.teamFold[open] > .teamFoldSummary > svg:last-child { transform: rotate(180deg); }
+.teamFold[open] > .teamFoldSummary { border-bottom: 1px solid var(--border); }
