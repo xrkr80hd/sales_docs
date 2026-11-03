@@ -33,3 +33,11 @@
 .pageList { background: #121a25; border: 1px solid #344152; border-radius: 9px; padding: 4px 18px; }
 .pageList .item { font-size: 15px; padding: 16px 0; }
 .pageList .itemTitle { font-size: 18px; }
+
+/* Read state: unread items show with their own "Mark read"; read items leave the bell. */
+.headActions { display: inline-flex; align-items: center; gap: 12px; }
+.markAll { background: none; border: 1px solid var(--border); border-radius: 10px; color: #f7f7f7; padding: 5px 10px; font-size: 12px; font-weight: 800; cursor: pointer; }
+.markAll:hover { border-color: #be1717; }
+.unreadItem { display: grid; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.unreadItem:last-child { border-bottom: none; }
+.markOne { justify-self: end; background: #be1717; border: 1px solid #be1717; color: #fff; border-radius: 10px; padding: 6px 12px; font-size: 12px; font-weight: 800; cursor: pointer; }

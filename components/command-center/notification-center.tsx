@@ -33,18 +33,14 @@ export function AnnouncementCard({ item, unread, headingLevel = 3 }: { item: Ann
 export function NotificationCenter({ userId, className }: { userId: string; className?: string }) {
   const [open, setOpen] = useState(false);
   const unread = useUnreadAnnouncements(userId);
-  // Keep the "New" tags visible for the moment the panel is open, even though opening marks them read.
-  const [shownUnread, setShownUnread] = useState<string[]>([]);
   const button = useRef<HTMLButtonElement>(null), panel = useRef<HTMLDivElement>(null);
   const panelId = useId();
 
   const close = useCallback((returnFocus: boolean) => { setOpen(false); if (returnFocus) button.current?.focus(); }, []);
-  const toggle = () => {
-    if (open) { close(false); return; }
-    setShownUnread(unread);
-    setOpen(true);
-    if (unread.length) markAnnouncementsRead(userId, announcements.map(a => a.id));
-  };
+  // The bell lists only what is still unread. Items clear when marked read; history lives on the Notifications page.
+  const toggle = () => { if (open) { close(false); return; } setOpen(true); };
+  const markRead = (id: string) => markAnnouncementsRead(userId, [id]);
+  const markAll = () => markAnnouncementsRead(userId, announcements.map(a => a.id));
 
   useEffect(() => {
     if (!open) return;
@@ -66,9 +62,12 @@ export function NotificationCenter({ userId, className }: { userId: string; clas
       {unread.length > 0 && <span aria-hidden="true">{unread.length > 9 ? "9+" : unread.length}</span>}
     </button>
     {open && <div ref={panel} id={panelId} className={styles.panel} role="region" aria-label="Notifications" tabIndex={-1}>
-      <div className={styles.panelHead}><strong>Notifications</strong><Link prefetch={false} href="/notifications" onClick={() => close(false)}>View all</Link></div>
+      <div className={styles.panelHead}><strong>Notifications</strong><span className={styles.headActions}>{unread.length > 0 && <button type="button" className={styles.markAll} onClick={markAll}>Mark all read</button>}<Link prefetch={false} href="/notifications" onClick={() => close(false)}>View all</Link></span></div>
       <div className={styles.list}>
-        {announcements.length === 0 ? <p className={styles.empty}>You&apos;re all caught up.</p> : announcements.map(item => <AnnouncementCard key={item.id} item={item} unread={shownUnread.includes(item.id)} />)}
+        {unread.length === 0 ? <p className={styles.empty}>You&apos;re all caught up.</p> : announcements.filter(item => unread.includes(item.id)).map(item => <div key={item.id} className={styles.unreadItem}>
+          <AnnouncementCard item={item} unread />
+          <button type="button" className={styles.markOne} onClick={() => markRead(item.id)}>Mark read</button>
+        </div>)}
       </div>
     </div>}
   </div>;

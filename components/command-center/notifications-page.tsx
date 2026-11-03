@@ -17,6 +17,7 @@ export function NotificationsPage() {
     <p className={styles.kicker}>NXTDOX · UPDATES</p>
     <h1>Notifications</h1>
     <p className={styles.intro}>News about NextDocs: changes, planned downtime and what&apos;s coming.</p>
+    {unread.length > 0 && <button type="button" className={styles.markAll} onClick={() => markAnnouncementsRead(userId, announcements.map(a => a.id))}>Mark all read</button>}
     <section className={styles.pageList} aria-label="All notifications">
       {announcements.length === 0 ? <p className={styles.empty}>You&apos;re all caught up.</p> : announcements.map(item => <AnnouncementCard key={item.id} item={item} unread={(shownUnread || []).includes(item.id)} headingLevel={2} />)}
     </section>
