@@ -14,6 +14,7 @@ const order = (a: Announcement) => a.postedAt || `${a.date}T12:00:00.000Z`;
 const merge = (remote: Announcement[]) => [...remote, ...builtIn].sort((a, b) => order(b).localeCompare(order(a)));
 
 let all: Announcement[] = merge([]);
+let openTickets: number | null = null;
 let loadedAt = 0, loadedFor = "";
 let pending: Promise<void> | null = null;
 const listeners = new Set<() => void>();
@@ -23,8 +24,8 @@ export async function refreshAnnouncements(token: string, force = false) {
   if (!token) return;
   if (!force && loadedFor === token && Date.now() - loadedAt < REFRESH_MS) return;
   if (pending && !force) return pending;
-  pending = requestJson<{ announcements: Announcement[] }>("/api/announcements", { headers: { Authorization: `Bearer ${token}` } })
-    .then(value => { all = merge(Array.isArray(value.announcements) ? value.announcements : []); loadedAt = Date.now(); loadedFor = token; emit(); })
+  pending = requestJson<{ announcements: Announcement[]; openTickets?: number }>("/api/announcements", { headers: { Authorization: `Bearer ${token}` } })
+    .then(value => { all = merge(Array.isArray(value.announcements) ? value.announcements : []); openTickets = typeof value.openTickets === "number" ? value.openTickets : null; loadedAt = Date.now(); loadedFor = token; emit(); })
     .catch(() => undefined)
     .finally(() => { pending = null; });
   return pending;
@@ -43,6 +44,12 @@ export function useAnnouncements(): Announcement[] {
     return () => document.removeEventListener("visibilitychange", visible);
   }, [token]);
   return useSyncExternalStore(subscribe, () => all, () => serverSnapshot);
+}
+
+/** Open tickets (admins only; null for everyone else). Updates with the notifications. */
+export function useOpenTicketCount(): number | null {
+  useAnnouncements();
+  return useSyncExternalStore(subscribe, () => openTickets, () => null);
 }
 
 /*

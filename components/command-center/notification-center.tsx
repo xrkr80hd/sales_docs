@@ -14,7 +14,8 @@ export function useUnreadAnnouncements(userId: string) {
   useEffect(() => { syncReadState(userId, accessToken || ""); }, [userId, accessToken]);
   const [unread, setUnread] = useState<string[]>([]);
   useEffect(() => {
-    const refresh = () => { const read = readAnnouncementIds(userId); setUnread(announcements.filter(a => !read.has(a.id)).map(a => a.id)); };
+    // Ticket notifications stay until the ticket is marked Done on the Tickets page.
+    const refresh = () => { const read = readAnnouncementIds(userId); setUnread(announcements.filter(a => a.id.startsWith("ticket-") || !read.has(a.id)).map(a => a.id)); };
     refresh();
     window.addEventListener("announcements-read", refresh);
     window.addEventListener("storage", refresh);
@@ -47,7 +48,7 @@ export function NotificationCenter({ userId, className }: { userId: string; clas
   // The bell lists only what is still unread. Items clear when marked read; history lives on the Notifications page.
   const toggle = () => { if (open) { close(false); return; } setOpen(true); };
   const markRead = (id: string) => markAnnouncementsRead(userId, [id]);
-  const markAll = () => markAnnouncementsRead(userId, announcements.map(a => a.id));
+  const markAll = () => markAnnouncementsRead(userId, announcements.filter(a => !a.id.startsWith("ticket-")).map(a => a.id));
 
   useEffect(() => {
     if (!open) return;
@@ -69,11 +70,11 @@ export function NotificationCenter({ userId, className }: { userId: string; clas
       {unread.length > 0 && <span aria-hidden="true">{unread.length > 9 ? "9+" : unread.length}</span>}
     </button>
     {open && <div ref={panel} id={panelId} className={styles.panel} role="region" aria-label="Notifications" tabIndex={-1}>
-      <div className={styles.panelHead}><strong>Notifications</strong><span className={styles.headActions}>{unread.length > 0 && <button type="button" className={styles.markAll} onClick={markAll}>Mark all read</button>}<Link prefetch={false} href="/notifications" onClick={() => close(false)}>View all</Link></span></div>
+      <div className={styles.panelHead}><strong>Notifications</strong><span className={styles.headActions}>{unread.some(id => !id.startsWith("ticket-")) && <button type="button" className={styles.markAll} onClick={markAll}>Mark all read</button>}<Link prefetch={false} href="/notifications" onClick={() => close(false)}>View all</Link></span></div>
       <div className={styles.list}>
         {unread.length === 0 ? <p className={styles.empty}>You&apos;re all caught up.</p> : announcements.filter(item => unread.includes(item.id)).map(item => <div key={item.id} className={styles.unreadItem}>
           <AnnouncementCard item={item} unread />
-          <button type="button" className={styles.markOne} onClick={() => markRead(item.id)}>Mark read</button>
+          {!item.id.startsWith("ticket-") && <button type="button" className={styles.markOne} onClick={() => markRead(item.id)}>Mark read</button>}
         </div>)}
       </div>
     </div>}

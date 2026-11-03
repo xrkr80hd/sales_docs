@@ -9,8 +9,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap, CircleHelp, Bell, FolderOpen, House, LifeBuoy } from "lucide-react";
+import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap, CircleHelp, Bell, FolderOpen, House, LifeBuoy, Inbox } from "lucide-react";
 import { NotificationCenter, useUnreadAnnouncements } from "./notification-center";
+import { useOpenTicketCount } from "@/lib/announcements-client";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { useWorkspaceIdentity } from "./workspace-context";
 import { ROLE_LABELS, validWorkspaceRole } from "@/lib/workspace-roles";
@@ -50,6 +51,7 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
   const mobile = useSyncExternalStore(subscribeMobile,mobileSnapshot,serverMobileSnapshot);
   const identity = useWorkspaceIdentity();
   const announcementUnread=useUnreadAnnouncements(identity?.id||"");
+  const openTicketCount=useOpenTicketCount();
   const session = useSession();
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
@@ -143,6 +145,8 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
             {activeView === "fni" && <Link prefetch={false} href="/role-views/fni" onClick={close} className={styles.navLink}><Home />F&amp;I</Link>}
             <Link prefetch={false} href="/notifications" onClick={close} className={`${styles.navLink} ${pathname === "/notifications" ? styles.active : ""}`}><Bell />Notifications{announcementUnread.length>0&&<span className={styles.navBadge} aria-label={`${announcementUnread.length} new`}>{announcementUnread.length}</span>}</Link>
             <Link prefetch={false} data-consultant-tour="messenger" href="/messenger" onClick={close} className={`${styles.navLink} ${pathname === "/messenger" ? styles.active : ""}`}><MessageCircle />Messenger</Link>
+            {/* The master admin's ticket inbox, in every view. */}
+            {admin && <Link prefetch={false} href="/admin/tickets" onClick={close} className={`${styles.navLink} ${pathname === "/admin/tickets" ? styles.active : ""}`}><Inbox />Tickets{(openTicketCount || 0) > 0 && <span className={styles.navBadge} aria-label={`${openTicketCount} open`}>{openTicketCount}</span>}</Link>}
             {/* Every role, every organization. */}
             <Link prefetch={false} data-consultant-tour="ticket" href={`/support${pathname === "/support" ? "" : `?from=${encodeURIComponent(pathname)}`}`} onClick={close} className={`${styles.navLink} ${pathname === "/support" ? styles.active : ""}`}><LifeBuoy />Submit a Ticket</Link>
             {!consultantView&&!pathname.startsWith("/deal-sheet")&&<Link prefetch={false} href="/documents" onClick={close} className={`${styles.navLink} ${pathname === "/documents" ? styles.active : ""}`}><Files />Documents</Link>}
