@@ -35,7 +35,8 @@ export async function GET(request:Request){
  else if(!district)query=query.eq("organization_id",organizationId);
  const {data:members,error:membersErr}=await query;
  if(membersErr)throw membersErr;
- const roster=(members||[]).filter(m=>(m.profiles as unknown as {role?:string})?.role==="user");
+ // Consultants, plus an admin who belongs to the dealership (they sell there too).
+ const roster=(members||[]).filter(m=>{const role=(m.profiles as unknown as {role?:string})?.role;return role==="user"||role==="admin";});
  const ids=roster.map(r=>r.user_id);
  const {data:settings,error:settingsErr}=ids.length?await db.from("user_settings").select("user_id,commander:consultant_info->saleCommander,updated_at").in("user_id",ids):{data:[],error:null};
  if(settingsErr)throw settingsErr;
