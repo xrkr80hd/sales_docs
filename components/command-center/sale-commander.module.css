@@ -30,3 +30,7 @@
 .required strong { font-size: 1.3rem; font-weight: 900; }
 @media (min-width: 760px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } .glance, .required { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .required { grid-template-columns: repeat(2, minmax(0, 1fr)); } .value { font-size: 1.35rem; } }
+
+/* Child accordion inside a section (e.g. My ratios inside Monthly activity required). */
+.fold details { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+.fold details > summary { cursor: pointer; font-weight: 800; }
