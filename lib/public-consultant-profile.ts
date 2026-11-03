@@ -164,11 +164,13 @@ export const getUnpublishedCardOwner = cache(async (slug: string): Promise<{ fir
       name = String((info.business_card as Record<string, unknown> | undefined)?.displayName || info.name || "").trim();
     }
     if (userId) {
+      // The account name ("Donald Goff") beats a half-finished card draft ("D.", "tbrown").
       const [profile, membership] = await Promise.all([
-        name ? null : db.from("profiles").select("display_name").eq("id", userId).maybeSingle().then(r => r.data),
+        db.from("profiles").select("display_name").eq("id", userId).maybeSingle().then(r => r.data),
         readMembership(db, userId).catch(() => null),
       ]);
-      if (!name) name = String(profile?.display_name || "").trim();
+      const accountName = String(profile?.display_name || "").trim();
+      if (accountName) name = accountName;
       const org = ((membership?.organizations as { name?: string } | null | undefined) || null)?.name;
       if (org) dealership = org;
     }
