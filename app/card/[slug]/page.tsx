@@ -7,7 +7,8 @@ import { CopyCardLinkButton } from "@/components/profile/copy-card-link-button";
 import { VideoPlaylist } from "@/components/profile/video-playlist";
 import { SocialPlatformIcon } from "@/components/profile/social-platform-icon";
 import { PublicCardAnalytics } from "@/components/profile/public-card-analytics";
-import { getPublishedConsultantProfile } from "@/lib/public-consultant-profile";
+import { getPublishedConsultantProfile, getUnpublishedCardOwner } from "@/lib/public-consultant-profile";
+import { CardComingSoon } from "@/components/profile/card-coming-soon";
 import styles from "../trav/page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +47,11 @@ export async function generateMetadata({ params, searchParams }: CardPageProps):
   const { slug } = await params;
   const selected = await searchParams;
   const profile = await getPublishedConsultantProfile(slug);
-  if (!profile) return { title: "Consultant profile unavailable" };
+  if (!profile) {
+    const owner = await getUnpublishedCardOwner(slug);
+    // Not live yet: friendly page for people, kept out of search results.
+    return { title: owner?.firstName ? `${owner.firstName}'s card is almost ready` : "Card coming soon", robots: { index: false, follow: false } };
+  }
   const vehicle = profile.vehicles.find((entry) => entry.secondaryUrl === selected.vehicle || entry.id === selected.vehicle);
   const video = profile.videos.find(
     (entry) => entry.id === selected.video && Boolean(entry.imageUrl || entry.url),
@@ -119,7 +124,12 @@ export default async function ConsultantCard({ params, searchParams }: CardPageP
   const { slug } = await params;
   const selected = await searchParams;
   const profile = await getPublishedConsultantProfile(slug);
-  if (!profile) notFound();
+  if (!profile) {
+    // A card that exists but isn't published gets a "coming soon" page; an unknown link stays a 404.
+    const owner = await getUnpublishedCardOwner(slug);
+    if (!owner) notFound();
+    return <CardComingSoon firstName={owner.firstName} dealership={owner.dealership} />;
+  }
 
   const vehicles = profile.vehicles.map((entry) => ({
     listingUrl: entry.url,
