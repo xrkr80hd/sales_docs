@@ -121,7 +121,6 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
             <div role="group" aria-label="Sales Commander">
               <Link prefetch={false} href="/dashboard" onClick={close} className={`${styles.navLink} ${pathname === "/dashboard" || pathname === "/role-views/user" ? styles.active : ""}`}><Home />Today</Link>
               <div className={styles.subnav}>
-                <Link prefetch={false} data-consultant-tour="commander" href="/sale-commander" onClick={close} aria-current={pathname === "/sale-commander" ? "page" : undefined}>Sales Commander · goals &amp; routine</Link>
                 <Link prefetch={false} data-consultant-tour="setup" href="/consultant-setup" onClick={close} aria-current={pathname === "/consultant-setup" ? "page" : undefined}>Consultant Set Up</Link>
                 <ConsultantLinksNav onNavigate={close}/>
               </div>

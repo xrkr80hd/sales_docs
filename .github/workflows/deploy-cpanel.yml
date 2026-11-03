@@ -53,12 +53,18 @@ jobs:
           YAML
           echo "${GITHUB_SHA}" > dist/BUILD_COMMIT
 
+      # Each build is a new commit ON TOP of the deploy branch, so cPanel's
+      # "Update from Remote" can fast-forward instead of failing on rewritten history.
       - name: Publish to the deploy branch
         run: |
+          # Files the server creates in the app folder; ignored so cPanel never sees "uncommitted changes".
+          printf '%s\n' 'tmp/' '*.log' 'stderr.log' '.htaccess' '.well-known/' '.cagefs/' > dist/.gitignore
+          remote="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
           cd dist
           git init -q
           git config user.name "nxtdox-deploy"
           git config user.email "deploy@nextdox.app"
-          git add -A -f
-          git commit -q -m "Build ${GITHUB_SHA} from ${GITHUB_REF_NAME}"
-          git push -q --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:deploy
+          if git fetch -q "$remote" deploy; then git reset -q --soft FETCH_HEAD; fi
+          git add -A -f . ':!tmp'
+          git commit -q --allow-empty -m "Build ${GITHUB_SHA} from ${GITHUB_REF_NAME}"
+          git push -q "$remote" HEAD:deploy
