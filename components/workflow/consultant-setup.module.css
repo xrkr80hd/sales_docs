@@ -46,10 +46,10 @@
 .whySave { min-height: 42px; padding: 8px 20px; border-radius: 10px; border: 1px solid #be1717; background: #be1717; color: #fff; font-weight: 800; cursor: pointer; }
 .whySave:disabled { opacity: .45; cursor: default; }
 .whyLabel { font-size: 13px; font-weight: 700; color: #c3cdd3; margin: 4px 0 8px; }
-.album { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-bottom: 6px; }
-.album figure { position: relative; margin: 0; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #0e161a; }
+.album { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 6px; }
+.album figure { position: relative; margin: 0; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #0e161a; }
 .album img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .album figure button { position: absolute; top: 5px; right: 5px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; border: none; background: #000b; color: #fff; cursor: pointer; }
-.albumAdd { position: relative; aspect-ratio: 1; display: grid !important; place-content: center; justify-items: center; gap: 4px; border: 1px dashed #4b5860; border-radius: 8px; color: #c3cdd3; cursor: pointer; font-size: 12px; text-align: center; }
+.albumAdd { position: relative; aspect-ratio: 16 / 9; display: grid !important; place-content: center; justify-items: center; gap: 4px; border: 1px dashed #4b5860; border-radius: 8px; color: #c3cdd3; cursor: pointer; font-size: 12px; text-align: center; }
 .albumAdd:hover { border-color: #be1717; color: #fff; }
 .albumAdd input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
