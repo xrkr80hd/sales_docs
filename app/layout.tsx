@@ -15,6 +15,12 @@ const plexMono = localFont({variable:"--font-plex-mono",display:"swap",src:[
   {path:"../public/fonts/ibm-plex-mono-700.woff2",weight:"700",style:"normal"},
 ]});
 
+// Every page is rendered per request and sent as "private, no-store". Prerendered pages
+// were sent with a one-year shared cache, so the host's nginx kept serving old pages
+// (pointing at deleted build files) after each deploy. Build files under /_next/static
+// are fingerprinted and still cache forever.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://nextdox.app"),
   title: { default: "NXTDOX", template: "%s | NXTDOX" },
