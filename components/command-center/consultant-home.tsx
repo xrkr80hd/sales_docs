@@ -161,7 +161,7 @@ export function ConsultantHome() {
   }, [state, today]);
 
   if (!state || !p || !plan) {
-    return <div className={styles.page}>
+    return <div className={`nxt-house ${styles.page}`}>
       {loadError ? <div role="alert" className={styles.card}><p>{loadError}</p><button type="button" className={styles.primary} onClick={retryLoad}>Try again</button></div> : <p role="status" className={styles.muted}>Loading your day…</p>}
     </div>;
   }
@@ -207,7 +207,7 @@ export function ConsultantHome() {
   };
   const shownTodos = todoDate ? log(todoDate).todos : [];
 
-  return <div className={styles.page}>
+  return <div className={`nxt-house ${styles.page}`}>
     <header className={styles.header}>
       <p className={styles.kicker}>{dayLabel(today).toUpperCase()} · {plan.kind === "off" ? "DAY OFF" : plan.kind === "friday" ? "EARLY FINISH" : plan.kind === "long" ? "LATE DAY · 7 HR" : "EARLY DAY · 5 HR"}</p>
       <h1>{greeting}{firstName ? `, ${firstName}` : ""}</h1>
