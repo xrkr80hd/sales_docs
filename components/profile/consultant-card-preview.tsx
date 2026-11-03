@@ -7,6 +7,7 @@ import { VehicleCarousel } from "@/components/profile/vehicle-carousel";
 import { VideoPlaylist } from "@/components/profile/video-playlist";
 import { SocialPlatformIcon } from "@/components/profile/social-platform-icon";
 import cardStyles from "@/app/card/trav/page.module.css";
+import { cardThemeClass } from "@/lib/card-theme";
 import styles from "./consultant-card-preview.module.css";
 
 type Props = {
@@ -71,7 +72,7 @@ export function ConsultantCardPreview({ profile, slug }: Props) {
   const soldGallery = profile.soldGallery.filter((entry) => Boolean(entry.imageUrl));
 
   return (
-    <div className={`${cardStyles.page} ${styles.page}`}>
+    <div className={`${cardStyles.page} ${styles.page} ${cardThemeClass(cardStyles, profile.identity.dealership)}`}>
       <div className={`${cardStyles.shell} ${styles.shell}`}>
         <header className={`${cardStyles.hero} ${styles.hero}`}>
           <div className={cardStyles.brandRow}>

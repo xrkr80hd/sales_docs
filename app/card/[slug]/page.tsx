@@ -10,6 +10,7 @@ import { PublicCardAnalytics } from "@/components/profile/public-card-analytics"
 import { getPublishedConsultantProfile, getUnpublishedCardOwner } from "@/lib/public-consultant-profile";
 import { CardComingSoon } from "@/components/profile/card-coming-soon";
 import styles from "../trav/page.module.css";
+import { cardThemeClass } from "@/lib/card-theme";
 
 export const dynamic = "force-dynamic";
 const SITE_URL = "https://nextdox.app";
@@ -200,7 +201,7 @@ export default async function ConsultantCard({ params, searchParams }: CardPageP
   };
 
   return (
-    <main className={styles.page}>
+    <main className={`${styles.page} ${cardThemeClass(styles, profile.identity.dealership)}`}>
       <PublicCardAnalytics slug={slug} />
       <script
         type="application/ld+json"
@@ -221,7 +222,7 @@ export default async function ConsultantCard({ params, searchParams }: CardPageP
               {profile.identity.profileImageUrl ? (
                 <Image src={profile.identity.profileImageUrl} alt={profile.identity.displayName} fill priority sizes="168px" className={styles.photo} />
               ) : (
-                <div style={{ display: "grid", placeItems: "center", width: "100%", height: "100%", background: "#22252a", color: "#be1717", fontSize: "2.5rem", fontWeight: 900 }}>
+                <div style={{ display: "grid", placeItems: "center", width: "100%", height: "100%", background: "#22252a", color: "var(--card-accent-text)", fontSize: "2.5rem", fontWeight: 900 }}>
                   {profile.identity.displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "WD"}
                 </div>
               )}

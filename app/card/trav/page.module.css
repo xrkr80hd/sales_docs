@@ -1,7 +1,15 @@
 .page {
+  /* Dealership accent (default: Walker / CDJR red). Each store overrides these below. */
+  --card-accent: #be1717;
+  --card-accent-ink: #fff;
+  --card-accent-text: #ef6262;
+  --card-accent-deep: #9c1010;
+  --card-accent-soft-text: #f3c5c5;
+  --card-accent-rgb: 190, 23, 23;
+  --card-accent-text-rgb: 239, 98, 98;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 12% 0%, rgba(190, 23, 23, .24), transparent 32rem),
+    radial-gradient(circle at 12% 0%, rgba(var(--card-accent-rgb), .24), transparent 32rem),
     #0d0e10;
   color: #f7f7f7;
   padding: 24px 14px 48px;
@@ -76,8 +84,8 @@
   min-width: 28px;
   height: 28px;
   border-radius: 9px;
-  background: #be1717;
-  color: #fff;
+  background: var(--card-accent);
+  color: var(--card-accent-ink);
   font-family: var(--font-plex-mono), monospace;
   font-size: .72rem;
   font-weight: 700;
@@ -98,7 +106,7 @@
 
 .eyebrow {
   margin: 0;
-  color: #ef6262;
+  color: var(--card-accent-text);
   font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -131,13 +139,13 @@
 }
 
 .primaryAction {
-  background: #be1717;
-  color: #fff;
+  background: var(--card-accent);
+  color: var(--card-accent-ink);
 }
 
 .primaryAction span {
   background: #fff;
-  color: #9c1010;
+  color: var(--card-accent-deep);
 }
 
 .secondaryAction,
@@ -208,7 +216,7 @@
 .mediaSection > h2::before {
   display: block;
   margin-bottom: 5px;
-  color: #ef6262;
+  color: var(--card-accent-text);
   content: "Happy customers";
   font-size: .7rem;
   font-weight: 850;
@@ -362,7 +370,7 @@
 
 .videoHeading p {
   margin: 0;
-  color: #ef6262;
+  color: var(--card-accent-text);
   font-size: .72rem;
   font-weight: 800;
   letter-spacing: .1em;
@@ -584,7 +592,7 @@
   aspect-ratio: 3 / 2;
   place-items: center;
   background:
-    linear-gradient(135deg, rgba(190, 23, 23, .18), transparent 60%),
+    linear-gradient(135deg, rgba(var(--card-accent-rgb), .18), transparent 60%),
     #202329;
   color: #8f939a;
   text-align: center;
@@ -638,7 +646,7 @@
 
 .vehicleLabel {
   margin: 0 0 5px;
-  color: #ef6262;
+  color: var(--card-accent-text);
   font-size: .78rem;
   font-weight: 800;
   letter-spacing: .1em;
@@ -697,8 +705,9 @@
 }
 
 .vehicleActions a:last-child {
-  border-color: #be1717;
-  background: #be1717;
+  border-color: var(--card-accent);
+  background: var(--card-accent);
+  color: var(--card-accent-ink);
 }
 
 .priceNote {
@@ -731,7 +740,7 @@
 
 .catchphrases {
   margin-top: 24px;
-  border-left: 3px solid #be1717;
+  border-left: 3px solid var(--card-accent);
   padding: 2px 0 2px 15px;
 }
 
@@ -771,7 +780,7 @@
 
 .contactAccordion summary::after {
   content: "+";
-  color: #ef6262;
+  color: var(--card-accent-text);
   font-family: var(--font-plex-mono), monospace;
   font-size: 1.2rem;
 }
@@ -902,10 +911,10 @@
 }
 
 .vehicleHighlights li {
-  border: 1px solid rgba(239, 98, 98, .45);
+  border: 1px solid rgba(var(--card-accent-text-rgb), .45);
   border-radius: 999px;
-  background: rgba(190, 23, 23, .12);
-  color: #f3c5c5;
+  background: rgba(var(--card-accent-rgb), .12);
+  color: var(--card-accent-soft-text);
   padding: 6px 9px;
   font-size: .72rem;
   font-weight: 750;
@@ -1061,7 +1070,8 @@
 
 .vehicleDockContact a {
   min-height: 52px;
-  background: #be1717;
+  background: var(--card-accent);
+  color: var(--card-accent-ink);
   font-size: .95rem;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -1083,12 +1093,53 @@
   min-height: 54px;
   align-items: center;
   justify-content: center;
-  border: 1px solid #be1717;
+  border: 1px solid var(--card-accent);
   border-radius: 17px;
-  background: #be1717;
-  color: #fff;
+  background: var(--card-accent);
+  color: var(--card-accent-ink);
   padding: 12px 18px;
   font-weight: 900;
   text-align: center;
   text-decoration: none;
 }
+
+/* Walker Kia consultant cards: white, black and silver (cards only — the app keeps its own look). */
+.themeKia {
+  --card-accent: #0d0e10;
+  --card-accent-ink: #fff;
+  --card-accent-text: #5b6068;
+  --card-accent-deep: #0d0e10;
+  --card-accent-soft-text: #1b1d21;
+  --card-accent-rgb: 195, 199, 205;
+  --card-accent-text-rgb: 150, 155, 162;
+  background: radial-gradient(circle at 12% 0%, rgba(195, 199, 205, .55), transparent 32rem), #f3f4f6;
+  color: #0d0e10;
+}
+.themeKia .hero { border-color: #d9dce0; background: linear-gradient(155deg, #fff, #f4f5f7 68%); box-shadow: 0 24px 60px rgba(13, 14, 16, .10); }
+.themeKia .brandRow { color: #3a3d43; }
+.themeKia .brand, .themeKia .mediaSection > h2, .themeKia .mediaRail strong, .themeKia .vehiclePrice, .themeKia .catchphrases .primaryPhrase { color: #0d0e10; }
+.themeKia .language { border-color: #c9ccd1; }
+.themeKia .photoFrame { border-color: #0d0e10; background: #e9ebee; }
+.themeKia .photoFrame > div { background: #e9ebee !important; }
+.themeKia .location, .themeKia .catchphrases p { color: #4a4f57; }
+.themeKia .catchphrases { border-left-color: #c3c7cd; }
+.themeKia .secondaryAction, .themeKia .disabledAction { border-color: #d4d7dc !important; background: #f1f2f4; color: #1b1d21; }
+.themeKia .contactAccordion { border-color: #d9dce0; background: #fafafb; }
+.themeKia .contactAccordion .actions { border-top-color: #e3e5e8; }
+.themeKia .emptyState, .themeKia .mediaRail article, .themeKia .videoCard, .themeKia .vehicleCard, .themeKia .vehicleDock { border-color: #dcdfe3; background: #fff; box-shadow: 0 10px 26px rgba(13, 14, 16, .06); }
+.themeKia .mediaSection, .themeKia .videoSection { border-color: #dcdfe3; background: linear-gradient(155deg, #fff, #f6f7f8 72%); }
+.themeKia .vehicleDetails, .themeKia .vehicleFacts div { border-color: #e1e3e6; background: #f6f7f8; }
+.themeKia .vehicleMedia { background: #e9ebee; color: #5f646c; }
+.themeKia .emptyState p, .themeKia .mediaRail p, .themeKia .videoHeading > span, .themeKia .videoCardBody p, .themeKia .vehicleFacts dt, .themeKia .priceNote, .themeKia .sectionHeading > span, .themeKia .vehicleDescription, .themeKia .vehicleImportState p { color: #5f646c; }
+.themeKia .mediaCopyButton, .themeKia .profileShareButton, .themeKia .videoActions a, .themeKia .videoActions button { border-color: #d4d7dc; background: #f1f2f4; color: #0d0e10; }
+.themeKia .vehicleActions a { border-color: #c9ccd1; color: #0d0e10; }
+.themeKia .vehicleActions a:last-child { color: #fff; }
+.themeKia .vehicleHighlights li { border-color: #c9ccd1; background: #f1f2f4; color: #1b1d21; }
+.themeKia .listingFallback { border-top-color: #e3e5e8; color: #0d0e10; }
+.themeKia .vehicleDockTop { border-bottom-color: #e3e5e8; }
+.themeKia .vehicleDock a, .themeKia .vehicleDock button { color: #0d0e10; }
+.themeKia .vehicleDock a + a, .themeKia .vehicleDock a + button { border-left-color: #e3e5e8; }
+.themeKia .vehicleDockContact a { color: #fff; }
+.themeKia .vehicleDockContact a + a { border-left-color: rgba(255, 255, 255, .22); }
+.themeKia .videoRail { border-top-color: #e3e5e8; }
+.themeKia .footer { border-top-color: #e3e5e8; color: #6b7078; }
