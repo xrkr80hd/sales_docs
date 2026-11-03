@@ -8,7 +8,7 @@ import { cachedResource, loadResource, primeResource } from "@/lib/client-resour
 import { requestJson, withDeadline } from "@/lib/request-json";
 import { publishSalesTargets } from "@/lib/sales-target-reminder";
 import { blank, chicagoDay, countKeys, countNames, normalize, pace, type Counts, type DayLog, type State } from "@/lib/sales-commander-model";
-import { closingTime, dateKey, formatClock, parseDay, planFor, startOfWeek } from "@/lib/routine-schedule";
+import { closingTime, dateKey, formatClock, parseDay, planFor, routineParts, startOfWeek } from "@/lib/routine-schedule";
 import styles from "./consultant-home.module.css";
 
 /* The daily checklist from the consultant Daily Planner sheet. */
@@ -236,30 +236,45 @@ export function ConsultantHome() {
 
     {plan.kind === "off" && <section className={styles.card}><h2>Day off</h2><p className={styles.muted}>Rest up.{nextShift ? ` Next shift: ${dayLabel(nextShift)}.` : ""} Anything you log today still counts toward the month.</p></section>}
 
-    <section aria-labelledby="numbers-title">
-      <div className={styles.sectionHead}><h2 id="numbers-title">Today&apos;s numbers</h2><span className={styles.muted}>actual / target</span></div>
+    {/* Today's numbers: closed shows them at a glance; open to adjust. */}
+    <details className={`${styles.card} ${styles.fold}`} aria-labelledby="numbers-title">
+      <summary className={styles.foldHead}>
+        <span className={styles.foldTitle}><h2 id="numbers-title">Today&apos;s numbers</h2><span className={styles.muted}>actual / target</span><span className={styles.chevron} aria-hidden="true">⌄</span></span>
+        <span className={styles.glance}>
+          {countKeys.map(k => <span key={k} className={styles.glanceItem}><span>{shortNames[k]}</span><strong>{counts[k]}<small> / {p.targets[k] || "—"}</small></strong></span>)}
+        </span>
+        <span className={styles.foldHint}>Tap to log calls, appointments and sales</span>
+      </summary>
       <div className={styles.counters}>
         {countKeys.map(k => <div key={k} className={styles.counter}>
-          <span className={styles.counterName}>{countNames[k]}</span>
+          <span className={styles.counterName}>{shortNames[k]}</span>
           <span className={styles.counterValue}><strong>{counts[k]}</strong> <small>/ {p.targets[k] || "—"}</small></span>
-          <span className={styles.catchUp} style={{ visibility: p.catchUp[k] ? "visible" : "hidden" }}>catch-up target</span>
+          {p.catchUp[k] && <span className={styles.catchUp}>catch-up target</span>}
           <span className={styles.counterButtons}>
             <button type="button" aria-label={`Remove one from ${countNames[k]}`} onClick={() => bump(k, -1)} disabled={counts[k] === 0}>−</button>
             <button type="button" aria-label={`Add one to ${countNames[k]}`} onClick={() => bump(k, 1)}>+</button>
           </span>
         </div>)}
       </div>
-    </section>
+    </details>
 
-    {plan.kind !== "off" && <section className={styles.card} aria-labelledby="routine-title">
-      <div className={styles.sectionHead}><h2 id="routine-title">Today&apos;s routine</h2><span className={styles.muted}>{doneBlocks}/{items.length} done</span></div>
-      {items.length === 0 ? <p className={styles.muted}>No routine saved for today. <Link href="/sale-commander">Build one in Sales Commander</Link>.</p> : <ul className={styles.checklist}>
-        {items.map((item, i) => <li key={item.id + i} className={i === currentIndex ? styles.now : undefined}>
-          <label><input type="checkbox" checked={todayLog.checks.includes("r:" + item.id)} onChange={() => toggle("r:" + item.id)} /><span className={styles.time}>{formatTime(item.time)}</span><span>{item.name}{i === currentIndex && <em className={styles.nowTag}> · now</em>}</span></label>
-        </li>)}
+    {/* Today's routine: closed shows what's due now; each block opens to its full description. */}
+    {plan.kind !== "off" && <details className={`${styles.card} ${styles.fold}`} aria-labelledby="routine-title">
+      <summary className={styles.foldHead}>
+        <span className={styles.foldTitle}><h2 id="routine-title">Today&apos;s routine</h2><span className={styles.muted}>{doneBlocks}/{items.length} done</span><span className={styles.chevron} aria-hidden="true">⌄</span></span>
+        {items.length > 0 && (() => { const nowItem = items[Math.max(0, currentIndex)]; return <span className={styles.nowLine}><em>{currentIndex >= 0 ? "Now" : "First up"}</em><span className={styles.time}>{formatTime(nowItem.time)}</span><span>{routineParts(nowItem).title}</span></span>; })()}
+      </summary>
+      {items.length === 0 ? <p className={styles.muted}>No routine saved for today. <Link href="/sale-commander">Build one in Sales Commander</Link>.</p> : <ul className={styles.tasks}>
+        {items.map((item, i) => { const parts = routineParts(item); const checked = todayLog.checks.includes("r:" + item.id); return <li key={item.id + i} className={i === currentIndex ? styles.now : undefined}>
+          <input type="checkbox" aria-label={`Done: ${parts.title}`} checked={checked} onChange={() => toggle("r:" + item.id)} />
+          <details className={styles.task}>
+            <summary><span className={styles.time}>{formatTime(item.time)}</span><span className={checked ? styles.done : undefined}>{parts.title}{i === currentIndex && <em className={styles.nowTag}> · now</em>}</span>{parts.detail && <span className={styles.chevron} aria-hidden="true">⌄</span>}</summary>
+            {parts.detail && <p>{parts.detail}</p>}
+          </details>
+        </li>; })}
       </ul>}
-      <p className={styles.small}><Link href="/sale-commander">Edit times or swap a shift</Link></p>
-    </section>}
+      <p className={styles.small}><Link href="/sale-commander">Edit blocks, titles and times</Link></p>
+    </details>}
 
     <section className={styles.card} aria-labelledby="disciplines-title">
       <div className={styles.sectionHead}><h2 id="disciplines-title">Daily disciplines</h2><span className={styles.muted}>{doneDisciplines}/{disciplines.length}</span></div>

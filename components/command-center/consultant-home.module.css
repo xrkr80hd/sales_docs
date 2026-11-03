@@ -94,3 +94,40 @@
   .week { font-size: 0.82rem; }
   .week th, .week td { padding: 7px 4px; }
 }
+
+/* Accordions (Today's numbers, Today's routine). */
+.fold > summary { list-style: none; cursor: pointer; display: grid; gap: 10px; }
+.fold > summary::-webkit-details-marker { display: none; }
+.foldTitle { display: flex; align-items: baseline; gap: 10px; }
+.foldTitle h2 { margin: 0; font-size: 1rem; font-weight: 850; }
+.foldTitle .muted { margin-left: auto; font-size: 0.8rem; }
+.chevron { color: var(--house-muted); font-size: 1.1rem; line-height: 1; transition: transform 0.2s; }
+.fold[open] > summary .foldTitle .chevron { transform: rotate(180deg); }
+.fold[open] > summary .glance, .fold[open] > summary .foldHint { display: none; }
+.fold[open] > summary { margin-bottom: 12px; }
+.glance { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.glanceItem { display: grid; gap: 2px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--field); min-width: 0; }
+.glanceItem > span { color: var(--house-label); font-size: 0.7rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.glanceItem strong { font-size: 1.25rem; font-weight: 900; line-height: 1.1; }
+.glanceItem small { color: var(--house-muted); font-size: 0.75rem; font-weight: 700; }
+.foldHint { color: var(--house-muted); font-size: 0.78rem; }
+.nowLine { display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 0.92rem; font-weight: 700; }
+.nowLine em { font-style: normal; color: var(--house-red); font-size: 0.7rem; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; }
+.nowLine > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.tasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.tasks li { display: flex; align-items: flex-start; gap: 10px; padding: 4px 6px; border-radius: var(--house-panel-radius); }
+.tasks input[type="checkbox"] { width: 20px; height: 20px; margin: 12px 0 0; flex: none; accent-color: var(--house-red); }
+.task { flex: 1; min-width: 0; }
+.task > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 10px; min-height: 44px; padding: 10px 0; font-size: 0.95rem; line-height: 1.35; }
+.task > summary::-webkit-details-marker { display: none; }
+.task > summary > span:nth-child(2) { flex: 1; min-width: 0; }
+.task[open] > summary .chevron { transform: rotate(180deg); }
+.task > p { margin: 0 0 10px 74px; color: #c9cfd4; font-size: 0.88rem; line-height: 1.5; }
+
+/* Counters: a compact two-column grid everywhere, three across on wide screens. */
+.counters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 760px) { .counters { grid-template-columns: repeat(3, minmax(0, 1fr)); } .glance { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+.counter { padding: 10px 12px; gap: 4px; box-shadow: none; background: var(--field); }
+.counterValue strong { font-size: 1.5rem; }
+.counterButtons button { min-height: 40px; font-size: 1.2rem; }
+@media (max-width: 420px) { .task > p { margin-left: 0; } .counterValue strong { font-size: 1.35rem; } }
