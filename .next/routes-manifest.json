@@ -357,6 +357,12 @@
       "namedRegex": "^/api/me/settings(?:/)?$"
     },
     {
+      "page": "/api/me/why",
+      "regex": "^/api/me/why(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/me/why(?:/)?$"
+    },
+    {
       "page": "/api/messenger",
       "regex": "^/api/messenger(?:/)?$",
       "routeKeys": {},
@@ -529,6 +535,12 @@
       "regex": "^/favicon\\.ico(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/favicon\\.ico(?:/)?$"
+    },
+    {
+      "page": "/home",
+      "regex": "^/home(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/home(?:/)?$"
     },
     {
       "page": "/llms.txt",

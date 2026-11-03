@@ -10,6 +10,7 @@ import { fetchServerSettings, loadConsultant, loadDealer, saveConsultant, saveDe
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { useWorkspaceIdentity } from "@/components/command-center/workspace-context";
 import { ROLE_LABELS, type WorkspaceRole } from "@/lib/workspace-roles";
+import { WhySection } from "./why-section";
 import styles from "./consultant-setup.module.css";
 
 export function ConsultantSetupScreen() {
@@ -78,6 +79,7 @@ export function ConsultantSetupScreen() {
         </section>
         {status && <p className={styles.status} role="status">{status}</p>}{error && <p className={styles.error} role="alert">{error}</p>}
         <Link prefetch={false} href="/business-card" className={styles.adminLink}>Edit public business card separately</Link>
+        <WhySection />
         <form onSubmit={event => { event.preventDefault(); void save(); }}>
           <fieldset disabled={saving || loading}>
             <details className={styles.section} open><summary><div><h3>Consultant information</h3><p>Your contact details for documents and tools</p></div><ChevronDown size={18} /></summary><div className={styles.fields}>

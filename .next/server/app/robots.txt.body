@@ -5,6 +5,7 @@ Disallow: /api
 Disallow: /auth
 Disallow: /business-card
 Disallow: /dashboard
+Disallow: /home
 Disallow: /deal-sheet
 Disallow: /deals
 Disallow: /documents

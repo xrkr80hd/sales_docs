@@ -9,7 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap, CircleHelp, Bell, FolderOpen } from "lucide-react";
+import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap, CircleHelp, Bell, FolderOpen, House, CalendarCheck } from "lucide-react";
 import { NotificationCenter, useUnreadAnnouncements } from "./notification-center";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { useWorkspaceIdentity } from "./workspace-context";
@@ -63,7 +63,7 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
   const viewKey = `nextdocs.workspace-view.v1:${identity?.id || ""}`;
   const storedView = useSyncExternalStore(subscribeView, () => readView(viewKey), () => "user");
   const routeRole = pathname.startsWith("/role-views/") ? pathname.split("/")[2] : null;
-  const consultantPage = ["/dashboard", "/sale-commander", "/consultant-setup", "/deal-commander", "/deals", "/business-card", "/vehicle-collage", "/training"].includes(pathname) || pathname.startsWith("/consultant-links") || pathname.startsWith("/sale-commander/") || pathname === "/team-board" || pathname.startsWith("/deal-sheet");
+  const consultantPage = ["/home", "/dashboard", "/sale-commander", "/consultant-setup", "/deal-commander", "/deals", "/business-card", "/vehicle-collage", "/training"].includes(pathname) || pathname.startsWith("/consultant-links") || pathname.startsWith("/sale-commander/") || pathname === "/team-board" || pathname.startsWith("/deal-sheet");
   const activeView = routeRole && validWorkspaceRole(routeRole) ? routeRole
     : pathname.startsWith("/admin") ? "admin"
     : pathname.startsWith("/manager-board") ? (["sales_manager", "floor_manager", "district_manager", "bdm"].includes(storedView) ? storedView : "sales_manager")
@@ -86,7 +86,7 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
     if (accountMenu.current) accountMenu.current.open = false;
     if (!availableViews.includes(role)||!await requestWorkspaceExit()) return;
     writeView(viewKey, role);
-    router.push(role === "user" ? "/dashboard" : role === "admin" ? "/admin" : `/role-views/${role}`);
+    router.push(role === "user" ? "/home" : role === "admin" ? "/admin" : `/role-views/${role}`);
     setNavigationOpen(false);
   }
   const readOnlyBoard = activeView === "bdm";
@@ -96,7 +96,7 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
   return <div className={`nxt-ui ${styles.shell}`}>
     <header className={styles.header}>
       <div className={styles.brands}>
-        <Link prefetch={false} href="/dashboard" className={styles.wordmark} aria-label="NXTDOX home"><SoftwareLogo /></Link>
+        <Link prefetch={false} href="/home" className={styles.wordmark} aria-label="NXTDOX home"><SoftwareLogo /></Link>
         <Image src="/branding/walker-automotive.png" alt="Walker Automotive" width={320} height={116} className={styles.dealerLogo} priority />
       </div>
       {consultantView && <SalesTargetReminder />}
@@ -118,8 +118,9 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
           <button className={styles.closeButton} onClick={close} aria-label="Close navigation"><X /></button>
           <nav>
             {consultantView && <>
+            <Link prefetch={false} href="/home" onClick={close} className={`${styles.navLink} ${pathname === "/home" ? styles.active : ""}`}><House />Home</Link>
             <div role="group" aria-label="Sales Commander">
-              <Link prefetch={false} href="/dashboard" onClick={close} className={`${styles.navLink} ${pathname === "/dashboard" || pathname === "/role-views/user" ? styles.active : ""}`}><Home />Today</Link>
+              <Link prefetch={false} href="/dashboard" onClick={close} className={`${styles.navLink} ${pathname === "/dashboard" || pathname === "/role-views/user" ? styles.active : ""}`}><CalendarCheck />Today</Link>
               <div className={styles.subnav}>
                 <Link prefetch={false} data-consultant-tour="setup" href="/consultant-setup" onClick={close} aria-current={pathname === "/consultant-setup" ? "page" : undefined}>Consultant Set Up</Link>
                 <ConsultantLinksNav onNavigate={close}/>
