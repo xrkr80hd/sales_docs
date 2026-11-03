@@ -180,11 +180,12 @@ html, body { background: var(--background); }
  .organization-theme .nxt-ui { color-scheme:dark; }
  .organization-theme .nxt-ui [class*="__shell"], .organization-theme .nxt-ui [class*="__main"] { color:var(--foreground); }
  .organization-theme .nxt-ui :is([class*="__header"],[class*="__sidebar"],[class*="__panel"],[class*="__drawer"],[class*="__member"],[class*="__storeCard"],[class*="__accountMenu"]) { background:var(--panel); color:var(--foreground); border-color:var(--border); }
- .organization-theme .nxt-ui :is([class*="__table"],[class*="__stat"],[class*="__kpi"],[class*="__total"],[class*="__tool"],[class*="__vehicleButton"],[class*="__navLink"],[class*="__navButton"]) { color:var(--foreground); border-color:var(--border); }
+ .organization-theme .nxt-ui :is([class*="__table"],[class$="__stat"],[class*="__stat "],[class*="__kpi"],[class*="__total"],[class*="__tool"],[class*="__vehicleButton"],[class*="__navLink"],[class*="__navButton"]) { color:var(--foreground); border-color:var(--border); }
  .organization-theme .nxt-ui :is([class*="__table"] td,[class*="__table"] th,[class*="__identity"] strong,[class*="__wordmark"],[class*="__sidebar"] summary) { color:var(--foreground); }
- .organization-theme .nxt-ui :is([class*="__muted"],[class*="__eyebrow"],[class*="__subtitle"],[class*="__identity"] small,[class*="__stat"] span,[class*="__kpi"] span,[class*="__total"] span,[class*="__subnav"] a) { color:var(--muted); }
+ .organization-theme .nxt-ui :is([class*="__muted"],[class*="__eyebrow"],[class*="__subtitle"],[class*="__identity"] small,:is([class$="__stat"],[class*="__stat "]) span,[class*="__kpi"] span,[class*="__total"] span,[class*="__subnav"] a) { color:var(--muted); }
  .organization-theme .nxt-ui :is([class*="__rowInput"],[class*="__goalInput"],[class*="__boardText"],[class*="__projectionForm"] input,[class*="__fields"] input,[class*="__editGrid"] select,[class*="__filters"] input,[class*="__filters"] select) { color:var(--foreground); background:var(--field); border-color:var(--border); }
- .organization-theme .nxt-ui :is([class*="__primary"],[class*="__save"],[class*="__confirmButton"]) { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+ /* Buttons and button-links only: a bare [class*="__save"] also painted wrappers like saveRow / saveLine. */
+ .organization-theme .nxt-ui :is(button,a):is([class*="__primary"],[class*="__save"],[class*="__confirmButton"]) { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
  .organization-theme .nxt-ui [class*="__vehicleButton"]:first-child { background:var(--accent); color:var(--on-accent); }
  .organization-theme .nxt-ui [class*="__active"] { background:var(--accent-soft); border-left-color:var(--accent); }
  .organization-theme .nxt-ui [class*="__storeCard"] { border-top:3px solid var(--accent); }
