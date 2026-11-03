@@ -60,12 +60,51 @@ export async function PATCH(
     updates.card_enabled = body.card_enabled;
   }
 
-  if (Object.keys(updates).length === 0) {
+  const publishChange = typeof body?.card_published === "boolean" ? body.card_published as boolean : null;
+  let slugChange: string | null = null;
+  if (typeof body?.card_slug === "string") {
+    slugChange = body.card_slug.trim().toLowerCase().replace(/^.*\/card\//, "").replace(/[^a-z0-9-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    if (slugChange.length < 2 || slugChange.length > 80) return Response.json({ error: "Card link must be 2–80 letters, numbers or dashes." }, { status: 400 });
+  }
+
+  if (Object.keys(updates).length === 0 && publishChange === null && slugChange === null) {
     return Response.json({ error: "Nothing to update." }, { status: 400 });
   }
 
   try {
     const supabase = getSupabaseServiceClient();
+
+    // Admin control: repair or assign this person's card link (e.g. to match an NFC band already written).
+    if (slugChange !== null) {
+      const { data: owned, error: ownedError } = await supabase.from("consultant_cards").select("id").eq("user_id", id).maybeSingle();
+      if (ownedError) return Response.json({ error: ownedError.message }, { status: 500 });
+      if (!owned) return Response.json({ error: "This person has no card yet. Turn on Consultant card and save first." }, { status: 400 });
+      const { data: taken } = await supabase.from("consultant_cards").select("user_id").eq("slug", slugChange).maybeSingle();
+      if (taken && taken.user_id !== id) return Response.json({ error: `The link /card/${slugChange} already belongs to someone else.` }, { status: 409 });
+      const { error: slugError } = await supabase.from("consultant_cards").update({ slug: slugChange, updated_at: new Date().toISOString() }).eq("id", owned.id).eq("user_id", id);
+      if (slugError) return Response.json({ error: slugError.message }, { status: 500 });
+      if (Object.keys(updates).length === 0 && publishChange === null) return Response.json({ ok: true, card: { slug: slugChange } });
+    }
+
+    // Admin control: publish or take down this person's card (only their own row, by user_id).
+    if (publishChange !== null) {
+      const { data: target, error: targetError } = await supabase
+        .from("consultant_cards")
+        .select("id, slug, published_at")
+        .eq("user_id", id)
+        .maybeSingle();
+      if (targetError) return Response.json({ error: targetError.message }, { status: 500 });
+      if (!target) return Response.json({ error: "This person has no card yet. Turn on Consultant card and save first." }, { status: 400 });
+      const now = new Date().toISOString();
+      const { error: publishError } = await supabase
+        .from("consultant_cards")
+        .update({ is_published: publishChange, published_at: publishChange ? (target.published_at || now) : null, updated_at: now })
+        .eq("id", target.id)
+        .eq("user_id", id);
+      if (publishError) return Response.json({ error: publishError.message }, { status: 500 });
+      if (publishChange) await supabase.from("profiles").update({ card_enabled: true }).eq("id", id);
+      if (Object.keys(updates).length === 0) return Response.json({ ok: true, card: { slug: slugChange ?? target.slug, is_published: publishChange } });
+    }
 
     const { error } = await supabase
       .from("profiles")

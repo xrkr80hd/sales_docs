@@ -113,3 +113,10 @@
 .teamFoldSummary > svg:last-child { transition: transform .2s; }
 .teamFold[open] > .teamFoldSummary > svg:last-child { transform: rotate(180deg); }
 .teamFold[open] > .teamFoldSummary { border-bottom: 1px solid var(--border); }
+
+/* Admin card controls: publish switch + card link repair. */
+.cardControls { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--house-radius, 10px); background: var(--field); }
+.slugRow { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.slugRow > span { color: var(--house-muted, #9aa); font-size: 0.85rem; }
+.slugRow input { flex: 1; min-width: 0; }
+.slugRow button { flex: none; }
