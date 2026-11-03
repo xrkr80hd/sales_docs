@@ -141,3 +141,37 @@ async function loadPublishedConsultantProfile(slug: string): Promise<ConsultantP
     return null;
   }
 }
+
+/**
+ * For a card link that isn't live yet: the consultant's first name and dealership, so the
+ * "coming soon" page can be personal. Only a first name and dealership are shown — nothing
+ * else from an unpublished card leaves the server.
+ */
+export const getUnpublishedCardOwner = cache(async (slug: string): Promise<{ firstName: string; dealership: string } | null> => {
+  if (!slug || slug.length > 191) return null;
+  try {
+    const db = getSupabaseServiceClient();
+    const { data: card } = await db.from("consultant_cards").select("user_id,display_name,dealership").eq("slug", slug).maybeSingle();
+    let userId = card?.user_id as string | undefined;
+    let name = String(card?.display_name || "").trim();
+    let dealership = String(card?.dealership || "").trim();
+    if (!card) {
+      const { data } = await db.from("user_settings").select("user_id,consultant_info").eq("consultant_info->business_card->>slug", slug);
+      const row = data?.[0];
+      if (!row) return null;
+      userId = row.user_id;
+      const info = (row.consultant_info as Record<string, unknown> | null) || {};
+      name = String((info.business_card as Record<string, unknown> | undefined)?.displayName || info.name || "").trim();
+    }
+    if (userId) {
+      const [profile, membership] = await Promise.all([
+        name ? null : db.from("profiles").select("display_name").eq("id", userId).maybeSingle().then(r => r.data),
+        readMembership(db, userId).catch(() => null),
+      ]);
+      if (!name) name = String(profile?.display_name || "").trim();
+      const org = ((membership?.organizations as { name?: string } | null | undefined) || null)?.name;
+      if (org) dealership = org;
+    }
+    return { firstName: name.split(/\s+/)[0] || "", dealership: dealership || "Walker Automotive" };
+  } catch { return null; }
+});

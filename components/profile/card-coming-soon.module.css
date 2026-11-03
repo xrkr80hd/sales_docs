@@ -1,0 +1,8 @@
+.page { min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 18px; padding: 24px 16px; background: radial-gradient(120% 80% at 50% 0%, rgba(190, 23, 23, 0.28), transparent 60%), #090f12; color: #f7f7f7; text-align: center; }
+.card { width: min(100%, 460px); padding: 36px 28px 30px; border: 1px solid #303c44; border-radius: 14px; background: #131b1f; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); display: grid; justify-items: center; gap: 10px; }
+.avatar { width: 76px; height: 76px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, #851014, #be1717); color: #fff; font-size: 2rem; font-weight: 900; box-shadow: 0 0 0 4px rgba(190, 23, 23, 0.18); margin-bottom: 6px; }
+.kicker { margin: 0; color: #ff8a8a; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.22em; }
+.card h1 { margin: 0; font-size: clamp(1.4rem, 5vw, 1.85rem); font-weight: 900; letter-spacing: -0.02em; line-height: 1.2; text-wrap: balance; }
+.lead { margin: 4px 0 0; color: #c9cfd4; font-size: 1rem; line-height: 1.55; }
+.small { margin: 6px 0 0; color: #9aa0a6; font-size: 0.85rem; line-height: 1.5; }
+.footer { margin: 0; color: #6f7a82; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; }
