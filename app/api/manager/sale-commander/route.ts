@@ -1,5 +1,6 @@
 import {getSupabaseServiceClient} from "@/lib/supabase-server";
 import {organizationBranding,organizationSettings} from "@/lib/organization-branding";
+import {sellingMembers} from "@/lib/board-roster";
 type CommanderData={goal?:number;rates?:Record<string,number>;days?:Record<string,Record<string,number>>};
 function dateInChicago(){return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Chicago",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());}
 export async function GET(request:Request){
@@ -35,8 +36,8 @@ export async function GET(request:Request){
  else if(!district)query=query.eq("organization_id",organizationId);
  const {data:members,error:membersErr}=await query;
  if(membersErr)throw membersErr;
- // Consultants, plus an admin who belongs to the dealership (they sell there too).
- const roster=(members||[]).filter(m=>{const role=(m.profiles as unknown as {role?:string})?.role;return role==="user"||role==="admin";});
+ // Everyone who sells at the dealership: consultants, floor managers and admins who belong there.
+ const roster=await sellingMembers(members);
  const ids=roster.map(r=>r.user_id);
  const {data:settings,error:settingsErr}=ids.length?await db.from("user_settings").select("user_id,commander:consultant_info->saleCommander,updated_at").in("user_id",ids):{data:[],error:null};
  if(settingsErr)throw settingsErr;
