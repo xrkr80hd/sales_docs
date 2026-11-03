@@ -1,0 +1,29 @@
+.page { max-width: 980px; margin: 0 auto; padding: 16px 14px 90px; display: grid; gap: 18px; }
+.page > * { min-width: 0; }
+.kicker { margin: 0; color: var(--house-red); font-weight: 800; font-size: 0.78rem; letter-spacing: 0.2em; }
+.muted { color: var(--house-muted); font-size: 0.9rem; margin: 4px 0 0; }
+.card { padding: 18px; display: grid; gap: 14px; }
+.card h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1rem; font-weight: 850; }
+.card label { display: grid; gap: 6px; font-size: 0.78rem; }
+.card input, .card textarea, .card select { width: 100%; }
+.card textarea { resize: vertical; line-height: 1.45; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.error { margin: 0; padding: 10px 12px; border-left: 3px solid var(--house-red); background: var(--house-red-soft); color: #ffb6bf; font-size: 0.88rem; }
+.success { margin: 0; padding: 10px 12px; border-left: 3px solid #40c985; background: #143820; color: #98ecc0; font-size: 0.88rem; }
+.sectionTitle { margin: 0 2px 10px; font-size: 0.82rem; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; color: var(--house-label); }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.list li { padding: 14px 18px; display: grid; gap: 6px; }
+.ticketHead { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.ticketHead strong { font-size: 1rem; }
+.meta { margin: 0; color: var(--house-muted); font-size: 0.8rem; }
+.details { margin: 0; white-space: pre-wrap; line-height: 1.45; font-size: 0.92rem; }
+.reply { margin: 4px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--panel-strong); font-size: 0.9rem; white-space: pre-wrap; }
+.status { flex: none; padding: 3px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 800; border: 1px solid var(--border); }
+.open { background: var(--house-red-soft); color: #ff9a9a; border-color: #7a2c35; }
+.in_progress { background: #3a2c10; color: #f9c06e; border-color: #6b5320; }
+.resolved { background: #143820; color: #82d9a0; border-color: #23624a; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.filters button[aria-pressed="true"] { border-color: var(--house-red); background: var(--house-red-soft); }
+.adminRow { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 10px; align-items: start; }
+.adminRow select, .adminRow textarea { width: 100%; }
+@media (max-width: 640px) { .adminRow { grid-template-columns: 1fr; } }

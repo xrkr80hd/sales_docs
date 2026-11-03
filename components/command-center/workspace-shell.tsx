@@ -9,7 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap, CircleHelp, Bell, FolderOpen, House } from "lucide-react";
+import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap, CircleHelp, Bell, FolderOpen, House, LifeBuoy } from "lucide-react";
 import { NotificationCenter, useUnreadAnnouncements } from "./notification-center";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { useWorkspaceIdentity } from "./workspace-context";
@@ -142,11 +142,13 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
             {activeView === "fni" && <Link prefetch={false} href="/role-views/fni" onClick={close} className={styles.navLink}><Home />F&amp;I</Link>}
             <Link prefetch={false} href="/notifications" onClick={close} className={`${styles.navLink} ${pathname === "/notifications" ? styles.active : ""}`}><Bell />Notifications{announcementUnread.length>0&&<span className={styles.navBadge} aria-label={`${announcementUnread.length} new`}>{announcementUnread.length}</span>}</Link>
             <Link prefetch={false} data-consultant-tour="messenger" href="/messenger" onClick={close} className={`${styles.navLink} ${pathname === "/messenger" ? styles.active : ""}`}><MessageCircle />Messenger</Link>
+            {/* Every role, every organization. */}
+            <Link prefetch={false} data-consultant-tour="ticket" href={`/support${pathname === "/support" ? "" : `?from=${encodeURIComponent(pathname)}`}`} onClick={close} className={`${styles.navLink} ${pathname === "/support" ? styles.active : ""}`}><LifeBuoy />Submit a Ticket</Link>
             {!consultantView&&!pathname.startsWith("/deal-sheet")&&<Link prefetch={false} href="/documents" onClick={close} className={`${styles.navLink} ${pathname === "/documents" ? styles.active : ""}`}><Files />Documents</Link>}
             {!consultantView&&pathname.startsWith("/deal-sheet") && <button onClick={() => { close(); onDocuments(); }} className={styles.navButton}><FilePlus2 />Deal Documents</button>}
             <>{consultantView&&<button type="button" className={styles.navButton} onClick={()=>{setTourNavigationWasOpen(navigationOpen);setNavigationOpen(true);setSidebarCollapsed(false);setTourOpen(true);}}><CircleHelp />Quick Tour</button>}</>
             <button onClick={() => { close(); session.signOut(); }} className={styles.navButton}><LogOut />Sign Out</button>
-            {admin && activeView === "admin" && <details open><summary><Shield />Administration</summary><div className={styles.subnav}><Link prefetch={false} href="/admin" onClick={close}>People &amp; Organizations</Link><Link prefetch={false} href="/admin/messenger" onClick={close}>Messenger Permissions</Link><Link prefetch={false} href="/admin/notifications" onClick={close} aria-current={pathname === "/admin/notifications" ? "page" : undefined}>Notification Center</Link></div></details>}
+            {admin && activeView === "admin" && <details open><summary><Shield />Administration</summary><div className={styles.subnav}><Link prefetch={false} href="/admin" onClick={close}>People &amp; Organizations</Link><Link prefetch={false} href="/admin/messenger" onClick={close}>Messenger Permissions</Link><Link prefetch={false} href="/admin/notifications" onClick={close} aria-current={pathname === "/admin/notifications" ? "page" : undefined}>Notification Center</Link><Link prefetch={false} href="/admin/tickets" onClick={close} aria-current={pathname === "/admin/tickets" ? "page" : undefined}>Tickets</Link></div></details>}
           </nav>
         </aside>
       </>}
