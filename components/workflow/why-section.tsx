@@ -60,10 +60,10 @@ export function WhySection() {
   }
 
   return <details className={styles.section} open>
-    <summary><div><h3>Your Why</h3><p>The reason you show up. It leads your Home page.</p></div><ChevronDown size={18} /></summary>
+    <summary><div><h3>Your Why</h3><p>Write it out or list it, one reason per line. Add photos too. Both show on your Home page.</p></div><ChevronDown size={18} /></summary>
     <div className={styles.fields}>
       <label>Your why
-        <textarea className={styles.whyText} value={why} maxLength={800} rows={4} disabled={busy} placeholder="My kids' college fund. A house with a yard. Taking my mom on the trip she's always wanted…" onChange={event => setWhy(event.target.value)} />
+        <textarea className={styles.whyText} value={why} maxLength={800} rows={5} disabled={busy} placeholder={"One reason per line, or write it out:\nMy kids' college fund\nA house with a yard\nTaking my mom on the trip she's always wanted"} onChange={event => setWhy(event.target.value)} />
       </label>
       <div className={styles.whyActions}>
         <button type="button" className={styles.whySave} disabled={busy || why === saved} onClick={() => void save()}>{busy ? "Saving…" : why === saved ? "Saved" : "Save my why"}</button>
