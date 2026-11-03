@@ -9,7 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap, CircleHelp, Bell } from "lucide-react";
+import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap, CircleHelp, Bell, FolderOpen } from "lucide-react";
 import { NotificationCenter, useUnreadAnnouncements } from "./notification-center";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { useWorkspaceIdentity } from "./workspace-context";
@@ -125,8 +125,11 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
                 <ConsultantLinksNav onNavigate={close}/>
               </div>
             </div>
-            <Link prefetch={false} data-consultant-tour="start-deal" href="/deal-commander" onClick={close} className={`${styles.navLink} ${pathname === "/deal-commander" ? styles.active : ""}`}><FilePlus2 />Start a Deal</Link>
-            <Link prefetch={false} data-consultant-tour="resume-deal" href="/deals" onClick={close} className={`${styles.navLink} ${pathname === "/deals" ? styles.active : ""}`}><Files />Resume Deal</Link>
+            <details open={pathname === "/deal-commander" || pathname === "/deals" || pathname === "/documents" || pathname.startsWith("/deal-sheet")}><summary data-consultant-tour="deal-folder"><FolderOpen />Deal Folder</summary><div className={styles.subnav}>
+              <Link prefetch={false} data-consultant-tour="start-deal" href="/deal-commander" onClick={close} aria-current={pathname === "/deal-commander" ? "page" : undefined}>Start a Deal</Link>
+              <Link prefetch={false} data-consultant-tour="resume-deal" href="/deals" onClick={close} aria-current={pathname === "/deals" ? "page" : undefined}>Resume Deal</Link>
+              {pathname.startsWith("/deal-sheet") ? <button type="button" onClick={() => { close(); onDocuments(); }} className={styles.navButton}>Deal Documents</button> : <Link prefetch={false} href="/documents" onClick={close} aria-current={pathname === "/documents" ? "page" : undefined}>Documents</Link>}
+            </div></details>
             <CustomerCopyPanel/>
             <details open={pathname === "/business-card" || pathname === "/vehicle-collage" || pathname === "/sale-commander/fun-facts"}><summary data-consultant-tour="tools"><Wrench />Consultant Tools</summary><div className={styles.subnav}>{[["Business Card", "/business-card"], ["Vehicle Collage", "/vehicle-collage"], ["Fun Facts · Sales Numbers", "/sale-commander/fun-facts"]].map(([label, href]) => <Link prefetch={false} key={href} href={href} onClick={close}>{label}</Link>)}</div></details>
             <Link prefetch={false} href="/training" onClick={close} className={`${styles.navLink} ${pathname === "/training" ? styles.active : ""}`}><GraduationCap />Training</Link>
@@ -136,8 +139,8 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
             {activeView === "fni" && <Link prefetch={false} href="/role-views/fni" onClick={close} className={styles.navLink}><Home />F&amp;I</Link>}
             <Link prefetch={false} href="/notifications" onClick={close} className={`${styles.navLink} ${pathname === "/notifications" ? styles.active : ""}`}><Bell />Notifications{announcementUnread.length>0&&<span className={styles.navBadge} aria-label={`${announcementUnread.length} new`}>{announcementUnread.length}</span>}</Link>
             <Link prefetch={false} data-consultant-tour="messenger" href="/messenger" onClick={close} className={`${styles.navLink} ${pathname === "/messenger" ? styles.active : ""}`}><MessageCircle />Messenger</Link>
-            {!pathname.startsWith("/deal-sheet")&&<Link prefetch={false} href="/documents" onClick={close} className={`${styles.navLink} ${pathname === "/documents" ? styles.active : ""}`}><Files />Documents</Link>}
-            {pathname.startsWith("/deal-sheet") && <button onClick={() => { close(); onDocuments(); }} className={styles.navButton}><FilePlus2 />Deal Documents</button>}
+            {!consultantView&&!pathname.startsWith("/deal-sheet")&&<Link prefetch={false} href="/documents" onClick={close} className={`${styles.navLink} ${pathname === "/documents" ? styles.active : ""}`}><Files />Documents</Link>}
+            {!consultantView&&pathname.startsWith("/deal-sheet") && <button onClick={() => { close(); onDocuments(); }} className={styles.navButton}><FilePlus2 />Deal Documents</button>}
             <>{consultantView&&<button type="button" className={styles.navButton} onClick={()=>{setTourNavigationWasOpen(navigationOpen);setNavigationOpen(true);setSidebarCollapsed(false);setTourOpen(true);}}><CircleHelp />Quick Tour</button>}</>
             <button onClick={() => { close(); session.signOut(); }} className={styles.navButton}><LogOut />Sign Out</button>
             {admin && activeView === "admin" && <details open><summary><Shield />Administration</summary><div className={styles.subnav}><Link prefetch={false} href="/admin" onClick={close}>People &amp; Organizations</Link><Link prefetch={false} href="/admin/messenger" onClick={close}>Messenger Permissions</Link></div></details>}
