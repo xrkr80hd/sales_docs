@@ -79,6 +79,16 @@
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .actions a { flex: 1 1 160px; }
 
+/* Phones: one tidy line for the day, a compact Save with its status beside it. */
+@media (max-width: 600px) {
+  .header { padding: 12px 14px 16px; }
+  .kicker { font-size: 0.68rem; letter-spacing: 1.2px; line-height: 1.5; }
+  .header h1 { font-size: 1.7rem; margin: 4px 0 0; }
+  .saveRow { flex-wrap: nowrap; gap: 10px; margin-top: 12px; }
+  .saveButton { flex: none; min-height: 40px; padding: 8px 20px; }
+  .saveLine { flex: 1; min-width: 0; font-size: 0.8rem; line-height: 1.3; }
+  .card { padding: 14px; }
+}
 @media (max-width: 420px) {
   .counterValue strong { font-size: 1.6rem; }
   .week { font-size: 0.82rem; }
