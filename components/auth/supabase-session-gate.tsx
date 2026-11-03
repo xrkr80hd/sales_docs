@@ -416,15 +416,16 @@ export function SupabaseSessionGate({
     );
   }
 
-  if (surface === "print") {
-    return <><PasswordRequirement key={session.user.id} session={session}>{children}</PasswordRequirement></>;
-  }
-
   const sessionCtx: SessionContextValue = {
     accessToken: session?.access_token,
     sessionLabel: getSessionLabel(session),
     signOut: handleSignOut,
   };
+
+  // Print pages share the session too: anything inside them (like the terms check) reads it.
+  if (surface === "print") {
+    return <SessionContext.Provider value={sessionCtx}><PasswordRequirement key={session.user.id} session={session}>{children}</PasswordRequirement></SessionContext.Provider>;
+  }
 
   return (
     <SessionContext.Provider value={sessionCtx}>
