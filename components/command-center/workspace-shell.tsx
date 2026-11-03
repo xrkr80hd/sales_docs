@@ -9,7 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap, CircleHelp, Bell, FolderOpen, House, CalendarCheck } from "lucide-react";
+import { Home, FilePlus2, Files, Wrench, MessageCircle, Table2, Menu, X, ChevronDown, Shield, LogOut, GraduationCap, CircleHelp, Bell, FolderOpen, House } from "lucide-react";
 import { NotificationCenter, useUnreadAnnouncements } from "./notification-center";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { useWorkspaceIdentity } from "./workspace-context";
@@ -118,14 +118,16 @@ export function WorkspaceShell({ children, onDocuments }: { children: ReactNode;
           <button className={styles.closeButton} onClick={close} aria-label="Close navigation"><X /></button>
           <nav>
             {consultantView && <>
-            <Link prefetch={false} href="/home" onClick={close} className={`${styles.navLink} ${pathname === "/home" ? styles.active : ""}`}><House />Home</Link>
-            <div role="group" aria-label="Sales Commander">
-              <Link prefetch={false} href="/dashboard" onClick={close} className={`${styles.navLink} ${pathname === "/dashboard" || pathname === "/role-views/user" ? styles.active : ""}`}><CalendarCheck />Today</Link>
+            {/* Home: the landing page, with the day's planner and account setup right under it. */}
+            <div role="group" aria-label="Home">
+              <Link prefetch={false} href="/home" onClick={close} className={`${styles.navLink} ${pathname === "/home" ? styles.active : ""}`}><House />Home</Link>
               <div className={styles.subnav}>
+                <Link prefetch={false} data-consultant-tour="planner" href="/dashboard" onClick={close} aria-current={pathname === "/dashboard" || pathname === "/role-views/user" ? "page" : undefined}>Daily Planner</Link>
                 <Link prefetch={false} data-consultant-tour="setup" href="/consultant-setup" onClick={close} aria-current={pathname === "/consultant-setup" ? "page" : undefined}>Consultant Set Up</Link>
-                <ConsultantLinksNav onNavigate={close}/>
               </div>
             </div>
+            {/* Command Center: its own tab. Sales Commander first, then the consultant's website shortcuts. */}
+            <ConsultantLinksNav onNavigate={close}/>
             <details open={pathname === "/deal-commander" || pathname === "/deals" || pathname === "/documents" || pathname.startsWith("/deal-sheet")}><summary data-consultant-tour="deal-folder"><FolderOpen />Deal Folder</summary><div className={styles.subnav}>
               <Link prefetch={false} data-consultant-tour="start-deal" href="/deal-commander" onClick={close} aria-current={pathname === "/deal-commander" ? "page" : undefined}>Start a Deal</Link>
               <Link prefetch={false} data-consultant-tour="resume-deal" href="/deals" onClick={close} aria-current={pathname === "/deals" ? "page" : undefined}>Resume Deal</Link>

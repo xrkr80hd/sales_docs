@@ -4,9 +4,10 @@ import {useEffect, useRef, useState} from "react";
 import styles from "./consultant-tour.module.css";
 
 const steps = [
+  {target:"planner", title:"Home · Daily Planner", text:"Home is your landing page: your why, your photos and your numbers. Daily Planner is where you log today's calls, checklist and to-dos."},
   {target:"setup", title:"Consultant Set Up", text:"Save your consultant details here so your paperwork can fill them in for you."},
   {target:"command-center", title:"Command Center", text:"Open your saved business websites here. Use Command Center Settings to add or change shortcuts."},
-  {target:"commander", fallback:"command-center", title:"Sales Commander", text:"Inside Command Center: set your goals, ratios and daily routine. Press Save, and your manager sees it."},
+  {target:"commander", fallback:"command-center", title:"Sales Commander", text:"The first button inside Command Center: set your goals, ratios, daily routine and seasonal hours. Press Save, and your manager sees it."},
   {target:"start-deal", fallback:"deal-folder", title:"Deal Folder · Start a Deal", text:"Open Deal Folder, choose Start a Deal, then pick New or Used and enter the customer and vehicle details once to fill your forms."},
   {target:"resume-deal", fallback:"deal-folder", title:"Deal Folder · Resume Deal & Documents", text:"Resume Deal finds a saved deal so you can continue where you left off. Documents holds your blank forms."},
   {target:"customer", title:"Customer Information", text:"Copy saved customer contact details into your dealership system without retyping them."},

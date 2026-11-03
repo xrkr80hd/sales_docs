@@ -86,3 +86,12 @@
 .containedDialog input {width:100%;padding:10px;background:var(--background);border:1px solid var(--border);}
 .containedDialog form > div {display:flex;justify-content:flex-end;gap:10px;margin-top:14px;}
 .containedDialog button {padding:8px 16px;border:1px solid var(--border);border-radius:4px;}
+
+/* Buttons inside Command Center (Sales Commander, Settings): real buttons, not underlined links. */
+.branchButton {display:flex;align-items:center;gap:10px;margin:6px 4px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel-strong);color:#f7f7f7;font-size:14px;font-weight:800;text-decoration:none;line-height:1.2;transition:border-color .15s,background-color .15s;}
+.branchButton span {display:grid;gap:2px;min-width:0;}
+.branchButton small {font-size:12px;font-weight:600;color:var(--muted);}
+.branchButton:hover {border-color:#be1717;background:#1d2730;}
+.branchButton[aria-current="page"] {border-color:#be1717;background:#2b1214;}
+.branchButton:focus-visible {outline:2px solid var(--foreground);outline-offset:2px;}
+.branchQuiet {background:transparent;font-weight:700;color:#d5d7dc;}

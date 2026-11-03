@@ -89,7 +89,7 @@ export function HomePage() {
         <div className={`nxt-panel ${styles.tile}`}><span>To finish at {state.goal}</span><strong>{p.mtd.sold >= state.goal ? "Bonus time" : p.perDayNeeded.toFixed(1)}</strong><small>{p.mtd.sold >= state.goal ? "Every sale from here is extra" : "sales a day"}</small></div>
       </div> : <p className={styles.muted} role="status">Loading your numbers…</p>}
       <nav className={styles.shortcuts} aria-label="Go to">
-        <Link prefetch={false} href="/dashboard" className={`nxt-panel ${styles.tile} ${styles.shortcut}`}><span>Today</span><strong>Log today&apos;s numbers</strong><small>Checklist, counters and to-dos →</small></Link>
+        <Link prefetch={false} href="/dashboard" className={`nxt-panel ${styles.tile} ${styles.shortcut}`}><span>Daily Planner</span><strong>Log today&apos;s numbers</strong><small>Checklist, counters and to-dos →</small></Link>
         <Link prefetch={false} href="/sale-commander" className={`nxt-panel ${styles.tile} ${styles.shortcut}`}><span>Sales Commander</span><strong>Goals &amp; routine</strong><small>Ratios, daily plan and seasonal hours →</small></Link>
       </nav>
     </section>
