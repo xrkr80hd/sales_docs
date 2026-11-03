@@ -63,8 +63,9 @@ export async function PATCH(
   const publishChange = typeof body?.card_published === "boolean" ? body.card_published as boolean : null;
   let slugChange: string | null = null;
   if (typeof body?.card_slug === "string") {
-    slugChange = body.card_slug.trim().toLowerCase().replace(/^.*\/card\//, "").replace(/[^a-z0-9-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
-    if (slugChange.length < 2 || slugChange.length > 80) return Response.json({ error: "Card link must be 2–80 letters, numbers or dashes." }, { status: 400 });
+    const cleaned: string = body.card_slug.trim().toLowerCase().replace(/^.*\/card\//, "").replace(/[^a-z0-9-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    slugChange = cleaned;
+    if (cleaned.length < 2 || cleaned.length > 80) return Response.json({ error: "Card link must be 2–80 letters, numbers or dashes." }, { status: 400 });
   }
 
   if (Object.keys(updates).length === 0 && publishChange === null && slugChange === null) {
