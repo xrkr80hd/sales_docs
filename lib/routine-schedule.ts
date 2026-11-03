@@ -1,5 +1,12 @@
 export type EarlyDays = "mon-wed" | "tue-thu";
-export type RoutineItem = { id: string; time: string; name: string; done?: boolean };
+/** name is the short title shown on the accordion; detail is what the block actually involves. */
+export type RoutineItem = { id: string; time: string; name: string; detail?: string; done?: boolean };
+/** Title + description for a block. Older blocks wrote both in one line ("Title: what it involves"). */
+export function routineParts(item: RoutineItem): { title: string; detail: string } {
+  if (item.detail !== undefined) return { title: item.name.trim(), detail: item.detail.trim() };
+  const at = item.name.indexOf(": ");
+  return at > 0 && at < 60 ? { title: item.name.slice(0, at).trim(), detail: item.name.slice(at + 2).trim() } : { title: item.name.trim(), detail: "" };
+}
 export type PlanKind = "short" | "long" | "friday" | "off";
 export type PlanDay = { kind: PlanKind; items: RoutineItem[] };
 
