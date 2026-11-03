@@ -76,7 +76,7 @@ export function WhySection() {
     finally { setBusy(false); }
   }
 
-  return <details className={styles.section} open>
+  return <><details className={styles.section} open>
     <summary><div><h3>Your Why</h3><p>Write it out or list it, one reason per line. Add photos too. Both show on your Home page.</p></div><ChevronDown size={18} /></summary>
     <div className={styles.fields}>
       <label>Your why
@@ -103,6 +103,7 @@ export function WhySection() {
       {message && <p className={styles.status} role="status">{message}</p>}
       {error && <p className={styles.error} role="alert">{error}</p>}
     </div>
+  </details>
     {queue[0] && <ImageCropperModal key={queue[0].url.slice(-40) + queue.length} imageUrl={queue[0].url} aspectRatio="16:9" title={queue.length > 1 ? `Crop for your Home slideshow (${queue.length} left)` : "Crop for your Home slideshow"} onCrop={croppedDataUrl => void upload(croppedDataUrl)} onCancel={() => setQueue(rest => rest.slice(1))} />}
-  </details>;
+  </>;
 }
