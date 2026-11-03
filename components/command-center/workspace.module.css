@@ -27,6 +27,7 @@
 .subnav { display: grid; padding: 0 0 8px 36px; }
 .subnav a { padding: 12px 16px; font-size: 15px; color: #b8c4cd; border-left: 1px solid #34414a; }
 .subnav a:hover { background: #1d282e; color: #fff; }
+.subnav .navButton { padding: 12px 16px; font-size: 15px; color: #b8c4cd; border-left: 1px solid #34414a; text-align: left; }
 .sidebar details[open] summary { color: #fff; }
 .main { min-width: 0; padding: 24px 30px; }
 .formMain { max-width: 1280px; margin: auto; width: 100%; }
