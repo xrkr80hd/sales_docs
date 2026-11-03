@@ -4,6 +4,7 @@ import { ChevronDown, ImagePlus, X } from "lucide-react";
 import { useSession } from "@/components/auth/supabase-session-gate";
 import { notifySave } from "@/components/ui/save-toast-host";
 import { addWhyPhoto, cachedWhy, loadWhy, removeWhyPhoto, saveWhy } from "@/lib/why-client";
+import { ImageCropperModal } from "@/components/ui/image-cropper-modal";
 import styles from "./consultant-setup.module.css";
 
 const MAX_PHOTOS = 12;
@@ -18,6 +19,8 @@ export function WhySection() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  // Photos waiting to be cropped, one at a time, before they upload.
+  const [queue, setQueue] = useState<{ name: string; url: string }[]>([]);
 
   useEffect(() => {
     if (!token) return;
@@ -34,21 +37,35 @@ export function WhySection() {
     finally { setBusy(false); }
   }
 
-  async function upload(event: ChangeEvent<HTMLInputElement>) {
+  // Pick photos → crop each to the Home slideshow's 16:9 shape → upload the crop.
+  function pick(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files || []); event.target.value = "";
     if (!files.length) return;
-    setBusy(true); setError(""); setMessage("");
-    let added = 0;
+    setError(""); setMessage("");
+    const room = Math.max(0, MAX_PHOTOS - photos.length);
+    if (files.length > room) setError(`Your album holds up to ${MAX_PHOTOS} photos.`);
+    for (const file of files.slice(0, room)) {
+      if (!file.type.startsWith("image/")) { setError(`${file.name} is not a photo.`); continue; }
+      if (file.size > 25 * 1024 * 1024) { setError(`${file.name} is larger than 25 MB.`); continue; }
+      const reader = new FileReader();
+      reader.onload = () => setQueue(current => [...current, { name: file.name, url: String(reader.result) }]);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  async function upload(croppedDataUrl: string) {
+    const current = queue[0];
+    setQueue(rest => rest.slice(1));
+    if (!current) return;
+    setBusy(true); setError("");
     try {
-      for (const file of files.slice(0, Math.max(0, MAX_PHOTOS - photos.length))) {
-        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error(`${file.name}: choose JPG, PNG, or WebP photos.`);
-        if (file.size > 8 * 1024 * 1024) throw new Error(`${file.name} is larger than 8 MB.`);
-        const value = await addWhyPhoto(token, file);
-        setPhotos(value.photos); added++;
-      }
-      if (files.length > MAX_PHOTOS - photos.length) setError(`Your album holds up to ${MAX_PHOTOS} photos.`);
-      if (added) setMessage(added === 1 ? "Photo added to your album." : `${added} photos added to your album.`);
-    } catch (failure) { setError(failure instanceof Error ? failure.message : "A photo could not be added."); }
+      const blob = await (await fetch(croppedDataUrl)).blob();
+      const file = new File([blob], current.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+      if (file.size > 8 * 1024 * 1024) throw new Error("That crop is too large. Zoom in a little and try again.");
+      const value = await addWhyPhoto(token, file);
+      setPhotos(value.photos);
+      setMessage("Photo added to your album.");
+    } catch (failure) { setError(failure instanceof Error ? failure.message : "The photo could not be added."); }
     finally { setBusy(false); }
   }
 
@@ -78,13 +95,14 @@ export function WhySection() {
             <button type="button" aria-label="Remove this photo" disabled={busy} onClick={() => void remove(url)}><X size={14} /></button>
           </figure>)}
           {photos.length < MAX_PHOTOS && <label className={styles.albumAdd}><ImagePlus size={22} /><span>Add photos</span>
-            <input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busy} onChange={upload} aria-label="Add photos to your why album" />
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busy} onChange={pick} aria-label="Add photos to your why album" />
           </label>}
         </div>
-        <small className={styles.whyHint}>Family, goals, places you&apos;re working toward. JPG, PNG or WebP · up to 8 MB each.</small>
+        <small className={styles.whyHint}>Family, goals, places you&apos;re working toward. Each photo is cropped to widescreen (16:9) for your Home slideshow. Best size: 1920 × 1080 or larger.</small>
       </div>
       {message && <p className={styles.status} role="status">{message}</p>}
       {error && <p className={styles.error} role="alert">{error}</p>}
     </div>
+    {queue[0] && <ImageCropperModal key={queue[0].url.slice(-40) + queue.length} imageUrl={queue[0].url} aspectRatio="16:9" title={queue.length > 1 ? `Crop for your Home slideshow (${queue.length} left)` : "Crop for your Home slideshow"} onCrop={croppedDataUrl => void upload(croppedDataUrl)} onCancel={() => setQueue(rest => rest.slice(1))} />}
   </details>;
 }
