@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowLeft, ChevronDown, ChevronRight, MessageCircle, Search, Send, ShieldCheck, Users, Plus, X, RefreshCw } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, MessageCircle, Search, Send, ShieldCheck, Users, Plus, X, RefreshCw } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import {useWorkspaceIdentity} from "@/components/command-center/workspace-context";
 import {readMessengerCache,cacheMessengerDirectory,cacheMessengerMessages,clearMessengerCache} from "@/lib/messenger-cache";
@@ -39,6 +39,8 @@ export function OrganizationMessenger() {
   const [messages, setMessages] = useState<Message[]>([]), [hasMore, setHasMore] = useState(false), [loadingHistory, setLoadingHistory] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({}), [busy, setBusy] = useState(false), [connection, setConnection] = useState("Connecting…");
   const [creating, setCreating] = useState(false), [orgName, setOrgName] = useState("");
+  // The team (channels & people) panel shows only once an organization is chosen, and can be tucked away.
+  const [teamOpen, setTeamOpen] = useState(true);
   const [editing, setEditing] = useState<Message | null>(null), [editText, setEditText] = useState("");
   const [actionsId, setActionsId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
@@ -134,7 +136,7 @@ export function OrganizationMessenger() {
   const rooms = data?.conversations.filter(c => c.kind === "organization" && c.organization_id === orgId) || [];
   const members = data?.people.filter(p => p.organization_id === orgId) || [];
   const open = (id: string) => { setActiveId(id); setScreen("conversation"); setError(""); };
-  const choose = (id: string) => { setOrgId(previous => previous === id ? null : id); setActiveId(null); setScreen(orgId === id ? "organizations" : "directory"); };
+  const choose = (id: string) => { setTeamOpen(true); setOrgId(previous => previous === id ? null : id); setActiveId(null); setScreen(orgId === id ? "organizations" : "directory"); };
   const back = () => { if (screen === "conversation") { setActiveId(null); setScreen(orgId ? "directory" : "organizations"); } else { setOrgId(null); setScreen("organizations"); } };
   async function dm(p: Person) {
     const existing = data?.conversations.find(c => c.kind === "dm" && c.messenger_participants.some(m => m.user_id === p.user_id));
@@ -169,7 +171,7 @@ export function OrganizationMessenger() {
   return <div ref={shell} className={`${styles.shell} ${styles[screen]}`}>
     <header className={styles.topbar}><div><strong>NXT <span>DOX</span></strong><small>MESSENGER</small></div><span className={styles.connection}>{connection}</span></header>
     {error && <div className={styles.error} role="alert"><span>{error}</span><button aria-label="Retry" onClick={() => { setError(""); void load(); if (activeId) void refreshHistory(activeId, true); }}><RefreshCw size={18} /></button><button aria-label="Dismiss error" onClick={() => setError("")}><X size={18} /></button></div>}
-    {!data ? <div className={styles.empty} role="status">{error ? "Messenger could not load." : "Loading your conversations…"}</div> : <div className={styles.columns}>
+    {!data ? <div className={styles.empty} role="status">{error ? "Messenger could not load." : "Loading your conversations…"}</div> : <div className={`${styles.columns} ${!org ? styles.noOrg : !teamOpen ? styles.teamClosed : ""}`}>
       <section className={styles.organizations} aria-label="Organizations">
         <div className={styles.heading}><h1>Organizations</h1>{data.canCreateOrganization && <button aria-label="Create organization" onClick={() => setCreating(!creating)}><Plus size={20} /></button>}</div>
         {creating && <form className={styles.createForm} onSubmit={createOrganization}><label htmlFor="organization-name">Organization name</label><input id="organization-name" value={orgName} onChange={e => setOrgName(e.target.value)} maxLength={120} required /><button disabled={busy || !orgName.trim()}>Create organization</button><button type="button" onClick={() => setCreating(false)}>Cancel</button></form>}
@@ -185,9 +187,10 @@ export function OrganizationMessenger() {
         </div>
       </section>
       <section className={styles.directory} aria-label="Channels and people">
-        {org ? <><header className={styles.panelHeader}><button className={styles.back} aria-label="Back to organizations" onClick={back}><ArrowLeft /></button><OrganizationBadge name={org.name} iconUrl={org.iconUrl} hidden={org.hideIcon} className={styles.orgIcon} /><div className={styles.rowText}><h2>{org.name}</h2><small>{members.length} team {members.length === 1 ? "member" : "members"}</small></div></header><div className={styles.scroll}>{rooms.map(roomRow)}{!rooms.length && <p className={styles.empty}>Organization chat is not enabled for your account.</p>}<h3 className={styles.sectionLabel}>Team members</h3>{members.map(p => <button key={p.user_id} className={styles.row} disabled={busy || !data.canDm || !p.can_dm || p.user_id === data.me} onClick={() => void dm(p)}><span className={styles.avatar}>{initials(p.name)}</span><span className={styles.rowText}><strong>{p.name}{p.user_id === data.me ? " (you)" : ""}</strong><small>{p.role === "admin" ? "Administrator" : p.role === "sales_manager" ? "Management" : p.role === "fni" ? "F&I" : "Consultant"}</small></span>{p.user_id !== data.me && p.can_dm && <ChevronRight size={16} />}</button>)}{!members.length && <p className={styles.empty}>No members with Messenger access yet.</p>}</div></> : <div className={styles.empty}><Users size={32} /><h2>Your team, connected.</h2><p>Select an organization to see its channels and people.</p></div>}
+        {org ? <><header className={styles.panelHeader}><button className={styles.back} aria-label="Back to organizations" onClick={back}><ArrowLeft /></button><button type="button" className={styles.teamToggle} aria-label="Hide team panel" aria-expanded="true" onClick={() => setTeamOpen(false)}><ChevronLeft size={18} /></button><OrganizationBadge name={org.name} iconUrl={org.iconUrl} hidden={org.hideIcon} className={styles.orgIcon} /><div className={styles.rowText}><h2>{org.name}</h2><small>{members.length} team {members.length === 1 ? "member" : "members"}</small></div></header><div className={styles.scroll}>{rooms.map(roomRow)}{!rooms.length && <p className={styles.empty}>Organization chat is not enabled for your account.</p>}<h3 className={styles.sectionLabel}>Team members</h3>{members.map(p => <button key={p.user_id} className={styles.row} disabled={busy || !data.canDm || !p.can_dm || p.user_id === data.me} onClick={() => void dm(p)}><span className={styles.avatar}>{initials(p.name)}</span><span className={styles.rowText}><strong>{p.name}{p.user_id === data.me ? " (you)" : ""}</strong><small>{p.role === "admin" ? "Administrator" : p.role === "sales_manager" ? "Management" : p.role === "fni" ? "F&I" : "Consultant"}</small></span>{p.user_id !== data.me && p.can_dm && <ChevronRight size={16} />}</button>)}{!members.length && <p className={styles.empty}>No members with Messenger access yet.</p>}</div></> : <div className={styles.empty}><Users size={32} /><h2>Your team, connected.</h2><p>Select an organization to see its channels and people.</p></div>}
       </section>
       <section className={styles.conversation} aria-label="Conversation">
+        {org && !teamOpen && <button type="button" className={styles.teamReopen} aria-label={`Show ${org.name} channels and people`} aria-expanded="false" onClick={() => setTeamOpen(true)}><ChevronRight size={18} /><span>Team</span></button>}
         {active ? <><header className={styles.panelHeader}><button className={styles.back} aria-label="Back to team" onClick={back}><ArrowLeft /></button>{active.kind === "dm" ? <span className={styles.avatar}>{initials(title || "DM")}</span> : active.channel === "management" ? <ShieldCheck className={styles.red} /> : <Users className={styles.red} />}<div className={styles.rowText}><h2>{title}</h2><small>{active.kind === "dm" ? "Private · participants only" : org?.name}</small></div></header>
           {historyError && <div className={styles.error} role="alert"><span>{historyError}</span><button aria-label="Retry messages" onClick={() => void refreshHistory(active.id, true)}><RefreshCw size={18} /></button></div>}
           <div ref={list} className={styles.messages} onScroll={() => { if (list.current) nearBottom.current = list.current.scrollHeight - list.current.scrollTop - list.current.clientHeight < 100; }}>
