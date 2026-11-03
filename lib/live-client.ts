@@ -10,7 +10,9 @@ type ChangeListener = { conversation: string | "*"; callback: (payload: Payload)
 type BroadcastListener = { event: string; callback: (payload: unknown) => void };
 type Status = "SUBSCRIBED" | "CHANNEL_ERROR" | "TIMED_OUT" | "CLOSED";
 
-const VISIBLE_MS = 3000, HIDDEN_MS = 30000, IDLE_MS = 15000;
+// Fast only while a Messenger conversation is open; the menu's unread badge alone polls slowly.
+const VISIBLE_MS = 3000, HIDDEN_MS = 60000, IDLE_MS = 20000;
+const BACKGROUND_CHANNELS = /^messenger-unread/;
 
 export class LiveChannel {
   changes: ChangeListener[] = [];
@@ -67,7 +69,7 @@ export class LiveHub {
 
   private schedule() {
     if (!this.channels.size) return;
-    const hasMessages = [...this.channels].some(c => c.changes.length || c.tracking);
+    const hasMessages = [...this.channels].some(c => !BACKGROUND_CHANNELS.test(c.name) && (c.changes.length || c.tracking));
     const delay = document.visibilityState !== "visible" ? HIDDEN_MS : hasMessages ? VISIBLE_MS : IDLE_MS;
     window.clearTimeout(this.timer);
     this.timer = window.setTimeout(() => void this.poll(), delay);
