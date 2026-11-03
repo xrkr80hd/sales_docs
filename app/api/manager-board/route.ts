@@ -1,6 +1,8 @@
 import { organizationBranding, brandingOwner, organizationSettings } from "@/lib/organization-branding";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { emptyBoard,emptyRow,currentBoardMonth,safeBoardNumber,type MonthBoard } from "@/lib/manager-board";
+// Consultants are on the board. So is an admin who belongs to the dealership (they sell there too).
+const onBoard=(role?:string)=>role==="user"||role==="admin";
 function record(value:unknown):Record<string,unknown>{return value&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,unknown>:{};}
 async function context(request:Request){
  const token=(request.headers.get("authorization")||"").replace(/^Bearer\s+/i,"").trim();
@@ -67,7 +69,7 @@ export async function GET(request:Request){
    if(orgError||membersError||boardError||settingsError)throw new Error("Your consultant board could not be loaded.");
    const board={...emptyBoard(),...record(saved?.board)} as MonthBoard;
    const rows=Object.fromEntries(Object.entries(board.rows||{}).map(([id,row])=>[id,{objective:row.objective,appointmentsGoal:row.appointmentsGoal,appointmentsSet:row.appointmentsSet,mtd:row.mtd,weeklyGoal:row.weeklyGoal,avg90:row.avg90,days:row.days,projection:row.projection,confirmedAt:row.confirmedAt}]));
-   const roster=(members||[]).filter(member=>(member.profiles as unknown as {role:string})?.role==="user").map(member=>({id:member.user_id,name:(member.profiles as unknown as {display_name:string})?.display_name||"Unnamed consultant"}));
+   const roster=(members||[]).filter(member=>onBoard((member.profiles as unknown as {role:string})?.role)).map(member=>({id:member.user_id,name:(member.profiles as unknown as {display_name:string})?.display_name||"Unnamed consultant"}));
    const branding=(await organizationBranding(db))[organizationId];
    return Response.json({organization:{...organization,...branding},month,board:{newGoal:board.newGoal,usedGoal:board.usedGoal,rows,schedule:board.schedule,weeklyUpdate:board.weeklyUpdate,publishedAt:board.publishedAt},roster,proposals:{[user.id]:record(settings?.projections)[`${organizationId}:${month}`]},me:user.id,canManage:false,canViewStats:false,version:board.publishedAt},{headers:{"Cache-Control":"private, no-store"}});
   }
@@ -77,7 +79,7 @@ export async function GET(request:Request){
   if(orgError||memberError)throw orgError||memberError;
   const latest=records.filter(row=>"saved" in row&&row.saved).sort((a,b)=>(b.saved as MonthBoard).publishedAt.localeCompare((a.saved as MonthBoard).publishedAt))[0];
   const board=latest&&"saved"in latest?latest.saved as MonthBoard:annualDefault(records,organizationId,month);
-  const roster=(members||[]).filter(member=>(member.profiles as unknown as {role:string})?.role==="user").map(member=>({id:member.user_id,name:(member.profiles as unknown as {display_name:string})?.display_name||"Unnamed consultant"}));
+  const roster=(members||[]).filter(member=>onBoard((member.profiles as unknown as {role:string})?.role)).map(member=>({id:member.user_id,name:(member.profiles as unknown as {display_name:string})?.display_name||"Unnamed consultant"}));
   const ids=roster.map(person=>person.id);
   const {data:settings,error:settingsError}=ids.length?await db.from("user_settings").select("user_id,projections:consultant_info->monthlyProjections").in("user_id",ids):{data:[],error:null};
   if(settingsError)throw settingsError;
@@ -143,7 +145,7 @@ export async function POST(request:Request){
    }
   }else if(body.action==="confirm-projection"||body.action==="change-projection"){
    const {data:member}=await db.from("organization_memberships").select("user_id,profiles!organization_memberships_user_id_fkey(display_name,role)").eq("user_id",body.userId).eq("organization_id",organizationId).maybeSingle();
-   if(!member||(member.profiles as unknown as {role:string})?.role!=="user")return Response.json({error:"Choose a consultant assigned to this dealership."},{status:400});
+   if(!member||!onBoard((member.profiles as unknown as {role:string})?.role))return Response.json({error:"Choose a consultant assigned to this dealership."},{status:400});
    const previous=board.rows[body.userId]||emptyRow();let value:number;
    if(body.action==="confirm-projection"){
     if(previous.confirmedAt)return Response.json({error:"Already confirmed. Use Change projection."},{status:409});
