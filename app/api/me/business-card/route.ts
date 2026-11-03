@@ -102,7 +102,8 @@ export async function GET(request: NextRequest) {
 
   const isDonaldGoff = user.email?.toLowerCase().includes("donald") || profile?.display_name?.toLowerCase().includes("donald") || user.id === "donald-goff";
   const isAdmin = profile?.role === "admin" || isTrav;
-  const isPermitted = isAdmin || Boolean(profile?.card_enabled) || isDonaldGoff;
+  // Managers (sales and floor managers) sell too, so they always get a card.
+  const isPermitted = isAdmin || Boolean(profile?.card_enabled) || isDonaldGoff || profile?.role === "sales_manager";
 
   if (!isPermitted) {
     return NextResponse.json({
@@ -320,7 +321,7 @@ export async function PUT(request: NextRequest) {
 
   const isDonaldGoff = user.email?.toLowerCase().includes("donald") || profile.display_name?.toLowerCase().includes("donald") || user.id === "donald-goff";
   const isAdmin = profile.role === "admin" || isTrav;
-  if (!isAdmin && !profile.card_enabled && !isDonaldGoff) {
+  if (!isAdmin && !profile.card_enabled && !isDonaldGoff && profile.role !== "sales_manager") {
     return NextResponse.json({ error: "Card permission required." }, { status: 403 });
   }
 
@@ -604,7 +605,7 @@ export async function POST(request: NextRequest) {
   }
 
   const isDonaldGoff = user.email?.toLowerCase().includes("donald") || profile.display_name?.toLowerCase().includes("donald") || user.id === "donald-goff";
-  const isPermitted = profile.role === "admin" || isTrav || Boolean(profile.card_enabled) || isDonaldGoff;
+  const isPermitted = profile.role === "admin" || isTrav || Boolean(profile.card_enabled) || isDonaldGoff || profile.role === "sales_manager";
   if (!isPermitted) return NextResponse.json({ error: "Card permission required." }, { status: 403 });
 
   if (request.headers.get("content-type")?.includes("application/json")) {
