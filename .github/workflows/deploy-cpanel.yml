@@ -35,6 +35,8 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: "1"
+          # Baked into the app so an open tab can tell when a newer version is live.
+          NEXT_PUBLIC_BUILD_ID: ${{ github.sha }}
 
       - name: Assemble the server bundle
         run: |
