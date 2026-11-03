@@ -1,4 +1,4 @@
-export const DISCLOSURE_VERSION = "2026-11-03.1";
+export const DISCLOSURE_VERSION = "2026-11-03.2";
 export const DISCLOSURE_TTL_MS = 72 * 60 * 60 * 1000;
 /** The short version, shown in bold above the full terms. */
 export const DISCLOSURE_SUMMARY = [
@@ -15,10 +15,10 @@ export const DISCLOSURE_SECTIONS = [
   { title: "Temporary paperwork", text: "NXTDOX is a temporary paperwork workspace, not a permanent customer document archive. Workflow information in the browser expires after 24 hours. Finishing a deal marks it for removal from the server, and you can delete your own saved deals at any time. Closing a tab does not delete a saved deal from the server. Accounts, preferences, messages, performance history and administrative settings are kept separately from paperwork. Server backups are managed by the system administrator and hosting provider, and deleting a live record does not instantly remove it from backups." },
   { title: "Employee Messenger", text: "Consultant Chat is open to people authorized for that organization and channel; Management Chat is limited to authorized management roles. Direct messages are limited to their participants, and a manager or administrator does not get access to a direct message just because of their role. Messages are stored on the server, so do not treat them as absolutely private: authorized system operators may access infrastructure for legitimate administration, security or legal reasons. Keep customer paperwork and sensitive information out of messages." },
   { title: "Your responsibilities", text: "Use NXTDOX only for authorized dealership work and only with information your role and organization allow. Protect your password, never share sign-ins, secure printed paperwork and sign out on shared devices. Do not share customer information with anyone who is not authorized. Report suspected unauthorized access, lost paperwork or security problems to dealership management or the system administrator right away; you can also use Submit a Ticket in the app." },
-  { title: "This acknowledgment", text: "Selecting I Agree saves this version and the time you agreed in this browser for up to 72 hours. It is a browser record, not a server record tied to your account or proof of employer authorization. You will be asked again when the terms change. Walker Automotive names and logos belong to their owners; showing them does not by itself mean corporate approval of NXTDOX. These terms do not waive legal protections that cannot be waived." },
+  { title: "This acknowledgment", text: "Selecting I Agree saves this version and the time you agreed on your NXTDOX account, so you are asked once, on any device, and again only when these terms change. It is not proof of employer authorization. Walker Automotive names and logos belong to their owners; showing them does not by itself mean corporate approval of NXTDOX. These terms do not waive legal protections that cannot be waived." },
 ] as const;
 export function validDisclosureAcceptance(value: unknown, now = Date.now()) {
   if (!value || typeof value !== "object") return false;
   const record = value as { version?: unknown; acceptedAt?: unknown };
-  return record.version === DISCLOSURE_VERSION && typeof record.acceptedAt === "number" && Number.isFinite(record.acceptedAt) && record.acceptedAt <= now && now - record.acceptedAt < DISCLOSURE_TTL_MS;
+  return record.version === DISCLOSURE_VERSION && typeof record.acceptedAt === "number" && Number.isFinite(record.acceptedAt) && record.acceptedAt <= now;
 }

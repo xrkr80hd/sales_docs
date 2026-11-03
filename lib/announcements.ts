@@ -30,7 +30,7 @@ export const announcements: Announcement[] = [
 
 const key = (userId: string) => `nextdocs.notifications.read.v1:${userId || "anonymous"}`;
 
-/** Read state is a per-device convenience only; failures fall back to "unread". */
+/** Read state: kept in this browser and synced to the account (see syncReadState in announcements-client). */
 export function readAnnouncementIds(userId: string): Set<string> {
   try {
     const raw = window.localStorage.getItem(key(userId));
@@ -48,7 +48,16 @@ export function markAnnouncementsRead(userId: string, ids: string[]) {
   } catch {
     /* Storage unavailable (private mode, blocked): the dot simply shows again next visit. */
   }
-  window.dispatchEvent(new Event("announcements-read"));
+  window.dispatchEvent(new CustomEvent("announcements-read", { detail: { ids } }));
+}
+
+/** Adds read ids that came from the account (another device) without sending them back. */
+export function mergeReadIds(userId: string, ids: string[]) {
+  try {
+    const next = new Set([...readAnnouncementIds(userId), ...ids]);
+    window.localStorage.setItem(key(userId), JSON.stringify([...next].slice(-200)));
+  } catch { /* storage unavailable */ }
+  window.dispatchEvent(new CustomEvent("announcements-read", { detail: { ids, fromServer: true } }));
 }
 
 export function formatAnnouncementDate(date: string) {
